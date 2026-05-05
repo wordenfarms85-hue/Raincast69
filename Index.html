@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecipBlend — Multi-Model Forecast</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060c14;
+    --panel: #0b1622;
+    --border: #1a2d44;
+    --accent: #00c8ff;
+    --accent2: #00ffa3;
+    --warn: #ffb300;
+    --danger: #ff4060;
+    --text: #c8dff0;
+    --muted: #4a6a88;
+    --gfs: #4fc3f7;
+    --ecmwf: #81c784;
+    --icon: #ffb74d;
+    --gem: #ce93d8;
+    --avg: #00ffa3;
+  }
+
+- { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+background: var(–bg);
+font-family: ‘Barlow Condensed’, sans-serif;
+color: var(–text);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Animated rain background */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background:
+repeating-linear-gradient(
+180deg,
+transparent 0px,
+transparent 3px,
+rgba(0,200,255,0.015) 3px,
+rgba(0,200,255,0.015) 4px
+);
+pointer-events: none;
+z-index: 0;
+animation: rain 0.8s linear infinite;
+}
+@keyframes rain { from { background-position: 0 0; } to { background-position: 0 40px; } }
+
+.app {
+position: relative;
+z-index: 1;
+max-width: 960px;
+margin: 0 auto;
+padding: 24px 16px;
+}
+
+/* Header */
+header {
+display: flex;
+align-items: flex-end;
+gap: 16px;
+margin-bottom: 28px;
+border-bottom: 1px solid var(–border);
+padding-bottom: 20px;
+}
+.logo {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 11px;
+letter-spacing: 3px;
+color: var(–accent);
+text-transform: uppercase;
+margin-bottom: 4px;
+opacity: 0.8;
+}
+h1 {
+font-size: clamp(32px, 6vw, 52px);
+font-weight: 900;
+letter-spacing: -1px;
+line-height: 1;
+color: #fff;
+}
+h1 span { color: var(–accent); }
+.tagline {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 2px;
+margin-left: auto;
+text-align: right;
+line-height: 1.6;
+}
+
+/* Location bar */
+.location-bar {
+display: flex;
+gap: 10px;
+margin-bottom: 20px;
+flex-wrap: wrap;
+}
+.loc-input-wrap {
+flex: 1;
+min-width: 200px;
+position: relative;
+}
+.loc-input-wrap input {
+width: 100%;
+background: var(–panel);
+border: 1px solid var(–border);
+color: var(–text);
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 13px;
+padding: 12px 16px;
+outline: none;
+transition: border-color 0.2s;
+letter-spacing: 1px;
+}
+.loc-input-wrap input:focus { border-color: var(–accent); }
+.loc-input-wrap input::placeholder { color: var(–muted); }
+
+.btn {
+background: var(–accent);
+color: #000;
+border: none;
+font-family: ‘Barlow Condensed’, sans-serif;
+font-weight: 700;
+font-size: 14px;
+letter-spacing: 2px;
+text-transform: uppercase;
+padding: 12px 24px;
+cursor: pointer;
+transition: background 0.2s, transform 0.1s;
+}
+.btn:hover { background: #33d6ff; }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { background: var(–muted); cursor: not-allowed; }
+
+.btn-locate {
+background: var(–panel);
+color: var(–accent);
+border: 1px solid var(–accent);
+font-family: ‘Barlow Condensed’, sans-serif;
+font-weight: 600;
+font-size: 13px;
+letter-spacing: 1.5px;
+padding: 12px 18px;
+cursor: pointer;
+transition: all 0.2s;
+white-space: nowrap;
+}
+.btn-locate:hover { background: rgba(0,200,255,0.1); }
+
+/* Status bar */
+.status-bar {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 11px;
+color: var(–muted);
+letter-spacing: 1px;
+margin-bottom: 20px;
+min-height: 18px;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.status-bar .dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: var(–accent);
+animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+.status-bar .dot.idle { animation: none; background: var(–muted); }
+.status-bar .dot.ok { animation: none; background: var(–accent2); }
+.status-bar .dot.err { animation: none; background: var(–danger); }
+
+/* Model legend */
+.legend {
+display: flex;
+gap: 16px;
+flex-wrap: wrap;
+margin-bottom: 20px;
+}
+.legend-item {
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 13px;
+font-weight: 600;
+letter-spacing: 1px;
+}
+.legend-swatch {
+width: 12px; height: 12px;
+border-radius: 2px;
+}
+
+/* Summary cards */
+.summary-cards {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+gap: 10px;
+margin-bottom: 24px;
+}
+.card {
+background: var(–panel);
+border: 1px solid var(–border);
+padding: 14px 16px;
+position: relative;
+overflow: hidden;
+}
+.card::before {
+content: ‘’;
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 2px;
+}
+.card.avg::before { background: var(–avg); }
+.card.gfs::before { background: var(–gfs); }
+.card.ecmwf::before { background: var(–ecmwf); }
+.card.icon::before { background: var(–icon); }
+.card.gem::before { background: var(–gem); }
+
+.card-label {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 10px;
+letter-spacing: 2px;
+color: var(–muted);
+margin-bottom: 6px;
+text-transform: uppercase;
+}
+.card-value {
+font-size: 32px;
+font-weight: 900;
+line-height: 1;
+color: #fff;
+}
+.card-unit {
+font-size: 13px;
+color: var(–muted);
+font-weight: 400;
+margin-left: 2px;
+}
+.card-sub {
+font-size: 11px;
+color: var(–muted);
+margin-top: 4px;
+font-family: ‘Share Tech Mono’, monospace;
+}
+.card.avg .card-value { color: var(–avg); }
+
+/* Chart section */
+.chart-section {
+background: var(–panel);
+border: 1px solid var(–border);
+padding: 20px;
+margin-bottom: 20px;
+}
+.chart-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 16px;
+}
+.chart-title {
+font-size: 15px;
+font-weight: 700;
+letter-spacing: 2px;
+text-transform: uppercase;
+color: var(–text);
+}
+.chart-toggle {
+display: flex;
+gap: 4px;
+}
+.toggle-btn {
+background: transparent;
+border: 1px solid var(–border);
+color: var(–muted);
+font-family: ‘Barlow Condensed’, sans-serif;
+font-size: 12px;
+letter-spacing: 1px;
+padding: 4px 12px;
+cursor: pointer;
+transition: all 0.2s;
+}
+.toggle-btn.active {
+background: var(–accent);
+color: #000;
+border-color: var(–accent);
+}
+
+canvas#chart {
+width: 100% !important;
+display: block;
+}
+
+/* Hourly table */
+.table-wrap {
+background: var(–panel);
+border: 1px solid var(–border);
+overflow-x: auto;
+margin-bottom: 20px;
+}
+table {
+width: 100%;
+border-collapse: collapse;
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 11px;
+min-width: 560px;
+}
+thead th {
+background: rgba(0,200,255,0.06);
+border-bottom: 1px solid var(–border);
+padding: 10px 14px;
+text-align: right;
+letter-spacing: 1px;
+color: var(–muted);
+white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+tbody tr {
+border-bottom: 1px solid rgba(26,45,68,0.5);
+transition: background 0.15s;
+}
+tbody tr:hover { background: rgba(0,200,255,0.04); }
+tbody td {
+padding: 8px 14px;
+text-align: right;
+white-space: nowrap;
+}
+tbody td:first-child {
+text-align: left;
+color: var(–muted);
+}
+.td-avg { color: var(–avg); font-weight: bold; }
+.td-gfs { color: var(–gfs); }
+.td-ecmwf { color: var(–ecmwf); }
+.td-icon { color: var(–icon); }
+.td-gem { color: var(–gem); }
+
+/* Intensity bar */
+.bar-cell {
+display: flex;
+align-items: center;
+gap: 6px;
+justify-content: flex-end;
+}
+.bar {
+height: 4px;
+background: var(–avg);
+border-radius: 2px;
+min-width: 2px;
+max-width: 60px;
+opacity: 0.7;
+}
+
+/* Placeholder / loading */
+.placeholder {
+text-align: center;
+padding: 60px 20px;
+color: var(–muted);
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 12px;
+letter-spacing: 2px;
+line-height: 2;
+}
+.placeholder .big { font-size: 48px; opacity: 0.2; margin-bottom: 16px; }
+
+/* Unit toggle */
+.unit-row {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-bottom: 20px;
+font-size: 13px;
+font-weight: 600;
+letter-spacing: 1px;
+color: var(–muted);
+}
+
+/* Disclaimer */
+.disclaimer {
+font-family: ‘Share Tech Mono’, monospace;
+font-size: 10px;
+color: var(–muted);
+letter-spacing: 1px;
+line-height: 1.8;
+border-top: 1px solid var(–border);
+padding-top: 16px;
+margin-top: 8px;
+}
+
+.loading-shimmer {
+animation: shimmer 1.2s ease-in-out infinite;
+}
+@keyframes shimmer {
+0%,100% { opacity: 0.4; }
+50% { opacity: 1; }
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="logo">⬡ PrecipBlend v2.0</div>
+      <h1>PRECIP<span>BLEND</span></h1>
+    </div>
+    <div class="tagline">
+      MULTI-MODEL ENSEMBLE<br>
+      48-HR PRECIPITATION<br>
+      FORECAST TOOL
+    </div>
+  </header>
+
+  <div class="location-bar">
+    <div class="loc-input-wrap">
+      <input type="text" id="cityInput" placeholder="Enter city, state or ZIP code..." value="" />
+    </div>
+    <button class="btn-locate" id="btnLocate" onclick="useGeolocation()">📍 MY LOCATION</button>
+    <button class="btn" id="btnFetch" onclick="runForecast()">FETCH FORECAST</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="dot idle" id="statusDot"></div>
+    <span id="statusText">ENTER A LOCATION TO BEGIN</span>
+  </div>
+
+  <div class="unit-row">
+    UNITS:
+    <button class="toggle-btn active" id="btnIn" onclick="setUnit('in')">INCHES</button>
+    <button class="toggle-btn" id="btnMm" onclick="setUnit('mm')">MM</button>
+  </div>
+
+  <!-- Legend -->
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--avg)"></div>BLEND AVG</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--gfs)"></div>GFS</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--ecmwf)"></div>ECMWF-IFS</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--icon)"></div>ICON-EU</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:var(--gem)"></div>GEM</div>
+  </div>
+
+  <!-- Summary cards -->
+
+  <div class="summary-cards" id="summaryCards">
+    <div class="card avg">
+      <div class="card-label">Blend Total</div>
+      <div class="card-value" id="sumAvg">--<span class="card-unit" id="unitAvg">in</span></div>
+      <div class="card-sub">48-HR ENSEMBLE MEAN</div>
+    </div>
+    <div class="card gfs">
+      <div class="card-label">GFS</div>
+      <div class="card-value" id="sumGfs">--<span class="card-unit" id="unitGfs">in</span></div>
+      <div class="card-sub">NCEP GLOBAL</div>
+    </div>
+    <div class="card ecmwf">
+      <div class="card-label">ECMWF-IFS</div>
+      <div class="card-value" id="sumEcmwf">--<span class="card-unit" id="unitEcmwf">in</span></div>
+      <div class="card-sub">EURO OPERATIONAL</div>
+    </div>
+    <div class="card icon">
+      <div class="card-label">ICON-EU</div>
+      <div class="card-value" id="sumIcon">--<span class="card-unit" id="unitIcon">in</span></div>
+      <div class="card-sub">DWD GERMAN MDL</div>
+    </div>
+    <div class="card gem">
+      <div class="card-label">GEM</div>
+      <div class="card-value" id="sumGem">--<span class="card-unit" id="unitGem">in</span></div>
+      <div class="card-sub">CANADIAN MDL</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <div class="chart-title">HOURLY PRECIPITATION</div>
+      <div class="chart-toggle">
+        <button class="toggle-btn active" id="btnHourly" onclick="setView('hourly')">HOURLY</button>
+        <button class="toggle-btn" id="btnCumul" onclick="setView('cumul')">CUMULATIVE</button>
+      </div>
+    </div>
+    <canvas id="chart" height="220"></canvas>
+    <div class="placeholder" id="chartPlaceholder">
+      <div class="big">🌧</div>
+      AWAITING FORECAST DATA<br>ENTER A LOCATION ABOVE
+    </div>
+  </div>
+
+  <!-- Hourly table -->
+
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table id="forecastTable">
+      <thead>
+        <tr>
+          <th>TIME</th>
+          <th class="td-avg">BLEND</th>
+          <th class="td-gfs">GFS</th>
+          <th class="td-ecmwf">ECMWF</th>
+          <th class="td-icon">ICON</th>
+          <th class="td-gem">GEM</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="disclaimer">
+    DATA SOURCE: OPEN-METEO.COM (FREE WEATHER API) · MODELS: GFS / ECMWF-IFS / ICON-EU / GEM<br>
+    NOTE: HRRR &amp; NAM NEST REQUIRE NOMADS/SYNOPTIC API KEYS NOT INCLUDED IN THIS BUILD.<br>
+    FORECAST UPDATED EVERY ~6 HRS · ALL TIMES LOCAL · PRECIPITATION IN HOURLY INTERVALS
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let currentUnit = 'in';
+let currentView = 'hourly';
+let forecastData = null;
+let chartInstance = null;
+let currentLat = null, currentLon = null;
+
+// ─── Unit helpers ─────────────────────────────────────────────────────────────
+function mmToIn(mm) { return mm / 25.4; }
+function toDisplay(mm) {
+  if (currentUnit === 'in') return +(mmToIn(mm)).toFixed(3);
+  return +mm.toFixed(2);
+}
+function unitLabel() { return currentUnit === 'in' ? 'in' : 'mm'; }
+
+function setUnit(u) {
+  currentUnit = u;
+  document.getElementById('btnIn').classList.toggle('active', u === 'in');
+  document.getElementById('btnMm').classList.toggle('active', u === 'mm');
+  if (forecastData) render(forecastData);
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('btnHourly').classList.toggle('active', v === 'hourly');
+  document.getElementById('btnCumul').classList.toggle('active', v === 'cumul');
+  if (forecastData) render(forecastData);
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+function setStatus(msg, state = 'loading') {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  txt.textContent = msg;
+  dot.className = 'dot ' + (state === 'loading' ? '' : state === 'ok' ? 'ok' : state === 'err' ? 'err' : 'idle');
+}
+
+// ─── Geocoding ────────────────────────────────────────────────────────────────
+async function geocode(query) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if (!d.results || !d.results.length) throw new Error('Location not found');
+  const { latitude, longitude, name, admin1, country } = d.results[0];
+  return { lat: latitude, lon: longitude, label: [name, admin1, country].filter(Boolean).join(', ') };
+}
+
+// ─── Geolocation ──────────────────────────────────────────────────────────────
+function useGeolocation() {
+  if (!navigator.geolocation) { setStatus('GEOLOCATION NOT SUPPORTED', 'err'); return; }
+  setStatus('ACQUIRING POSITION...', 'loading');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLon = pos.coords.longitude;
+      document.getElementById('cityInput').value = `${currentLat.toFixed(4)}, ${currentLon.toFixed(4)}`;
+      runForecast(currentLat, currentLon, 'YOUR LOCATION');
+    },
+    () => setStatus('GEOLOCATION DENIED', 'err')
+  );
+}
+
+// ─── Main fetch ───────────────────────────────────────────────────────────────
+async function runForecast(lat, lon, label) {
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+
+  try {
+    if (!lat) {
+      const q = document.getElementById('cityInput').value.trim();
+      if (!q) { setStatus('PLEASE ENTER A LOCATION', 'idle'); btn.disabled = false; return; }
+      setStatus('GEOCODING LOCATION...', 'loading');
+      const geo = await geocode(q);
+      lat = geo.lat; lon = geo.lon; label = geo.label;
+    }
+
+    setStatus(`FETCHING MULTI-MODEL DATA FOR ${(label||'').toUpperCase()}...`, 'loading');
+
+    // Models available in open-meteo:
+    // GFS = gfs_seamless, ECMWF = ecmwf_ifs025, ICON = icon_eu, GEM = gem_seamless
+    const models = ['gfs_seamless', 'ecmwf_ifs025', 'icon_eu', 'gem_seamless'];
+    const modelNames = ['GFS', 'ECMWF-IFS', 'ICON-EU', 'GEM'];
+
+    const fetches = models.map(m =>
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation&forecast_days=2&models=${m}&timezone=auto`)
+        .then(r => r.json())
+    );
+
+    const results = await Promise.all(fetches);
+
+    // Validate and extract
+    const times = results[0].hourly.time;
+    const allPrecip = results.map(r => r.hourly.precipitation);
+
+    // Compute average per hour, skipping nulls
+    const avgPrecip = times.map((_, i) => {
+      const vals = allPrecip.map(p => p[i]).filter(v => v !== null && v !== undefined);
+      if (!vals.length) return 0;
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
+    });
+
+    forecastData = { times, allPrecip, avgPrecip, modelNames, label };
+    setStatus(`MODEL BLEND COMPLETE · ${label.toUpperCase()} · ${times.length} HOURS`, 'ok');
+    render(forecastData);
+
+  } catch (e) {
+    setStatus('ERROR: ' + e.message.toUpperCase(), 'err');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render(data) {
+  const { times, allPrecip, avgPrecip, modelNames } = data;
+
+  // Summary totals
+  const totals = allPrecip.map(arr => arr.reduce((s, v) => s + (v || 0), 0));
+  const avgTotal = avgPrecip.reduce((s, v) => s + (v || 0), 0);
+
+  const ids = ['sumAvg', 'sumGfs', 'sumEcmwf', 'sumIcon', 'sumGem'];
+  const unitIds = ['unitAvg', 'unitGfs', 'unitEcmwf', 'unitIcon', 'unitGem'];
+  const vals = [avgTotal, ...totals];
+
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    const u = document.getElementById(unitIds[i]);
+    const v = toDisplay(vals[i]);
+    el.childNodes[0].textContent = v;
+    u.textContent = unitLabel();
+  });
+
+  renderChart(times, allPrecip, avgPrecip, modelNames);
+  renderTable(times, allPrecip, avgPrecip, modelNames, avgTotal);
+}
+
+function buildDataset(data, view) {
+  if (view === 'hourly') return data;
+  // cumulative
+  let sum = 0;
+  return data.map(v => { sum += (v || 0); return +sum.toFixed(4); });
+}
+
+const MODEL_COLORS = ['#4fc3f7', '#81c784', '#ffb74d', '#ce93d8'];
+
+function renderChart(times, allPrecip, avgPrecip, modelNames) {
+  document.getElementById('chartPlaceholder').style.display = 'none';
+  const canvas = document.getElementById('chart');
+  canvas.style.display = 'block';
+
+  const labels = times.map(t => {
+    const d = new Date(t);
+    const h = d.getHours();
+    return h === 0 ? d.toLocaleDateString('en-US', {month:'short',day:'numeric'}) : (h % 6 === 0 ? `${h}:00` : '');
+  });
+
+  const v = currentView;
+  const datasets = [
+    ...allPrecip.map((p, i) => ({
+      label: modelNames[i],
+      data: buildDataset(p, v),
+      borderColor: MODEL_COLORS[i],
+      backgroundColor: MODEL_COLORS[i] + '22',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: false,
+    })),
+    {
+      label: 'BLEND AVG',
+      data: buildDataset(avgPrecip, v),
+      borderColor: '#00ffa3',
+      backgroundColor: '#00ffa322',
+      borderWidth: 3,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: v === 'hourly',
+      order: -1,
+    }
+  ];
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#4a6a88',
+            font: { family: 'Share Tech Mono', size: 10 },
+            boxWidth: 12,
+            padding: 16,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0b1622',
+          borderColor: '#1a2d44',
+          borderWidth: 1,
+          titleColor: '#4a6a88',
+          bodyColor: '#c8dff0',
+          titleFont: { family: 'Share Tech Mono', size: 10 },
+          bodyFont: { family: 'Share Tech Mono', size: 11 },
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3)} ${unitLabel()}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a2d4444' },
+          ticks: { color: '#4a6a88', font: { family: 'Share Tech Mono', size: 9 }, maxRotation: 0 },
+        },
+        y: {
+          grid: { color: '#1a2d4466' },
+          ticks: { color: '#4a6a88', font: { family: 'Share Tech Mono', size: 10 },
+            callback: v => v.toFixed(2) + ' ' + unitLabel() },
+          title: { display: true, text: v === 'cumul' ? 'Cumulative Precip' : 'Hourly Precip',
+            color: '#4a6a88', font: { family: 'Share Tech Mono', size: 10 } }
+        }
+      }
+    }
+  });
+  // Fix height
+  canvas.parentElement.style.height = '260px';
+}
+
+function renderTable(times, allPrecip, avgPrecip, modelNames, avgTotal) {
+  const tbody = document.getElementById('tableBody');
+  const maxVal = Math.max(...avgPrecip);
+
+  tbody.innerHTML = times.map((t, i) => {
+    const dt = new Date(t);
+    const timeStr = dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    const avg = toDisplay(avgPrecip[i] || 0);
+    const vals = allPrecip.map(p => toDisplay(p[i] || 0));
+    const barW = maxVal > 0 ? Math.round((avgPrecip[i] / maxVal) * 60) : 0;
+    const highlight = avgPrecip[i] > 1.0 ? 'style="background:rgba(0,255,163,0.05)"' : '';
+    return `<tr ${highlight}>
+      <td>${timeStr}</td>
+      <td class="td-avg">${avg}</td>
+      <td class="td-gfs">${vals[0]}</td>
+      <td class="td-ecmwf">${vals[1]}</td>
+      <td class="td-icon">${vals[2]}</td>
+      <td class="td-gem">${vals[3]}</td>
+      <td><div class="bar-cell"><div class="bar" style="width:${barW}px"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableWrap').style.display = 'block';
+}
+
+// ─── Enter key ────────────────────────────────────────────────────────────────
+document.getElementById('cityInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runForecast();
+});
+</script>
+
+</body>
+</html>
