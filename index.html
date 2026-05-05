@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PrecipBlend</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0a0f1a; color: #cde; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
@@ -45,6 +46,15 @@ td { padding: 7px 12px; text-align: right; white-space: nowrap; border-bottom: 1
 td:first-child { text-align: left; color: #3a6080; }
 .empty { text-align: center; padding: 60px 20px; color: #1e3a5f; font-size: 11px; letter-spacing: 2px; }
 .footer { font-size: 9px; color: #1a2d40; letter-spacing: 1px; line-height: 2; margin-top: 20px; border-top: 1px solid #0d1520; padding-top: 12px; }
+#mapSection { display: none; margin-bottom: 20px; }
+#mapTitle { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 8px; }
+#map { height: 260px; border: 1px solid #1e3a5f; }
+.leaflet-popup-content-wrapper { background: #0d1520 !important; border: 1px solid #1e3a5f !important; border-radius: 0 !important; box-shadow: none !important; }
+.leaflet-popup-content { color: #cde !important; font-family: monospace !important; font-size: 12px !important; margin: 10px 14px !important; }
+.leaflet-popup-tip { background: #0d1520 !important; }
+.popup-name { font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 6px; }
+.popup-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 3px; font-size: 11px; }
+.popup-label { color: #3a6080; }
 </style>
 </head>
 <body>
@@ -73,13 +83,18 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div class="cards" id="cards" style="display:none"></div>
 
+<div id="mapSection">
+  <div id="mapTitle">FORECAST LOCATION</div>
+  <div id="map"></div>
+</div>
+
 <div class="chart-box" id="chartBox" style="display:none">
   <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
   <div id="bars"></div>
   <div class="chart-legend">
-    <span><span style="color:#1e3a5f">■</span> Trace</span>
-    <span><span style="color:#00c8ff">■</span> Light</span>
-    <span><span style="color:#00ffa3">■</span> Heavy (&gt;2mm/hr)</span>
+    <span><span style="color:#1e3a5f">&#9632;</span> Trace</span>
+    <span><span style="color:#00c8ff">&#9632;</span> Light</span>
+    <span><span style="color:#00ffa3">&#9632;</span> Heavy (&gt;2mm/hr)</span>
   </div>
 </div>
 
@@ -87,22 +102,25 @@ td:first-child { text-align: left; color: #3a6080; }
   <table id="tbl"></table>
 </div>
 
-<div class="empty" id="empty">🌧 AWAITING FORECAST DATA</div>
+<div class="empty" id="empty">&#127783; AWAITING FORECAST DATA</div>
 
 <div class="footer">
-  SOURCE: OPEN-METEO.COM &nbsp;·&nbsp; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
-  HRRR &amp; NAM-NEST REQUIRE NOMADS API KEY (NOT INCLUDED) &nbsp;·&nbsp; ALL TIMES LOCAL · 14-DAY FORECAST
+  SOURCE: OPEN-METEO.COM &nbsp;&middot;&nbsp; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
+  MAP: &copy; OPENSTREETMAP CONTRIBUTORS &nbsp;&middot;&nbsp; ALL TIMES LOCAL &middot; 14-DAY FORECAST
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <script>
 const MODELS = [
   { key:"gfs",   name:"GFS",     api:"gfs_seamless",  color:"#38bdf8" },
   { key:"ecmwf", name:"ECMWF",   api:"ecmwf_ifs025",  color:"#4ade80" },
   { key:"icon",  name:"ICON-EU", api:"icon_eu",        color:"#fb923c" },
-  { key:"gem",   name:"GEM",     api:"gem_seamless",  color:"#c084fc" },
+  { key:"gem",   name:"GEM",     api:"gem_seamless",   color:"#c084fc" },
 ];
 
 let unit = "in", view = "hourly", allRows = [], allTotals = null;
+let map = null, marker = null;
 
 function cv(mm) {
   return unit === "in" ? (mm/25.4).toFixed(3) : mm.toFixed(2);
@@ -125,26 +143,57 @@ function setStatus(msg, cls) {
   el.className = cls||"";
 }
 
+function initMap(lat, lon) {
+  document.getElementById("mapSection").style.display = "block";
+  if (!map) {
+    map = L.map("map", { center:[lat,lon], zoom:7 });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:"&copy; OpenStreetMap contributors", maxZoom:18
+    }).addTo(map);
+  } else {
+    map.setView([lat,lon], 7);
+    if (marker) { marker.remove(); marker = null; }
+  }
+}
+
+function updateMapMarker(lat, lon, label, totals) {
+  if (!map) return;
+  const icon = L.divIcon({
+    className:"",
+    html:'<div style="width:16px;height:16px;background:#00c8ff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px #00c8ff;"></div>',
+    iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-12]
+  });
+  const modelRows = MODELS.map((m,i) => {
+    if (totals.modelTotals[i] === null) return "";
+    return '<div class="popup-row"><span style="color:'+m.color+'">'+m.name+'</span><span style="color:'+m.color+'">'+cv(totals.modelTotals[i])+' '+unit+'</span></div>';
+  }).join("");
+  const html = '<div class="popup-name">'+label+'</div>'
+    +'<div class="popup-row"><span style="color:#00ffa3">BLEND AVG</span><span style="color:#00ffa3;font-weight:bold">'+cv(totals.avg)+' '+unit+'</span></div>'
+    +'<hr style="border-color:#1e3a5f;margin:6px 0">'
+    +modelRows
+    +'<div style="font-size:9px;color:#3a6080;margin-top:6px;letter-spacing:1px">14-DAY TOTAL PRECIP</div>';
+  marker = L.marker([lat,lon],{icon}).addTo(map).bindPopup(html,{maxWidth:220}).openPopup();
+}
+
 async function geocode(q) {
-  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`);
+  const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(q)+"&count=1&language=en&format=json");
   const d = await r.json();
-  if (!d.results?.length) throw new Error("Location not found");
-  const {latitude,longitude,name,admin1,country} = d.results[0];
-  return {lat:latitude, lon:longitude, label:[name,admin1,country].filter(Boolean).join(", ")};
+  if (!d.results || !d.results.length) throw new Error("Location not found");
+  const g = d.results[0];
+  return {lat:g.latitude, lon:g.longitude, label:[g.name,g.admin1,g.country].filter(Boolean).join(", ")};
 }
 
 async function fetchForecast(lat, lon, label) {
-  setStatus(`Fetching models for ${label}...`);
+  setStatus("Fetching models for "+label+"...");
+  initMap(lat, lon);
 
   const results = await Promise.all(
     MODELS.map(m =>
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation&forecast_days=14&models=${m.api}&timezone=auto`)
-        .then(r => r.json())
-        .catch(() => null)
+      fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&hourly=precipitation&forecast_days=14&models="+m.api+"&timezone=auto")
+        .then(r => r.json()).catch(() => null)
     )
   );
 
-  // Find first successful result for times
   const base = results.find(r => r && r.hourly && r.hourly.time);
   if (!base) { setStatus("Error: Could not load any model data", "err"); return; }
 
@@ -153,20 +202,22 @@ async function fetchForecast(lat, lon, label) {
   const validIndices = precips.map((p,i) => p ? i : null).filter(i => i !== null);
 
   allRows = times.map((t,i) => {
-    const vals = MODELS.map((_,mi) => precips[mi] ? (precips[mi][i] ?? 0) : null);
+    const vals = MODELS.map((_,mi) => precips[mi] ? (precips[mi][i] || 0) : null);
     const validVals = vals.filter(v => v !== null);
-    const avg = validVals.length ? validVals.reduce((a,b)=>a+b,0) / validVals.length : 0;
+    const avg = validVals.length ? validVals.reduce((a,b)=>a+b,0)/validVals.length : 0;
     return {t, vals, avg};
   });
 
   const modelTotals = MODELS.map((_,mi) =>
-    precips[mi] ? precips[mi].reduce((s,v)=>s+(v??0),0) : null
+    precips[mi] ? precips[mi].reduce((s,v)=>s+(v||0),0) : null
   );
   const validTotals = modelTotals.filter(v => v !== null);
   allTotals = { modelTotals, avg: validTotals.reduce((a,b)=>a+b,0)/validTotals.length };
 
+  updateMapMarker(lat, lon, label, allTotals);
+
   const loadedModels = validIndices.map(i => MODELS[i].name).join(", ");
-  setStatus(`✓ ${loadedModels} · ${times.length}h loaded`, "ok");
+  setStatus("Done: "+loadedModels+" loaded", "ok");
   renderAll(label);
 }
 
@@ -177,7 +228,7 @@ async function run() {
     setStatus("Geocoding...");
     const geo = await geocode(q);
     await fetchForecast(geo.lat, geo.lon, geo.label);
-  } catch(e) { setStatus("Error: " + e.message, "err"); }
+  } catch(e) { setStatus("Error: "+e.message, "err"); }
 }
 
 function locate() {
@@ -189,7 +240,7 @@ function locate() {
   );
 }
 
-document.getElementById("cityInput").addEventListener("keydown", e => { if(e.key==="Enter") run(); });
+document.getElementById("cityInput").addEventListener("keydown", function(e){ if(e.key==="Enter") run(); });
 
 function renderAll(label) {
   if (label) {
@@ -200,21 +251,20 @@ function renderAll(label) {
   renderCards();
   renderBars();
   renderTable();
+  if (map) setTimeout(function(){ map.invalidateSize(); }, 200);
 }
 
 function renderCards() {
   const el = document.getElementById("cards");
   el.style.display = "grid";
-  const items = [
-    { label:"BLEND AVG", val:allTotals.avg, color:"#00ffa3" },
-    ...MODELS.map((m,i) => ({ label:m.name, val:allTotals.modelTotals[i], color:m.color }))
-  ];
-  el.innerHTML = items.filter(c => c.val !== null).map(c => `
-    <div class="card" style="border-top:2px solid ${c.color}">
-      <div class="card-label">${c.label}</div>
-      <div class="card-val" style="color:${c.color}">${cv(c.val)}<span class="card-unit">${unit}</span></div>
-      <div class="card-sub">48-HR TOTAL</div>
-    </div>`).join("");
+  const items = [{label:"BLEND AVG", val:allTotals.avg, color:"#00ffa3"}]
+    .concat(MODELS.map((m,i) => ({label:m.name, val:allTotals.modelTotals[i], color:m.color})));
+  el.innerHTML = items.filter(c => c.val !== null).map(c =>
+    '<div class="card" style="border-top:2px solid '+c.color+'">'
+    +'<div class="card-label">'+c.label+'</div>'
+    +'<div class="card-val" style="color:'+c.color+'">'+cv(c.val)+'<span class="card-unit">'+unit+'</span></div>'
+    +'<div class="card-sub">14-DAY TOTAL</div></div>'
+  ).join("");
 }
 
 function renderBars() {
@@ -222,59 +272,46 @@ function renderBars() {
   const barsEl = document.getElementById("bars");
   const titleEl = document.getElementById("chartTitle");
   box.style.display = "block";
-
   const isCumul = view === "cumul";
   titleEl.textContent = isCumul ? "CUMULATIVE BLEND" : "HOURLY BLEND AVERAGE";
-
   let cumSum = 0;
-  const displayVals = allRows.map(r => {
-    if (isCumul) { cumSum += r.avg; return cumSum; }
-    return r.avg;
-  });
-  const maxVal = Math.max(...displayVals, 0.001);
-
+  const displayVals = allRows.map(r => { if(isCumul){cumSum+=r.avg;return cumSum;} return r.avg; });
+  const maxVal = Math.max.apply(null, displayVals.concat([0.001]));
   barsEl.innerHTML = allRows.map((r,i) => {
     const val = displayVals[i];
-    const h = Math.max((val / maxVal) * 76, val > 0 ? 2 : 0);
-    const col = isCumul ? "#00c8ff" : (r.avg > 2 ? "#00ffa3" : r.avg > 0 ? "#00c8ff" : "#1e3a5f");
+    const h = Math.max((val/maxVal)*76, val>0?2:0);
+    const col = isCumul ? "#00c8ff" : (r.avg>2?"#00ffa3":r.avg>0?"#00c8ff":"#1e3a5f");
     const dt = new Date(r.t);
-    const dayLabel = dt.getHours() === 0 ? dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
-    return `<div class="bar-wrap" title="${new Date(r.t).toLocaleString()}: ${cv(val)} ${unit}">
-      <div class="bar" style="height:${h}px;background:${col}"></div>
-      <div class="bar-day">${dayLabel}</div>
-    </div>`;
+    const dayLabel = dt.getHours()===0 ? dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
+    return '<div class="bar-wrap" title="'+dt.toLocaleString()+': '+cv(val)+' '+unit+'">'
+      +'<div class="bar" style="height:'+h+'px;background:'+col+'"></div>'
+      +'<div class="bar-day">'+dayLabel+'</div></div>';
   }).join("");
 }
 
 function renderTable() {
   const wrap = document.getElementById("tableWrap");
-  const tbl  = document.getElementById("tbl");
+  const tbl = document.getElementById("tbl");
   wrap.style.display = "block";
-
   const isCumul = view === "cumul";
   let cumAvg = 0;
   const cumModel = MODELS.map(() => 0);
-
   const rows = allRows.map((r,i) => {
     cumAvg += r.avg;
-    MODELS.forEach((_,mi) => { cumModel[mi] += r.vals[mi]; });
+    MODELS.forEach((_,mi) => { cumModel[mi] += r.vals[mi] || 0; });
     const avg = isCumul ? cumAvg : r.avg;
-    const vals = isCumul ? [...cumModel] : r.vals;
+    const vals = isCumul ? cumModel.slice() : r.vals;
     const dt = new Date(r.t);
     const time = dt.toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true});
-    const hl = avg > 2 ? "background:rgba(0,255,163,0.05)" : "";
-    return `<tr style="${hl}">
-      <td>${time}</td>
-      <td style="color:#00ffa3;font-weight:bold">${cv(avg)}</td>
-      ${MODELS.map((m,mi)=>`<td style="color:${m.color}">${vals[mi] !== null ? cv(vals[mi]) : '<span style="color:#1e3a5f">N/A</span>'}</td>`).join("")}
-    </tr>`;
+    const hl = avg>2 ? "background:rgba(0,255,163,0.05)" : "";
+    return '<tr style="'+hl+'"><td>'+time+'</td>'
+      +'<td style="color:#00ffa3;font-weight:bold">'+cv(avg)+'</td>'
+      +MODELS.map((m,mi)=>'<td style="color:'+m.color+'">'+(vals[mi]!==null?cv(vals[mi]):'<span style="color:#1e3a5f">N/A</span>')+'</td>').join("")
+      +'</tr>';
   });
-
-  tbl.innerHTML = `<thead><tr>
-    <th style="text-align:left">TIME</th>
-    <th style="color:#00ffa3">BLEND</th>
-    ${MODELS.map(m=>`<th style="color:${m.color}">${m.name}</th>`).join("")}
-  </tr></thead><tbody>${rows.join("")}</tbody>`;
+  tbl.innerHTML = '<thead><tr><th style="text-align:left">TIME</th><th style="color:#00ffa3">BLEND</th>'
+    +MODELS.map(m=>'<th style="color:'+m.color+'">'+m.name+'</th>').join("")
+    +'</tr></thead><tbody>'+rows.join("")+'</tbody>';
 }
 </script>
 
