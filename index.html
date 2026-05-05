@@ -90,7 +90,7 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div class="footer">
   SOURCE: OPEN-METEO.COM &nbsp;·&nbsp; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
-  HRRR &amp; NAM-NEST REQUIRE NOMADS API KEY (NOT INCLUDED) &nbsp;·&nbsp; ALL TIMES LOCAL
+  HRRR &amp; NAM-NEST REQUIRE NOMADS API KEY (NOT INCLUDED) &nbsp;·&nbsp; ALL TIMES LOCAL · 14-DAY FORECAST
 </div>
 
 <script>
@@ -137,7 +137,7 @@ async function fetchForecast(lat, lon, label) {
 
   const results = await Promise.all(
     MODELS.map(m =>
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation&forecast_days=2&models=${m.api}&timezone=auto`)
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation&forecast_days=14&models=${m.api}&timezone=auto`)
         .then(r => r.json())
         .catch(() => null)
     )
@@ -204,7 +204,7 @@ function renderCards() {
     { label:"BLEND AVG", val:allTotals.avg, color:"#00ffa3" },
     ...MODELS.map((m,i) => ({ label:m.name, val:allTotals.modelTotals[i], color:m.color }))
   ];
-  el.innerHTML = items.map(c => `
+  el.innerHTML = items.filter(c => c.val !== null).map(c => `
     <div class="card" style="border-top:2px solid ${c.color}">
       <div class="card-label">${c.label}</div>
       <div class="card-val" style="color:${c.color}">${cv(c.val)}<span class="card-unit">${unit}</span></div>
@@ -261,7 +261,7 @@ function renderTable() {
     return `<tr style="${hl}">
       <td>${time}</td>
       <td style="color:#00ffa3;font-weight:bold">${cv(avg)}</td>
-      ${MODELS.map((m,mi)=>`<td style="color:${m.color}">${cv(vals[mi])}</td>`).join("")}
+      ${MODELS.map((m,mi)=>`<td style="color:${m.color}">${vals[mi] !== null ? cv(vals[mi]) : '<span style="color:#1e3a5f">N/A</span>'}</td>`).join("")}
     </tr>`;
   });
 
