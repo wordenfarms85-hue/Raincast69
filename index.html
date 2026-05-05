@@ -58,6 +58,7 @@ td:first-child { text-align: left; color: #3a6080; }
   <button class="primary" onclick="run()">FETCH FORECAST</button>
 </div>
 
+<div id="locationDisplay" style="display:none;font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:6px;">📍 <span id="locationName"></span></div>
 <div id="status">ENTER A LOCATION ABOVE</div>
 
 <div class="toggle-row">
@@ -165,8 +166,8 @@ async function fetchForecast(lat, lon, label) {
   allTotals = { modelTotals, avg: validTotals.reduce((a,b)=>a+b,0)/validTotals.length };
 
   const loadedModels = validIndices.map(i => MODELS[i].name).join(", ");
-  setStatus(`✓ ${label} · ${loadedModels} · ${times.length}h loaded`, "ok");
-  renderAll();
+  setStatus(`✓ ${loadedModels} · ${times.length}h loaded`, "ok");
+  renderAll(label);
 }
 
 async function run() {
@@ -190,7 +191,11 @@ function locate() {
 
 document.getElementById("cityInput").addEventListener("keydown", e => { if(e.key==="Enter") run(); });
 
-function renderAll() {
+function renderAll(label) {
+  if (label) {
+    document.getElementById("locationName").textContent = label;
+    document.getElementById("locationDisplay").style.display = "block";
+  }
   document.getElementById("empty").style.display = "none";
   renderCards();
   renderBars();
