@@ -7,155 +7,203 @@
 <title>FarmCast — Precision Ag Weather</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0a0f1a; color: #cde; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
+body { background: #0a0f1a; color: #e8f4ff; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
 h1 { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -1px; margin-bottom: 4px; }
 h1 span { color: #00c8ff; }
-.sub { font-size: 10px; color: #3a6080; letter-spacing: 3px; margin-bottom: 16px; }
+.sub { font-size: 10px; color: #7ab8d4; letter-spacing: 3px; margin-bottom: 16px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-input, select { background: #111827; border: 1px solid #1e3a5f; color: #cde; padding: 10px 12px; font-family: monospace; font-size: 13px; outline: none; }
+input, select { background: #111827; border: 1px solid #2a5278; color: #e8f4ff; padding: 10px 12px; font-family: monospace; font-size: 13px; outline: none; }
 input { flex: 1; min-width: 160px; }
 select { cursor: pointer; }
 input:focus, select:focus { border-color: #00c8ff; }
-button { background: #111827; border: 1px solid #1e3a5f; color: #3a6080; font-family: monospace; font-weight: bold; font-size: 12px; padding: 10px 14px; cursor: pointer; letter-spacing: 1px; }
+button { background: #111827; border: 1px solid #2a5278; color: #7ab8d4; font-family: monospace; font-weight: bold; font-size: 12px; padding: 10px 14px; cursor: pointer; letter-spacing: 1px; }
 button.primary { background: #00c8ff; color: #000; border: none; }
 button.active { background: #00c8ff; color: #000; border-color: #00c8ff; }
 button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; }
-#status { font-size: 10px; color: #3a6080; letter-spacing: 1px; margin-bottom: 16px; min-height: 16px; }
+#status { font-size: 10px; color: #7ab8d4; letter-spacing: 1px; margin-bottom: 16px; min-height: 16px; }
 #status.ok { color: #00ffa3; }
 #status.err { color: #f87171; }
 .toggle-row { display: flex; gap: 6px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-.toggle-label { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-right: 4px; }
-.section-title { font-size: 10px; color: #3a6080; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
-.panel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+.toggle-label { font-size: 10px; color: #7ab8d4; letter-spacing: 2px; margin-right: 4px; }
+.section-title { font-size: 10px; color: #7ab8d4; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
+.panel { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; }
 /* Field tags */
-#fieldTagsPanel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+#fieldTagsPanel { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; }
 .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 32px; }
-.field-tag { display: flex; align-items: center; gap: 6px; background: #111827; border: 1px solid #1e3a5f; padding: 5px 10px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.field-tag { display: flex; align-items: center; gap: 6px; background: #111827; border: 1px solid #2a5278; padding: 5px 10px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
 .field-tag.active-tag { border-color: #00c8ff; color: #00c8ff; background: rgba(0,200,255,0.1); }
 .field-tag .tag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.field-tag .tag-del { color: #3a6080; font-size: 13px; margin-left: 2px; line-height: 1; }
+.field-tag .tag-del { color: #7ab8d4; font-size: 13px; margin-left: 2px; line-height: 1; }
 .field-tag .tag-del:hover { color: #f87171; }
 .tag-add-row { display: flex; gap: 8px; }
 .tag-add-row input { padding: 7px 10px; font-size: 12px; }
 /* Planting date */
-#plantingPanel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+#plantingPanel { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; }
 .planting-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 10px; }
 .planting-field { display: flex; flex-direction: column; gap: 4px; }
-.planting-label { font-size: 9px; color: #3a6080; letter-spacing: 2px; }
+.planting-label { font-size: 9px; color: #7ab8d4; letter-spacing: 2px; }
 .planting-field input { padding: 8px 10px; font-size: 12px; width: 150px; }
 .planting-field select { padding: 8px 10px; font-size: 12px; }
 /* Stage timeline */
-#stagePanel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; display: none; }
+#stagePanel { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; display: none; }
 .stage-timeline { position: relative; margin: 16px 0 8px; }
-.stage-track { display: flex; align-items: stretch; overflow-x: auto; border: 1px solid #1e3a5f; }
+.stage-track { display: flex; align-items: stretch; overflow-x: auto; border: 1px solid #2a5278; }
 .stage-seg { flex: 1; min-width: 70px; padding: 8px 4px 6px; text-align: center; border-right: 1px solid #0a0f1a; cursor: pointer; transition: all 0.15s; position: relative; }
 .stage-seg:last-child { border-right: none; }
 .stage-seg:hover { background: rgba(255,255,255,0.04); }
 .stage-seg.active-stage { background: rgba(0,200,255,0.12); }
 .stage-seg.current-stage { outline: 2px solid #ffb300; outline-offset: -2px; }
 .stage-top-bar { height: 4px; width: 100%; margin-bottom: 6px; }
-.stage-name { font-size: 8px; letter-spacing: 1px; color: #3a6080; margin-bottom: 3px; text-transform: uppercase; }
-.stage-date-range { font-size: 8px; font-weight: bold; color: #cde; }
-.stage-kc { font-size: 7px; color: #3a6080; margin-top: 2px; }
+.stage-name { font-size: 8px; letter-spacing: 1px; color: #7ab8d4; margin-bottom: 3px; text-transform: uppercase; }
+.stage-date-range { font-size: 8px; font-weight: bold; color: #e8f4ff; }
+.stage-kc { font-size: 7px; color: #7ab8d4; margin-top: 2px; }
 .stage-now-marker { position: absolute; top: 0; width: 2px; background: #ffb300; height: 100%; pointer-events: none; }
-#stageInfo { background: #060f1a; border: 1px solid #1e3a5f; padding: 12px 14px; margin-top: 10px; font-size: 11px; line-height: 1.8; }
+#stageInfo { background: #060f1a; border: 1px solid #2a5278; padding: 12px 14px; margin-top: 10px; font-size: 11px; line-height: 1.8; }
 .stage-info-name { font-size: 14px; font-weight: 900; color: #00c8ff; margin-bottom: 6px; }
 .stage-info-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 4px; }
-.stage-info-item { color: #3a6080; }
-.stage-info-item span { color: #cde; }
+.stage-info-item { color: #7ab8d4; }
+.stage-info-item span { color: #e8f4ff; }
 .stage-alert { margin-top: 8px; padding: 7px 10px; font-size: 10px; letter-spacing: 1px; border-left: 3px solid; }
-.maturity-bar { margin-top: 12px; padding: 10px 12px; background: #060f1a; border: 1px solid #1e3a5f; font-size: 11px; }
-.maturity-title { font-size: 9px; color: #3a6080; letter-spacing: 2px; margin-bottom: 6px; }
+.maturity-bar { margin-top: 12px; padding: 10px 12px; background: #060f1a; border: 1px solid #2a5278; font-size: 11px; }
+.maturity-title { font-size: 9px; color: #7ab8d4; letter-spacing: 2px; margin-bottom: 6px; }
 .maturity-dates { display: flex; gap: 20px; flex-wrap: wrap; }
-.mat-item { color: #3a6080; }
+.mat-item { color: #7ab8d4; }
 .mat-item span { color: #ffb300; font-weight: bold; }
 /* Cards */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 20px; }
-.card { background: #0d1520; border: 1px solid #1e3a5f; padding: 10px 12px; }
-.card-label { font-size: 9px; color: #3a6080; letter-spacing: 2px; margin-bottom: 4px; }
+.card { background: #0d1520; border: 1px solid #2a5278; padding: 10px 12px; }
+.card-label { font-size: 9px; color: #7ab8d4; letter-spacing: 2px; margin-bottom: 4px; }
 .card-val { font-size: 26px; font-weight: 900; line-height: 1; }
-.card-unit { font-size: 11px; color: #3a6080; margin-left: 2px; font-weight: normal; }
-.card-sub { font-size: 9px; color: #3a6080; margin-top: 3px; }
+.card-unit { font-size: 11px; color: #7ab8d4; margin-left: 2px; font-weight: normal; }
+.card-sub { font-size: 9px; color: #7ab8d4; margin-top: 3px; }
+/* Tabs */
+.tab-bar { display:flex; gap:0; margin-bottom:0; overflow-x:auto; border-bottom:2px solid #2a5278; }
+.tab-btn { background:#0d1520; border:none; border-bottom:2px solid transparent; color:#7ab8d4; font-family:monospace; font-weight:bold; font-size:11px; padding:10px 16px; cursor:pointer; letter-spacing:1px; white-space:nowrap; margin-bottom:-2px; transition:all 0.15s; }
+.tab-btn:hover { color:#e8f4ff; background:#111827; }
+.tab-btn.tab-active { color:#00c8ff; border-bottom-color:#00c8ff; background:#0a0f1a; }
+.tab-pane { display:none; padding-top:16px; }
+.tab-pane.tab-visible { display:block; }
+/* Soil moisture tab */
+.soil-section-title { font-size:9px; color:#7ab8d4; letter-spacing:3px; margin-bottom:12px; text-transform:uppercase; }
+.soil-depth-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.soil-depth-label { font-size:9px; color:#7ab8d4; letter-spacing:1px; width:100px; flex-shrink:0; }
+.soil-depth-pct { font-size:22px; font-weight:900; width:56px; flex-shrink:0; text-align:right; }
+.soil-depth-bar-wrap { flex:1; }
+.soil-depth-bar-bg { background:#0a0f1a; height:14px; border-radius:3px; overflow:hidden; border:1px solid #2a5278; }
+.soil-depth-bar-fill { height:100%; border-radius:3px; transition:width 0.6s ease; }
+.soil-depth-vwc { font-size:9px; color:#7ab8d4; margin-top:2px; letter-spacing:1px; }
+.soil-zones { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin-bottom:16px; }
+.soil-zone-card { background:#060f1a; border:1px solid #2a5278; padding:10px 12px; }
+.soil-zone-label { font-size:9px; color:#7ab8d4; letter-spacing:2px; margin-bottom:4px; }
+.soil-zone-val { font-size:28px; font-weight:900; line-height:1; }
+.soil-zone-sub { font-size:9px; color:#7ab8d4; margin-top:3px; }
+.soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
+.soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
+/* Map */
 /* Map */
 #mapSection { margin-bottom: 20px; }
 #mapSection .section-title { margin-bottom: 8px; }
 
 /* Ag cards */
 #agCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 20px; }
-.ag-card { background: #0d1520; border: 1px solid #1e3a5f; padding: 12px 14px; }
-.ag-card-label { font-size: 9px; color: #3a6080; letter-spacing: 2px; margin-bottom: 6px; }
+.ag-card { background: #0d1520; border: 1px solid #2a5278; padding: 12px 14px; }
+.ag-card-label { font-size: 9px; color: #7ab8d4; letter-spacing: 2px; margin-bottom: 6px; }
 .ag-card-val { font-size: 22px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
 /* Field windows */
-#fieldWindows { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+#fieldWindows { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; }
 .window-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #0a1520; font-size: 11px; }
 .window-row:last-child { border-bottom: none; }
 .window-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.window-date { color: #cde; min-width: 140px; }
-.window-len { color: #3a6080; min-width: 60px; }
+.window-date { color: #e8f4ff; min-width: 140px; }
+.window-len { color: #7ab8d4; min-width: 60px; }
 .window-tag { font-size: 9px; letter-spacing: 1px; padding: 2px 7px; border-radius: 2px; }
 /* Chart */
-.chart-box { background: #0d1520; border: 1px solid #1e3a5f; padding: 16px; margin-bottom: 20px; }
-.chart-title { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 12px; }
+.chart-box { background: #0d1520; border: 1px solid #2a5278; padding: 16px; margin-bottom: 20px; }
+.chart-title { font-size: 10px; color: #7ab8d4; letter-spacing: 2px; margin-bottom: 12px; }
 #bars { display: flex; align-items: flex-end; gap: 1px; height: 80px; overflow-x: auto; padding-bottom: 2px; }
 .bar-wrap { display: flex; flex-direction: column; align-items: center; min-width: 7px; }
 .bar { width: 6px; border-radius: 1px 1px 0 0; }
-.bar-day { font-size: 7px; color: #3a6080; white-space: nowrap; margin-top: 2px; }
-.chart-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #3a6080; flex-wrap: wrap; }
+.bar-day { font-size: 7px; color: #7ab8d4; white-space: nowrap; margin-top: 2px; }
+.chart-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #7ab8d4; flex-wrap: wrap; }
 /* Table */
-.table-wrap { background: #0d1520; border: 1px solid #1e3a5f; overflow-x: auto; margin-bottom: 20px; }
+.table-wrap { background: #0d1520; border: 1px solid #2a5278; overflow-x: auto; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px; }
 thead tr { background: #0a0f1a; }
-th { padding: 9px 12px; text-align: right; letter-spacing: 1px; border-bottom: 1px solid #1e3a5f; white-space: nowrap; font-weight: 700; color: #3a6080; }
+th { padding: 9px 12px; text-align: right; letter-spacing: 1px; border-bottom: 1px solid #2a5278; white-space: nowrap; font-weight: 700; color: #7ab8d4; }
 th:first-child { text-align: left; }
 td { padding: 7px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid #0d1a26; }
-td:first-child { text-align: left; color: #3a6080; }
-.empty { text-align: center; padding: 60px 20px; color: #1e3a5f; font-size: 11px; letter-spacing: 2px; }
-.footer { font-size: 9px; color: #1a2d40; letter-spacing: 1px; line-height: 2; margin-top: 20px; border-top: 1px solid #0d1520; padding-top: 12px; }
+td:first-child { text-align: left; color: #7ab8d4; }
+.empty { text-align: center; padding: 60px 20px; color: #3a6a94; font-size: 11px; letter-spacing: 2px; }
+.footer { font-size: 9px; color: #4a7fa0; letter-spacing: 1px; line-height: 2; margin-top: 20px; border-top: 1px solid #0d1520; padding-top: 12px; }
 .badge-good { background: rgba(0,255,163,0.15); color: #00ffa3; }
 .badge-warn { background: rgba(255,179,0,0.15); color: #ffb300; }
 .badge-bad  { background: rgba(248,113,113,0.15); color: #f87171; }
 /* Crop grid */
-#cropPanel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+#cropPanel { background: #0d1520; border: 1px solid #2a5278; padding: 14px 16px; margin-bottom: 20px; }
 .crop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-top: 10px; }
-.crop-btn { background: #111827; border: 1px solid #1e3a5f; color: #3a6080; font-family: monospace; font-size: 11px; padding: 8px 6px; cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s; }
-.crop-btn:hover { border-color: #00c8ff; color: #cde; }
+.crop-btn { background: #111827; border: 1px solid #2a5278; color: #7ab8d4; font-family: monospace; font-size: 11px; padding: 8px 6px; cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s; }
+.crop-btn:hover { border-color: #00c8ff; color: #e8f4ff; }
 .crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
 
+/* Tabs */
+.tab-bar { display:flex; gap:0; margin-bottom:0; overflow-x:auto; border-bottom:2px solid #2a5278; }
+.tab-btn { background:#0d1520; border:none; border-bottom:2px solid transparent; color:#7ab8d4; font-family:monospace; font-weight:bold; font-size:11px; padding:10px 16px; cursor:pointer; letter-spacing:1px; white-space:nowrap; margin-bottom:-2px; transition:all 0.15s; }
+.tab-btn:hover { color:#e8f4ff; background:#111827; }
+.tab-btn.tab-active { color:#00c8ff; border-bottom-color:#00c8ff; background:#0a0f1a; }
+.tab-pane { display:none; padding-top:16px; }
+.tab-pane.tab-visible { display:block; }
+/* Soil moisture tab */
+.soil-section-title { font-size:9px; color:#7ab8d4; letter-spacing:3px; margin-bottom:12px; text-transform:uppercase; }
+.soil-depth-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.soil-depth-label { font-size:9px; color:#7ab8d4; letter-spacing:1px; width:100px; flex-shrink:0; }
+.soil-depth-pct { font-size:22px; font-weight:900; width:56px; flex-shrink:0; text-align:right; }
+.soil-depth-bar-wrap { flex:1; }
+.soil-depth-bar-bg { background:#0a0f1a; height:14px; border-radius:3px; overflow:hidden; border:1px solid #2a5278; }
+.soil-depth-bar-fill { height:100%; border-radius:3px; transition:width 0.6s ease; }
+.soil-depth-vwc { font-size:9px; color:#7ab8d4; margin-top:2px; letter-spacing:1px; }
+.soil-zones { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin-bottom:16px; }
+.soil-zone-card { background:#060f1a; border:1px solid #2a5278; padding:10px 12px; }
+.soil-zone-label { font-size:9px; color:#7ab8d4; letter-spacing:2px; margin-bottom:4px; }
+.soil-zone-val { font-size:28px; font-weight:900; line-height:1; }
+.soil-zone-sub { font-size:9px; color:#7ab8d4; margin-top:3px; }
+.soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
+.soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
+/* Map */
 /* Map */
 #mapSection { margin-bottom: 20px; }
-#map { width:100%; height:340px; border:1px solid #1e3a5f; background:#0d1520; cursor:crosshair; }
-.map-hint { font-size:9px; color:#3a6080; letter-spacing:1px; margin-top:5px; text-align:center; }
+#map { width:100%; height:340px; border:1px solid #2a5278; background:#0d1520; cursor:crosshair; }
+.map-hint { font-size:9px; color:#7ab8d4; letter-spacing:1px; margin-top:5px; text-align:center; }
 .leaflet-popup-content-wrapper { background:#0d1520 !important; border:1px solid #00c8ff !important; border-radius:2px !important; box-shadow:0 0 16px rgba(0,200,255,0.2) !important; color:#cde !important; }
 .leaflet-popup-tip { background:#0d1520 !important; }
 .leaflet-popup-content { font-family:monospace !important; font-size:12px !important; margin:10px 14px !important; color:#cde !important; }
-.leaflet-control-zoom a { background:#0d1520 !important; color:#00c8ff !important; border-color:#1e3a5f !important; }
+.leaflet-control-zoom a { background:#0d1520 !important; color:#00c8ff !important; border-color:#4a82a8 !important; }
 /* Pin name modal */
 #pinModal { display:none; position:fixed; inset:0; background:rgba(4,9,15,0.88); z-index:2000; align-items:center; justify-content:center; }
 #pinModal.show { display:flex; }
-#pinModalBox { background:#0d1520; border:1px solid #1e3a5f; padding:20px; width:100%; max-width:320px; margin:16px; }
+#pinModalBox { background:#0d1520; border:1px solid #2a5278; padding:20px; width:100%; max-width:320px; margin:16px; }
 #pinModal h3 { font-size:14px; font-weight:900; color:#fff; margin-bottom:4px; }
-#pinModal .pin-coords { font-size:9px; color:#3a6080; letter-spacing:1px; margin-bottom:14px; }
+#pinModal .pin-coords { font-size:9px; color:#7ab8d4; letter-spacing:1px; margin-bottom:14px; }
 #pinModal input { width:100%; margin-bottom:10px; display:block; flex:none; }
 #pinModal .pin-btns { display:flex; gap:8px; }
 /* Auth modal */
 /* Auth modal */
 #authOverlay { display:none; position:fixed; inset:0; background:rgba(4,9,15,0.92); z-index:1000; align-items:center; justify-content:center; }
 #authOverlay.show { display:flex; }
-#authBox { background:#0d1520; border:1px solid #1e3a5f; padding:28px 24px; width:100%; max-width:360px; margin:16px; }
+#authBox { background:#0d1520; border:1px solid #2a5278; padding:28px 24px; width:100%; max-width:360px; margin:16px; }
 #authBox h2 { font-size:20px; font-weight:900; color:#fff; margin-bottom:4px; }
-#authBox .auth-sub { font-size:10px; color:#3a6080; letter-spacing:2px; margin-bottom:20px; }
+#authBox .auth-sub { font-size:10px; color:#7ab8d4; letter-spacing:2px; margin-bottom:20px; }
 #authBox input { width:100%; margin-bottom:10px; display:block; flex:none; }
 #authBox .auth-err { font-size:10px; color:#f87171; min-height:16px; margin-bottom:8px; letter-spacing:1px; }
-#authBox .auth-switch { font-size:10px; color:#3a6080; margin-top:12px; text-align:center; cursor:pointer; }
+#authBox .auth-switch { font-size:10px; color:#7ab8d4; margin-top:12px; text-align:center; cursor:pointer; }
 #authBox .auth-switch span { color:#00c8ff; text-decoration:underline; }
 /* Auth bar */
-#authBar { display:flex; align-items:center; justify-content:space-between; background:#0d1520; border:1px solid #1e3a5f; padding:8px 14px; margin-bottom:16px; font-size:11px; }
-#authBar .auth-user { color:#3a6080; }
+#authBar { display:flex; align-items:center; justify-content:space-between; background:#0d1520; border:1px solid #2a5278; padding:8px 14px; margin-bottom:16px; font-size:11px; }
+#authBar .auth-user { color:#7ab8d4; }
 #authBar .auth-user span { color:#00ffa3; }
 /* Map pins */
-.map-pin-popup { font-family:monospace; font-size:12px; color:#cde; }
+.map-pin-popup { font-family:monospace; font-size:12px; color:#e8f4ff; }
 .map-pin-popup b { color:#00c8ff; display:block; margin-bottom:4px; font-size:13px; }
-.map-pin-popup .pin-crop { color:#3a6080; font-size:10px; }
+.map-pin-popup .pin-crop { color:#7ab8d4; font-size:10px; }
 
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
@@ -168,7 +216,7 @@ td:first-child { text-align: left; color: #3a6080; }
   <div id="authBox">
     <h2>FARM<span style="color:#00c8ff">CAST</span></h2>
     <div class="auth-sub">PRECISION AG WEATHER PLATFORM</div>
-    <div id="authTitle" style="font-size:14px;font-weight:900;color:#cde;margin-bottom:16px;letter-spacing:1px;">SIGN IN</div>
+    <div id="authTitle" style="font-size:14px;font-weight:900;color:#e8f4ff;margin-bottom:16px;letter-spacing:1px;">SIGN IN</div>
     <input id="authEmail" type="email" placeholder="Email address" />
     <input id="authPassword" type="password" placeholder="Password" />
     <div class="auth-err" id="authErr"></div>
@@ -178,13 +226,13 @@ td:first-child { text-align: left; color: #3a6080; }
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:16px;">
       <div style="flex:1;height:1px;background:#1e3a5f;"></div>
-      <div style="font-size:9px;color:#1e3a5f;letter-spacing:2px;">OR</div>
+      <div style="font-size:9px;color:#3a6a94;letter-spacing:2px;">OR</div>
       <div style="flex:1;height:1px;background:#1e3a5f;"></div>
     </div>
-    <button onclick="tryItOut()" style="width:100%;padding:11px;margin-top:12px;background:transparent;border:1px solid #1e3a5f;color:#3a6080;font-family:monospace;font-weight:bold;font-size:12px;cursor:pointer;letter-spacing:2px;">
+    <button onclick="tryItOut()" style="width:100%;padding:11px;margin-top:12px;background:transparent;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-weight:bold;font-size:12px;cursor:pointer;letter-spacing:2px;">
       TRY WITHOUT ACCOUNT
     </button>
-    <div style="font-size:9px;color:#1e3a5f;margin-top:10px;text-align:center;line-height:1.8;">
+    <div style="font-size:9px;color:#3a6a94;margin-top:10px;text-align:center;line-height:1.8;">
       GUEST MODE: FORECASTS WORK BUT FIELDS WON'T BE SAVED
     </div>
   </div>
@@ -196,7 +244,7 @@ td:first-child { text-align: left; color: #3a6080; }
   <div class="auth-user" id="authBarLabel">Signed in as <span id="authUserEmail"></span></div>
   <div style="display:flex;gap:6px;">
     <button id="authSignInBtn" onclick="showLogin();tryItOut_cancel()" style="display:none;font-size:10px;padding:5px 10px;background:#00c8ff;color:#000;border:none;font-family:monospace;font-weight:bold;cursor:pointer;letter-spacing:1px;">SIGN IN</button>
-    <button id="authSignOutBtn" onclick="signOut()" style="font-size:10px;padding:5px 10px;border-color:#1e3a5f;">SIGN OUT</button>
+    <button id="authSignOutBtn" onclick="signOut()" style="font-size:10px;padding:5px 10px;border-color:#3a6a94;">SIGN OUT</button>
   </div>
 </div>
 
@@ -291,45 +339,83 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <!-- Field pins list -->
 
-<div id="fieldPinsSection" style="background:#0d1520;border:1px solid #1e3a5f;padding:14px 16px;margin-bottom:20px;display:none;">
+<div id="fieldPinsSection" style="background:#0d1520;border:1px solid #2a5278;padding:14px 16px;margin-bottom:20px;display:none;">
   <div class="section-title">SAVED FIELDS</div>
   <div id="pinList"></div>
 </div>
 
-<!-- Ag insight cards -->
+<!-- Main data tabs -->
 
-<div id="agCards" style="display:none"></div>
+<div id="mainTabs" style="display:none; background:#0d1520; border:1px solid #2a5278; margin-bottom:20px;">
 
-<!-- Soil depth panel -->
+  <!-- Tab bar -->
 
-<div id="soilDepthPanel" style="background:#0d1520;border:1px solid #1e3a5f;padding:14px 16px;margin-bottom:20px;display:none;">
-  <div class="section-title">SOIL MOISTURE BY DEPTH — ERA5-LAND</div>
-  <div id="soilDepthContent"></div>
-</div>
-
-<!-- Field work windows -->
-
-<div id="fieldWindows" style="display:none">
-  <div class="section-title">FIELD WORK WINDOWS</div>
-  <div id="windowsList"></div>
-</div>
-
-<!-- Chart -->
-
-<div class="chart-box" id="chartBox" style="display:none">
-  <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
-  <div id="bars"></div>
-  <div class="chart-legend">
-    <span><span style="color:#1e3a5f">&#9632;</span> Trace</span>
-    <span><span style="color:#00c8ff">&#9632;</span> Light</span>
-    <span><span style="color:#00ffa3">&#9632;</span> Heavy (&gt;2mm/hr)</span>
+  <div class="tab-bar">
+    <button class="tab-btn tab-active" onclick="switchTab('overview')">&#127807; OVERVIEW</button>
+    <button class="tab-btn" onclick="switchTab('soil')">&#127758; SOIL</button>
+    <button class="tab-btn" onclick="switchTab('chart')">&#128200; CHART</button>
+    <button class="tab-btn" onclick="switchTab('table')">&#128203; TABLE</button>
+    <button class="tab-btn" onclick="switchTab('windows')">&#9728; FIELD OPS</button>
   </div>
+
+  <!-- OVERVIEW TAB -->
+
+  <div id="tab-overview" class="tab-pane tab-visible" style="padding:16px;">
+    <div id="agCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:0;"></div>
+  </div>
+
+  <!-- SOIL TAB -->
+
+  <div id="tab-soil" class="tab-pane" style="padding:16px;">
+    <div class="soil-section-title">SOIL MOISTURE BY DEPTH &mdash; ERA5-LAND SATELLITE MODEL</div>
+
+```
+<!-- Summary zones -->
+<div class="soil-zones" id="soilZones"></div>
+
+<!-- Depth bars -->
+<div id="soilDepthBars"></div>
+
+<!-- 14-day trend -->
+<div class="soil-section-title" style="margin-top:16px;">14-DAY SURFACE MOISTURE TREND</div>
+<div class="soil-trend" id="soilTrend"></div>
+<div style="display:flex;justify-content:space-between;font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:4px;">
+  <span>TODAY</span><span>DAY 7</span><span>DAY 14</span>
 </div>
 
-<!-- Table -->
+<div style="font-size:9px;color:#3a6a94;letter-spacing:1px;margin-top:12px;line-height:1.8;">
+  VWC = VOLUMETRIC WATER CONTENT (m&#179;/m&#179;) &middot; FIELD CAPACITY ~0.33 &middot; WILTING POINT ~0.10<br>
+  SOURCE: ERA5-LAND (ECMWF) VIA OPEN-METEO &middot; ~9KM RESOLUTION &middot; UPDATED DAILY
+</div>
+```
 
-<div class="table-wrap" id="tableWrap" style="display:none">
-  <table id="tbl"></table>
+  </div>
+
+  <!-- CHART TAB -->
+
+  <div id="tab-chart" class="tab-pane" style="padding:16px;">
+    <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
+    <div id="bars" style="display:flex;align-items:flex-end;gap:1px;height:80px;overflow-x:auto;padding-bottom:2px;margin-top:10px;"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:10px;color:#7ab8d4;flex-wrap:wrap;">
+      <span><span style="color:#4a82a8">&#9632;</span> Trace</span>
+      <span><span style="color:#00c8ff">&#9632;</span> Light</span>
+      <span><span style="color:#00ffa3">&#9632;</span> Heavy (&gt;2mm/hr)</span>
+    </div>
+  </div>
+
+  <!-- TABLE TAB -->
+
+  <div id="tab-table" class="tab-pane" style="overflow-x:auto;">
+    <table id="tbl" style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px;"></table>
+  </div>
+
+  <!-- FIELD OPS TAB -->
+
+  <div id="tab-windows" class="tab-pane" style="padding:16px;">
+    <div class="section-title">FIELD WORK WINDOWS</div>
+    <div id="windowsList"></div>
+  </div>
+
 </div>
 
 <div class="empty" id="empty">&#127807; SELECT A CROP, SET PLANTING DATE, AND ENTER YOUR FIELD LOCATION</div>
@@ -401,7 +487,7 @@ function tryItOut() {
   currentUser = null;
   document.getElementById('authOverlay').classList.remove('show');
   document.getElementById('authBar').style.display = 'flex';
-  document.getElementById('authBarLabel').innerHTML = '<span style="color:#ffb300;letter-spacing:1px;">&#x26A0; GUEST MODE</span> <span style="color:#3a6080;font-size:10px;">— fields not saved</span>';
+  document.getElementById('authBarLabel').innerHTML = '<span style="color:#ffb300;letter-spacing:1px;">&#x26A0; GUEST MODE</span> <span style="color:#7ab8d4;font-size:10px;">— fields not saved</span>';
   document.getElementById('authSignInBtn').style.display = '';
   document.getElementById('authSignOutBtn').style.display = 'none';
   fields = [];
@@ -507,7 +593,7 @@ var CROPS = {
       {name:"TASSELING",   pct:[40,52], kc:1.2, need:8,  color:"#ffb300", note:"CRITICAL: Peak water demand. Pollination sensitive.", critical:"1-2 dry days during pollination cuts yield 5-8%."},
       {name:"SILKING",     pct:[52,62], kc:1.2, need:8,  color:"#ffb300", note:"CRITICAL: Kernel set determined here.", critical:"Stress reduces kernel count permanently."},
       {name:"GRAIN FILL",  pct:[62,88], kc:1.0, need:6,  color:"#fb923c", note:"Starch accumulation. Steady moisture needed.", critical:"Late drought reduces test weight and bushels."},
-      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#3a6080", note:"Crop drying down. Excess rain delays harvest.", critical:"Rain risks mold and harvest delays."}
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#5a8aa8", note:"Crop drying down. Excess rain delays harvest.", critical:"Rain risks mold and harvest delays."}
     ]
   },
   soybeans: {
@@ -519,7 +605,7 @@ var CROPS = {
       {name:"VEGETATIVE",  pct:[16,38], kc:0.7, need:4,  color:"#00c8ff", note:"Node development. Relatively drought tolerant.", critical:"Moderate stress tolerated but slows canopy."},
       {name:"FLOWERING",   pct:[38,55], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Flower and pod set. High sensitivity.", critical:"Drought drops pod count 30-50%."},
       {name:"POD FILL",    pct:[55,88], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Seed size determined. Peak demand.", critical:"Stress during R5-R6 = major yield loss."},
-      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#3a6080", note:"Pod dry-down. Rain delays harvest.", critical:"Excess rain risks pod mold and shattering."}
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#5a8aa8", note:"Pod dry-down. Rain delays harvest.", critical:"Excess rain risks pod mold and shattering."}
     ]
   },
   wheat: {
@@ -531,7 +617,7 @@ var CROPS = {
       {name:"STEM EXTENSION",  pct:[30,55], kc:0.9, need:5,  color:"#00c8ff", note:"Rapid growth. Increasing water need.", critical:"Frost + wet conditions risks disease."},
       {name:"HEADING",         pct:[55,70], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Head emergence and pollination.", critical:"Rain during heading causes fusarium blight."},
       {name:"GRAIN FILL",      pct:[70,90], kc:1.0, need:5,  color:"#fb923c", note:"Kernel weight determined.", critical:"Hot dry winds reduce test weight."},
-      {name:"RIPENING",        pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Crop drying. Rain risks quality loss.", critical:"Rain at harvest causes sprouting."}
+      {name:"RIPENING",        pct:[90,100],kc:0.4, need:1,  color:"#5a8aa8", note:"Crop drying. Rain risks quality loss.", critical:"Rain at harvest causes sprouting."}
     ]
   },
   cotton: {
@@ -543,7 +629,7 @@ var CROPS = {
       {name:"SQUARING",    pct:[18,42], kc:0.7, need:4,  color:"#00c8ff", note:"Square (bud) formation. Moderate demand.", critical:"Excess N + water causes rank growth."},
       {name:"FLOWERING",   pct:[42,64], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Boll set. Peak water demand.", critical:"Drought drops boll retention dramatically."},
       {name:"BOLL FILL",   pct:[64,88], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Fiber/seed development in bolls.", critical:"Stress reduces fiber length and strength."},
-      {name:"MATURITY",    pct:[88,100],kc:0.5, need:1,  color:"#3a6080", note:"Boll opening. Dry weather critical.", critical:"Rain on open bolls stains fiber."}
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:1,  color:"#5a8aa8", note:"Boll opening. Dry weather critical.", critical:"Rain on open bolls stains fiber."}
     ]
   },
   sorghum: {
@@ -555,7 +641,7 @@ var CROPS = {
       {name:"BOOT",        pct:[38,55], kc:0.9, need:5,  color:"#00c8ff", note:"Head forming. Increasing sensitivity.", critical:"Drought causes head to not fully exert."},
       {name:"HEADING",     pct:[55,68], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Head emergence and pollination.", critical:"Drought during flowering cuts grain set."},
       {name:"GRAIN FILL",  pct:[68,90], kc:0.9, need:5,  color:"#fb923c", note:"Kernel weight accumulation.", critical:"Late drought reduces test weight."},
-      {name:"MATURITY",    pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Physiological maturity.", critical:"Excess rain delays harvest and causes mold."}
+      {name:"MATURITY",    pct:[90,100],kc:0.4, need:1,  color:"#5a8aa8", note:"Physiological maturity.", critical:"Excess rain delays harvest and causes mold."}
     ]
   },
   canola: {
@@ -567,14 +653,14 @@ var CROPS = {
       {name:"STEM ELONGATION",  pct:[22,48], kc:0.7, need:4,  color:"#00c8ff", note:"Bolting and stem extension.", critical:"Frost risk at this stage damages stems."},
       {name:"FLOWERING",        pct:[48,65], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Frost kills flowers.", critical:"Frost at flowering = catastrophic yield loss."},
       {name:"POD FILL",         pct:[65,90], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Oil content determined.", critical:"Heat + drought reduces oil % and seed size."},
-      {name:"MATURITY",         pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Pod shatter risk increases.", critical:"Rain causes pod shatter and sprouting."}
+      {name:"MATURITY",         pct:[90,100],kc:0.4, need:1,  color:"#5a8aa8", note:"Pod shatter risk increases.", critical:"Rain causes pod shatter and sprouting."}
     ]
   },
   pasture: {
     name:"PASTURE", icon:"&#127807;", flood:60, droughtDays:14,
     rmOptions:[{l:"Cool-Season Mix",g:800},{l:"Warm-Season Mix",g:1200},{l:"Bermudagrass",g:1400},{l:"Fescue",g:900}],
     stages:[
-      {name:"DORMANT",      pct:[0,12],  kc:0.3, need:1,  color:"#3a6080", note:"Minimal water use. Soil recharge period.", critical:"Ice sheeting can kill stands."},
+      {name:"DORMANT",      pct:[0,12],  kc:0.3, need:1,  color:"#5a8aa8", note:"Minimal water use. Soil recharge period.", critical:"Ice sheeting can kill stands."},
       {name:"GREEN-UP",     pct:[12,25], kc:0.5, need:3,  color:"#4ade80", note:"Root carbohydrate reserves drive growth.", critical:"Late frost after green-up damages growth."},
       {name:"VEGETATIVE",   pct:[25,50], kc:0.8, need:4,  color:"#00c8ff", note:"Rapid growth. Grazing management critical.", critical:"Overgrazing during wet = compaction."},
       {name:"HEADING",      pct:[50,65], kc:0.9, need:5,  color:"#00c8ff", note:"Seed head formation. Quality declines.", critical:"Drought slows regrowth after grazing."},
@@ -586,7 +672,7 @@ var CROPS = {
     name:"HAY", icon:"&#129360;", flood:40, droughtDays:10,
     rmOptions:[{l:"Alfalfa",g:1100},{l:"Orchardgrass",g:900},{l:"Timothy",g:850},{l:"Mixed Grass",g:950}],
     stages:[
-      {name:"DORMANT",     pct:[0,12],  kc:0.3, need:1,  color:"#3a6080", note:"Root system maintenance.", critical:"Winterkill from ice sheets or heaving."},
+      {name:"DORMANT",     pct:[0,12],  kc:0.3, need:1,  color:"#5a8aa8", note:"Root system maintenance.", critical:"Winterkill from ice sheets or heaving."},
       {name:"GREEN-UP",    pct:[12,22], kc:0.5, need:3,  color:"#4ade80", note:"First growth from crown.", critical:"Late frost after 3+ inches damages crop."},
       {name:"1ST CUTTING", pct:[22,42], kc:0.9, need:5,  color:"#00c8ff", note:"Rapid vegetative growth. Dry window needed to cut.", critical:"Rain on cut hay causes quality loss and mold."},
       {name:"REGROWTH 1",  pct:[42,60], kc:0.9, need:5,  color:"#00c8ff", note:"Recovery after 1st cut. 28-35 day rest ideal.", critical:"Drought extends regrowth interval."},
@@ -617,7 +703,7 @@ function renderTags() {
   renderMapPins();
   var list = document.getElementById("tagList");
   if (!fields.length) {
-    list.innerHTML = "<div style='color:#1e3a5f;font-size:10px;letter-spacing:1px;padding:6px 0;'>NO FIELDS SAVED YET — ADD ONE BELOW</div>";
+    list.innerHTML = "<div style='color:#3a6a94;font-size:10px;letter-spacing:1px;padding:6px 0;'>NO FIELDS SAVED YET — ADD ONE BELOW</div>";
     return;
   }
   var html = "";
@@ -626,7 +712,7 @@ function renderTags() {
     html += "<div class='field-tag" + (isActive ? " active-tag" : "") + "' onclick='loadField(" + i + ")'>"
       + "<div class='tag-dot' style='background:" + f.color + "'></div>"
       + "<span>" + f.name + "</span>"
-      + (f.crop ? "<span style='color:#3a6080;font-size:9px;margin-left:4px;'>[" + CROPS[f.crop].name + "]</span>" : "")
+      + (f.crop ? "<span style='color:#7ab8d4;font-size:9px;margin-left:4px;'>[" + CROPS[f.crop].name + "]</span>" : "")
       + "<span class='tag-del' onclick='deleteField(event," + i + ")'>&#10005;</span>"
       + "</div>";
   });
@@ -757,15 +843,15 @@ function onPlantingChange() {
   var fmt = function(d) { return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); };
 
   resultDiv.style.display = "block";
-  resultDiv.innerHTML = "<div style='background:#060f1a;border:1px solid #1e3a5f;padding:12px 14px;font-size:11px;'>"
-    + "<div style='font-size:9px;color:#3a6080;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>"
+  resultDiv.innerHTML = "<div style='background:#060f1a;border:1px solid #2a5278;padding:12px 14px;font-size:11px;'>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>"
     + "<div style='display:flex;gap:20px;flex-wrap:wrap;margin-bottom:6px;'>"
-    + "<div style='color:#3a6080;'>Planted: <span style='color:#cde;'>" + fmt(pDate) + "</span></div>"
-    + "<div style='color:#3a6080;'>RM / GDD Target: <span style='color:#cde;'>" + rm.l + " &mdash; " + rm.g + " GDD</span></div>"
-    + "<div style='color:#3a6080;'>Est. Days: <span style='color:#cde;'>" + earlyDays + "–" + lateDays + " days</span></div>"
+    + "<div style='color:#7ab8d4;'>Planted: <span style='color:#e8f4ff;'>" + fmt(pDate) + "</span></div>"
+    + "<div style='color:#7ab8d4;'>RM / GDD Target: <span style='color:#e8f4ff;'>" + rm.l + " &mdash; " + rm.g + " GDD</span></div>"
+    + "<div style='color:#7ab8d4;'>Est. Days: <span style='color:#e8f4ff;'>" + earlyDays + "–" + lateDays + " days</span></div>"
     + "</div>"
     + "<div style='font-size:14px;font-weight:900;color:#ffb300;margin-bottom:2px;'>&#128197; " + fmt(earlyMat) + " – " + fmt(lateMat) + "</div>"
-    + "<div style='font-size:9px;color:#3a6080;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>"
     + "</div>";
 
   renderStagePanel();
@@ -835,7 +921,7 @@ function renderStagePanel() {
     + "<div class='stage-info-item'>Water Need: <span>" + waterVal + " " + unit + "/day</span></div>"
     + "<div class='stage-info-item'>Crop Kc: <span>" + st.kc + "</span></div>"
     + "</div>"
-    + "<div style='color:#3a6080;margin-bottom:6px;font-size:11px;'>" + st.note + "</div>"
+    + "<div style='color:#7ab8d4;margin-bottom:6px;font-size:11px;'>" + st.note + "</div>"
     + "<div class='stage-alert' style='border-color:#f87171;background:rgba(248,113,113,0.07);color:#f87171;'>&#9888; " + st.critical + "</div>";
 
   // Maturity range bar
@@ -862,7 +948,7 @@ function selectStage(idx) {
 function ensureMap() {
   if (leafletMap) return;
   if (typeof L === "undefined") {
-    document.getElementById("map").innerHTML = "<div style='padding:20px;color:#3a6080;font-size:10px;text-align:center;letter-spacing:2px;'>MAP UNAVAILABLE — CHECK CONNECTION</div>";
+    document.getElementById("map").innerHTML = "<div style='padding:20px;color:#7ab8d4;font-size:10px;text-align:center;letter-spacing:2px;'>MAP UNAVAILABLE — CHECK CONNECTION</div>";
     return;
   }
   leafletMap = L.map("map").setView([39.5, -98.35], 5);
@@ -902,7 +988,7 @@ function updateMapMarker(lat, lon, label, totals) {
   var popup = "<div style='font-weight:bold;color:#fff;margin-bottom:4px;'>"+label+"</div>"
     +"<div style='display:flex;justify-content:space-between;gap:12px;margin-bottom:4px;'><span style='color:#00ffa3'>BLEND</span><span style='color:#00ffa3;font-weight:bold'>"+cv(totals.avg)+" "+unit+"</span></div>"
     +"<hr style='border:none;border-top:1px solid #1e3a5f;margin:5px 0'/>"+modelRows
-    +"<div style='font-size:9px;color:#3a6080;margin-top:5px;'>14-DAY TOTAL PRECIP</div>";
+    +"<div style='font-size:9px;color:#7ab8d4;margin-top:5px;'>14-DAY TOTAL PRECIP</div>";
   forecastMarker = L.marker([lat,lon],{icon:icon}).addTo(leafletMap);
   forecastMarker.bindPopup(popup,{maxWidth:230}).openPopup();
 }
@@ -960,7 +1046,7 @@ function renderMapPins() {
   // Pins are shown as overlaid labels below the map
   var pinList = document.getElementById("pinList");
   if (!pinList) return;
-  if (!fields.length) { pinList.innerHTML = "<div style='color:#1e3a5f;font-size:10px;'>No saved fields yet.</div>"; return; }
+  if (!fields.length) { pinList.innerHTML = "<div style='color:#3a6a94;font-size:10px;'>No saved fields yet.</div>"; return; }
   var html = "";
   fields.forEach(function(f, i) {
     if (!f.lat || !f.lon) return;
@@ -969,15 +1055,15 @@ function renderMapPins() {
       + "<div style='width:10px;height:10px;border-radius:50%;background:" + f.color + ";flex-shrink:0;box-shadow:0 0 6px " + f.color + ";'></div>"
       + "<div style='flex:1;'>"
       + "<div style='font-size:12px;color:#fff;font-weight:bold;'>" + f.name + "</div>"
-      + "<div style='font-size:9px;color:#3a6080;letter-spacing:1px;'>"
+      + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>"
       + (crop ? crop.icon + " " + crop.name : "") 
       + (f.lat ? " &middot; " + f.lat.toFixed(3) + ", " + f.lon.toFixed(3) : "")
       + (f.plantingDate ? " &middot; Planted " + new Date(f.plantingDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "")
       + "</div></div>"
-      + "<div style='font-size:9px;color:#3a6080;'>&#8594;</div>"
+      + "<div style='font-size:9px;color:#7ab8d4;'>&#8594;</div>"
       + "</div>";
   });
-  pinList.innerHTML = html || "<div style='color:#1e3a5f;font-size:10px;'>Add a location to pin fields on the map.</div>";
+  pinList.innerHTML = html || "<div style='color:#3a6a94;font-size:10px;'>Add a location to pin fields on the map.</div>";
 }
 
 // ─── GEOCODE / FETCH ──────────────────────────────────────────────────────────
@@ -1106,12 +1192,23 @@ function setStatus(msg,cls){
 }
 function cv(mm){return unit==="in"?(mm/25.4).toFixed(3):mm.toFixed(2);}
 
+function switchTab(name) {
+  var tabs = ['overview','soil','chart','table','windows'];
+  tabs.forEach(function(t) {
+    document.getElementById('tab-'+t).classList.toggle('tab-visible', t===name);
+  });
+  document.querySelectorAll('.tab-btn').forEach(function(b,i) {
+    b.classList.toggle('tab-active', tabs[i]===name);
+  });
+}
+
 function renderAll(label){
   if(label){
     document.getElementById("locationName").textContent="📍 "+label;
     document.getElementById("locationDisplay").style.display="block";
   }
   document.getElementById("empty").style.display="none";
+  document.getElementById("mainTabs").style.display="block";
   renderCards();
   renderAgSection();
   renderBars();
@@ -1189,56 +1286,96 @@ function renderAgSection(){
   var ac=document.getElementById("agCards");
   ac.style.display="grid";
   ac.innerHTML=
-    agCard("WATER BALANCE",cv(netBalance)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
-    agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>",soilColor,soilLabel,
+    agCard("WATER BALANCE",cv(netBalance)+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
+    agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>%</span>",soilColor,soilLabel,
       soilSource === "ERA5-LAND"
         ? "ERA5-Land satellite model"
         : "Estimated water balance")+
-    agCard("CROP ET",cv(cropET)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>","#c084fc","EVAPOTRANSPIRATION","Kc="+stageKc+" for "+crop.stages[selectedStage].name)+
-    agCard("MAX DRY STREAK",maxDrought+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",droughtColor,maxDrought>=crop.droughtDays?"DROUGHT RISK":"ACCEPTABLE","Consecutive days <2mm")+
-    agCard("FLOOD RISK DAYS",floodDays+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",floodColor,floodDays>0?"MONITOR":"LOW RISK","Days >"+crop.flood+"mm");
+    agCard("CROP ET",cv(cropET)+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>"+unit+"</span>","#c084fc","EVAPOTRANSPIRATION","Kc="+stageKc+" for "+crop.stages[selectedStage].name)+
+    agCard("MAX DRY STREAK",maxDrought+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>days</span>",droughtColor,maxDrought>=crop.droughtDays?"DROUGHT RISK":"ACCEPTABLE","Consecutive days <2mm")+
+    agCard("FLOOD RISK DAYS",floodDays+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>days</span>",floodColor,floodDays>0?"MONITOR":"LOW RISK","Days >"+crop.flood+"mm");
   renderFieldWindows(daily);
   renderSoilDepthPanel(latestSurface, latestShallow, latestMid, latestDeep, soilSource);
 }
 
 function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
-  var panel = document.getElementById("soilDepthPanel");
-  if (!panel) return;
-  if (!surface && surface !== 0) { panel.style.display = "none"; return; }
-  panel.style.display = "block";
+  if (surface === null || surface === undefined) return;
 
-  var fmt = function(v) {
-    if (v === null || v === undefined) return "N/A";
-    return (v * 100).toFixed(1) + "%";
-  };
-  var bar = function(v) {
-    // VWC to bar width: 0-50% range
-    var pct = v ? Math.min(100, (v / 0.50) * 100) : 0;
-    var col = v > 0.35 ? "#f87171" : v > 0.20 ? "#00ffa3" : v > 0.12 ? "#ffb300" : "#3a6080";
-    return "<div style='background:#0a0f1a;height:8px;border-radius:4px;overflow:hidden;margin-top:3px;'>"
-      + "<div style='width:"+pct+"%;height:100%;background:"+col+";border-radius:4px;'></div></div>";
-  };
+  var wilt = 0.10, fc = 0.33, sat = 0.47;
 
-  var depths = [
-    { label:"0–1 cm (SURFACE)", val:surface },
-    { label:"1–3 cm (TOPSOIL)", val:shallow },
-    { label:"3–9 cm (ROOT ZONE)", val:mid },
-    { label:"9–27 cm (SUBSOIL)", val:deep }
+  function vwcToPct(v) {
+    if (v === null || v === undefined) return null;
+    return Math.round(Math.max(0, Math.min(100, ((v - wilt) / (fc - wilt)) * 100)));
+  }
+  function pctColor(p) {
+    if (p === null) return "#7ab8d4";
+    return p > 100 ? "#f87171" : p > 60 ? "#00ffa3" : p > 30 ? "#ffb300" : "#f87171";
+  }
+  function pctLabel(p) {
+    if (p === null) return "N/A";
+    return p > 100 ? "SATURATED" : p > 60 ? "ADEQUATE" : p > 30 ? "LOW" : "VERY DRY";
+  }
+
+  var layers = [
+    { name:"SURFACE",   depth:"0–1 cm",   val:surface },
+    { name:"TOPSOIL",   depth:"1–3 cm",   val:shallow },
+    { name:"ROOT ZONE", depth:"3–9 cm",   val:mid     },
+    { name:"SUBSOIL",   depth:"9–27 cm",  val:deep    }
   ];
 
-  var html = "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;'>";
-  depths.forEach(function(d) {
-    var col = !d.val ? "#3a6080" : d.val > 0.35 ? "#f87171" : d.val > 0.20 ? "#00ffa3" : d.val > 0.12 ? "#ffb300" : "#3a6080";
-    html += "<div style='background:#060f1a;border:1px solid #1e3a5f;padding:8px 10px;'>"
-      + "<div style='font-size:8px;color:#3a6080;letter-spacing:1px;margin-bottom:2px;'>"+d.label+"</div>"
-      + "<div style='font-size:18px;font-weight:900;color:"+col+";'>"+fmt(d.val)+"</div>"
-      + "<div style='font-size:8px;color:#3a6080;'>VWC m³/m³</div>"
-      + bar(d.val)
+  // Summary zone cards
+  var zoneHtml = "";
+  layers.forEach(function(l) {
+    var p = vwcToPct(l.val);
+    var col = pctColor(p);
+    var lbl = pctLabel(p);
+    zoneHtml += "<div class='soil-zone-card' style='border-top:2px solid "+col+"'>"
+      + "<div class='soil-zone-label'>"+l.name+"<br>"+l.depth+"</div>"
+      + "<div class='soil-zone-val' style='color:"+col+"'>"+(p !== null ? p+"%" : "N/A")+"</div>"
+      + "<div class='soil-zone-sub' style='color:"+col+"'>"+lbl+"</div>"
+      + "<div class='soil-zone-sub'>VWC: "+(l.val !== null ? (l.val*100).toFixed(1)+"%" : "N/A")+"</div>"
       + "</div>";
   });
-  html += "</div>"
-    + "<div style='font-size:9px;color:#1e3a5f;margin-top:8px;letter-spacing:1px;text-align:right;'>SOURCE: "+source+" &middot; VOLUMETRIC WATER CONTENT &middot; FIELD CAP ~0.33 m³/m³</div>";
-  document.getElementById("soilDepthContent").innerHTML = html;
+  document.getElementById("soilZones").innerHTML = zoneHtml;
+
+  // Depth bars
+  var barHtml = "";
+  layers.forEach(function(l) {
+    var p = vwcToPct(l.val);
+    var col = pctColor(p);
+    var w = p !== null ? Math.min(100, Math.max(0, p)) : 0;
+    // Show FC line at 100% and sat zone above
+    barHtml += "<div class='soil-depth-row'>"
+      + "<div class='soil-depth-label'>"+l.depth+"<br><span style='font-size:8px;'>"+l.name+"</span></div>"
+      + "<div class='soil-depth-pct' style='color:"+col+"'>"+(p !== null ? p+"%" : "N/A")+"</div>"
+      + "<div class='soil-depth-bar-wrap'>"
+      + "<div class='soil-depth-bar-bg'><div class='soil-depth-bar-fill' style='width:"+w+"%;background:"+col+";'></div></div>"
+      + "<div class='soil-depth-vwc'>VWC "+(l.val !== null ? (l.val).toFixed(3) : "--")+" m&#179;/m&#179; &nbsp;|&nbsp; FC=0.33 &nbsp;|&nbsp; WP=0.10</div>"
+      + "</div></div>";
+  });
+  document.getElementById("soilDepthBars").innerHTML = barHtml;
+
+  // 14-day trend using surface soil moisture over time (daily first values)
+  var trendHtml = "";
+  if (soilRows.surface && soilRows.surface.length > 0) {
+    var maxTrend = 0;
+    var trendVals = [];
+    for (var ti = 0; ti < soilRows.surface.length; ti += 24) {
+      var v = soilRows.surface[ti] || 0;
+      trendVals.push(v);
+      if (v > maxTrend) maxTrend = v;
+    }
+    maxTrend = Math.max(maxTrend, 0.01);
+    trendVals.forEach(function(v) {
+      var h = Math.max(3, Math.round((v / maxTrend) * 46));
+      var p = vwcToPct(v);
+      var col = pctColor(p);
+      trendHtml += "<div class='soil-trend-bar' style='height:"+h+"px;background:"+col+";' title='"+((v*100).toFixed(1))+"% VWC'></div>";
+    });
+  } else {
+    trendHtml = "<div style='color:#3a6a94;font-size:10px;letter-spacing:1px;padding:10px 0;'>NO TREND DATA</div>";
+  }
+  document.getElementById("soilTrend").innerHTML = trendHtml;
 }
 
 function agCard(label,valHtml,color,badge,sub){
@@ -1247,12 +1384,13 @@ function agCard(label,valHtml,color,badge,sub){
     +"<div class='ag-card-label'>"+label+"</div>"
     +"<div class='ag-card-val' style='color:"+color+"'>"+valHtml+"</div>"
     +"<span class='window-tag "+bc+"'>"+badge+"</span>"
-    +"<div style='font-size:9px;color:#3a6080;margin-top:4px;'>"+sub+"</div></div>";
+    +"<div style='font-size:9px;color:#7ab8d4;margin-top:4px;'>"+sub+"</div></div>";
 }
 
 function renderFieldWindows(daily){
+  // Field windows rendered in tab
   var box=document.getElementById("fieldWindows");
-  box.style.display="block";
+  if (box) box.style.display="block";
   var list=document.getElementById("windowsList");
   var windows=[],start=-1;
   for(var i=0;i<daily.length;i++){
@@ -1260,7 +1398,7 @@ function renderFieldWindows(daily){
     else{if(start!==-1&&(i-start)>=2)windows.push({start:start,end:i-1,len:i-start});start=-1;}
   }
   if(start!==-1&&(daily.length-start)>=2)windows.push({start:start,end:daily.length-1,len:daily.length-start});
-  if(!windows.length){list.innerHTML="<div style='color:#3a6080;font-size:11px;padding:8px 0;'>No extended dry windows in forecast period.</div>";return;}
+  if(!windows.length){list.innerHTML="<div style='color:#7ab8d4;font-size:11px;padding:8px 0;'>No extended dry windows in forecast period.</div>";return;}
   var html="";
   windows.forEach(function(w){
     var dt=new Date(daily[w.start].t),dt2=new Date(daily[w.end].t);
@@ -1277,8 +1415,8 @@ function renderFieldWindows(daily){
 }
 
 function renderBars(){
-  var box=document.getElementById("chartBox"),barsEl=document.getElementById("bars"),titleEl=document.getElementById("chartTitle");
-  box.style.display="block";
+  var barsEl=document.getElementById("bars"),titleEl=document.getElementById("chartTitle");
+  var box=document.getElementById("chartBox"); if(box) box.style.display="block";
   var isCumul=(view==="cumul");
   titleEl.textContent=isCumul?"CUMULATIVE BLEND":"HOURLY BLEND AVERAGE";
   var cumSum=0,displayVals=allRows.map(function(r){if(isCumul){cumSum+=r.avg;return cumSum;}return r.avg;});
@@ -1286,7 +1424,7 @@ function renderBars(){
   var html="";
   for(var j=0;j<allRows.length;j++){
     var val=displayVals[j],h=Math.max((val/maxVal)*76,val>0?2:0);
-    var col=isCumul?"#00c8ff":(allRows[j].avg>2?"#00ffa3":allRows[j].avg>0?"#00c8ff":"#1e3a5f");
+    var col=isCumul?"#00c8ff":(allRows[j].avg>2?"#00ffa3":allRows[j].avg>0?"#00c8ff":"#223d56");
     var dt=new Date(allRows[j].t),dayLabel=(dt.getHours()===0)?dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
     html+="<div class='bar-wrap' title='"+dt.toLocaleString()+": "+cv(val)+" "+unit+"'>"
       +"<div class='bar' style='height:"+h+"px;background:"+col+"'></div>"
@@ -1297,7 +1435,7 @@ function renderBars(){
 
 function renderTable(){
   var wrap=document.getElementById("tableWrap"),tbl=document.getElementById("tbl");
-  wrap.style.display="block";
+  if(wrap) wrap.style.display="block";
   var isCumul=(view==="cumul");
   var stKc=CROPS[selectedCrop].stages[selectedStage].kc;
   var buckets=[];
@@ -1327,7 +1465,7 @@ function renderTable(){
       +"<td style='color:#c084fc'>"+cv(bk.et)+"</td>"
       +"<td style='color:"+netColor+"'>"+(net>=0?"+":"")+cv(net)+"</td>";
     for(var mi2=0;mi2<MODELS.length;mi2++){
-      rows+="<td style='color:"+MODELS[mi2].color+"'>"+(vals[mi2]!==null?cv(vals[mi2]):"<span style='color:#1e3a5f'>N/A</span>")+"</td>";
+      rows+="<td style='color:"+MODELS[mi2].color+"'>"+(vals[mi2]!==null?cv(vals[mi2]):"<span style='color:#4a82a8'>N/A</span>")+"</td>";
     }
     rows+="</tr>";
   }
