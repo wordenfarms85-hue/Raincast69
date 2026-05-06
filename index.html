@@ -1103,9 +1103,19 @@ function loadField(i) {
   // Restore hybrid selector for this field
   clearHybrid();
   if (f.hybrid && f.hybrid.name) {
-    selectedHybrid = f.hybrid;
-    document.getElementById("hybridSearch").value = f.hybrid.name;
-    showSelectedHybridCard(f.hybrid);
+    // Try to find the full hybrid object from the HYBRIDS array by name
+    var fullHybrid = null;
+    var allH = getAllHybrids();
+    for (var hi=0; hi<allH.length; hi++) {
+      if (allH[hi].name === f.hybrid.name) { fullHybrid = allH[hi]; break; }
+    }
+    selectedHybrid = fullHybrid || f.hybrid;
+    document.getElementById("hybridSearch").value = selectedHybrid.name;
+    showSelectedHybridCard(selectedHybrid);
+    // Update field with full hybrid data
+    if (fullHybrid && activeField !== null && fields[activeField]) {
+      fields[activeField].hybrid = {name:fullHybrid.name,brand:fullHybrid.brand,rm:fullHybrid.rm,gduMat:fullHybrid.gduMat,gduSilk:fullHybrid.gduSilk||null,silkCRM:fullHybrid.silkCRM||null,physCRM:fullHybrid.physCRM||null,stalkStr:fullHybrid.stalkStr||null,traits:fullHybrid.traits||"",notes:fullHybrid.notes||""};
+    }
   }
 
   onPlantingChange();
@@ -2382,7 +2392,7 @@ function selectHybrid(idx) {
   autoSetMaturity(h.rm, h.gduMat);
   setStatus("Hybrid: "+h.name+" — "+h.gduMat+" GDU to maturity", "ok");
   if (activeField !== null && fields[activeField]) {
-    fields[activeField].hybrid = {name:h.name,brand:h.brand,rm:h.rm,gduMat:h.gduMat,traits:h.traits||""};
+    fields[activeField].hybrid = {name:h.name,brand:h.brand,rm:h.rm,gduMat:h.gduMat,gduSilk:h.gduSilk||null,silkCRM:h.silkCRM||null,physCRM:h.physCRM||null,stalkStr:h.stalkStr||null,traits:h.traits||"",notes:h.notes||""};
     saveFieldToDB(fields[activeField]);
   }
 }
