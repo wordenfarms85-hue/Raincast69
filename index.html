@@ -682,6 +682,42 @@ var CROPS = {
       {name:"FALL REGROWTH",pct:[82,100],kc:0.7, need:3,  color:"#4ade80", note:"Second growth flush. Good quality forage.", critical:"Early hard frost stops growth."}
     ]
   },
+  tallgrass: {
+    name:"TALLGRASS", icon:"&#127808;", flood:55, droughtDays:21,
+    rmOptions:[
+      {l:"Big Bluestem",g:1400},
+      {l:"Indiangrass",g:1300},
+      {l:"Switchgrass",g:1200},
+      {l:"Eastern Gamagrass",g:1500},
+      {l:"Mixed Tallgrass",g:1350}
+    ],
+    stages:[
+      {name:"DORMANT",       pct:[0,15],  kc:0.2, need:0,  color:"#5a8aa8", note:"Deep root system overwinters well. Minimal moisture use. Fire beneficial for removing thatch.", critical:"Late dormant burning window closes with green-up. Ice sheeting rarely an issue — deep crowns survive."},
+      {name:"GREEN-UP",      pct:[15,28], kc:0.4, need:2,  color:"#4ade80", note:"Warm-season grasses green up late (May–June). Soil temp above 60F required. Very slow early growth.", critical:"Do not graze until 8–10 inches tall — crown damage reduces summer yield drastically."},
+      {name:"VEGETATIVE",    pct:[28,52], kc:0.8, need:4,  color:"#00c8ff", note:"Rapid growth June–July. Peak production period. Ideal grazing window is 8–18 inches.", critical:"Overgrazing below 6 inches during peak growth permanently weakens stand vigor."},
+      {name:"BOOT/HEADING",  pct:[52,68], kc:0.9, need:5,  color:"#00c8ff", note:"Seed head emergence July–August. Quality declines but yield still high. Deferred grazing or haying window.", critical:"Drought during boot stage cuts seed set and weakens root carb reserves for next year."},
+      {name:"MID-SUMMER",    pct:[68,82], kc:0.7, need:4,  color:"#ffb300", note:"Growth slows in August heat. Excellent drought tolerance due to deep roots (6–8 ft). Still productive if moisture adequate.", critical:"Severe drought causes premature dormancy. Allow 60-day rest before fall frost."},
+      {name:"FALL HARDENING",pct:[82,100],kc:0.4, need:1,  color:"#fb923c", note:"Plants storing carbohydrates in roots for winter. Critical rest period — no grazing after Sept 1 in northern range.", critical:"Fall grazing depletes root reserves and risks winterkill. Leave 8–12 inch stubble for snow catch and insulation."}
+    ]
+  },
+  shortgrass: {
+    name:"SHORTGRASS", icon:"&#127807;", flood:30, droughtDays:28,
+    rmOptions:[
+      {l:"Blue Grama",g:900},
+      {l:"Buffalograss",g:950},
+      {l:"Mixed Shortgrass",g:920},
+      {l:"Sideoats Grama",g:1000},
+      {l:"Black Grama",g:850}
+    ],
+    stages:[
+      {name:"DORMANT",       pct:[0,18],  kc:0.15,need:0,  color:"#5a8aa8", note:"Extremely drought-hardy dormant state. Brown color normal. Minimal water use — survives months without rain.", critical:"Flash flooding on dormant crusted soil causes erosion. Watch for bare soil expansion."},
+      {name:"GREEN-UP",      pct:[18,30], kc:0.3, need:1,  color:"#4ade80", note:"Waits for reliable soil moisture and 55F+ soil temp. Can green up from single good rain event.", critical:"False green-up from spring rain followed by dry period stresses plants. Watch for late frost."},
+      {name:"ACTIVE GROWTH", pct:[30,55], kc:0.6, need:3,  color:"#00c8ff", note:"Low-growing mat (4–12 in). Thrives in heat and drought conditions. Very efficient water use (C4 pathway).", critical:"Overgrazing below 1–2 inch height during active growth destroys photosynthetic area rapidly."},
+      {name:"REPRODUCTIVE",  pct:[55,70], kc:0.7, need:3,  color:"#00c8ff", note:"Seed production June–August. Buffalograss produces burrs; blue grama has distinctive comb-like seed heads.", critical:"Continuous heavy grazing prevents seed set — reduces natural reseeding of bare patches."},
+      {name:"LATE SUMMER",   pct:[70,85], kc:0.5, need:2,  color:"#ffb300", note:"Excellent heat/drought tolerance. Can appear semi-dormant in extreme heat but recovers with any rain.", critical:"Overgrazing in drought conditions leads to bare ground invasion by weeds and undesirable species."},
+      {name:"FALL DORMANCY", pct:[85,100],kc:0.2, need:0,  color:"#5a8aa8", note:"Enters dormancy with first hard frost. Very forgiving of fall grazing compared to tallgrass — but rest still improves vigor.", critical:"Repeated heavy fall grazing over years thins stand and allows juniper/mesquite encroachment."}
+    ]
+  },
   hay: {
     name:"HAY", icon:"&#129360;", flood:40, droughtDays:10,
     rmOptions:[{l:"Alfalfa",g:1100},{l:"Orchardgrass",g:900},{l:"Timothy",g:850},{l:"Mixed Grass",g:950}],
@@ -1574,10 +1610,10 @@ function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
   }
 
   var layers = [
-    { name:"SURFACE",   depth:"0–1 cm",   val:surface },
-    { name:"TOPSOIL",   depth:"1–3 cm",   val:shallow },
-    { name:"ROOT ZONE", depth:"3–9 cm",   val:mid     },
-    { name:"SUBSOIL",   depth:"9–27 cm",  val:deep    }
+    { name:"SURFACE",   depth:"0–0.4 in",  val:surface },
+    { name:"TOPSOIL",   depth:"0.4–1.2 in",val:shallow },
+    { name:"ROOT ZONE", depth:"1.2–3.5 in",val:mid     },
+    { name:"SUBSOIL",   depth:"3.5–10.6 in",val:deep  }
   ];
 
   // Summary zone cards
