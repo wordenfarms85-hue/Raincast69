@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PrecipBlend</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0a0f1a; color: #cde; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
@@ -31,7 +31,8 @@ button.active { background: #00c8ff; color: #000; border-color: #00c8ff; }
 .card-sub { font-size: 9px; color: #3a6080; margin-top: 3px; }
 #mapSection { margin-bottom: 20px; }
 #mapTitle { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 8px; }
-#map { width: 100%; height: 300px; border: 1px solid #1e3a5f; background: #0d1520; }
+#map { width: 100%; height: 300px; border: 1px solid #1e3a5f; background: #0d1520; position: relative; overflow: hidden; }
+#mapFrame { width: 100%; height: 300px; border: none; display: block; }
 .chart-box { background: #0d1520; border: 1px solid #1e3a5f; padding: 16px; margin-bottom: 20px; }
 .chart-title { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 12px; }
 #bars { display: flex; align-items: flex-end; gap: 1px; height: 80px; overflow-x: auto; padding-bottom: 2px; }
@@ -48,10 +49,9 @@ td { padding: 7px 12px; text-align: right; white-space: nowrap; border-bottom: 1
 td:first-child { text-align: left; color: #3a6080; }
 .empty { text-align: center; padding: 60px 20px; color: #1e3a5f; font-size: 11px; letter-spacing: 2px; }
 .footer { font-size: 9px; color: #1a2d40; letter-spacing: 1px; line-height: 2; margin-top: 20px; border-top: 1px solid #0d1520; padding-top: 12px; }
-.leaflet-popup-content-wrapper { background: #0d1520 !important; border: 1px solid #00c8ff !important; border-radius: 0 !important; color: #cde !important; }
-.leaflet-popup-tip { background: #0d1520 !important; }
-.leaflet-popup-content { font-family: monospace !important; font-size: 12px !important; }
+
 </style>
+
 </head>
 <body>
 
@@ -60,11 +60,13 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div class="row">
   <input id="cityInput" type="text" placeholder="City, state, or ZIP..." />
-  <button onclick="locate()">&#128205; GPS</button>
+  <button onclick="locate()">GPS</button>
   <button class="primary" onclick="run()">FETCH FORECAST</button>
 </div>
 
-<div id="locationDisplay" style="display:none;font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:6px;">&#128205; <span id="locationName"></span></div>
+<div id="locationDisplay" style="display:none;font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:6px;">
+  <span id="locationName"></span>
+</div>
 <div id="status">ENTER A LOCATION ABOVE</div>
 
 <div class="toggle-row">
@@ -81,7 +83,7 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div id="mapSection">
   <div id="mapTitle">FORECAST LOCATION</div>
-  <div id="map"></div>
+  <iframe id="mapFrame" src="" title="Map"></iframe>
 </div>
 
 <div class="chart-box" id="chartBox" style="display:none">
@@ -101,11 +103,9 @@ td:first-child { text-align: left; color: #3a6080; }
 <div class="empty" id="empty">&#127783; AWAITING FORECAST DATA</div>
 
 <div class="footer">
-  SOURCE: OPEN-METEO.COM &nbsp;&middot;&nbsp; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
-  MAP: &copy; OPENSTREETMAP CONTRIBUTORS &nbsp;&middot;&nbsp; 14-DAY FORECAST
+  SOURCE: OPEN-METEO.COM &middot; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
+  MAP: &copy; OPENSTREETMAP CONTRIBUTORS &middot; 14-DAY FORECAST
 </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 var MODELS = [
@@ -115,120 +115,92 @@ var MODELS = [
   { key:"gem",   name:"GEM",     api:"gem_seamless",   color:"#c084fc" }
 ];
 
-var unit = "in", view = "hourly", allRows = [], allTotals = null;
-var map = null, marker = null;
-
-// Init map immediately on page load so it has size
-window.addEventListener("load", function() {
-  map = L.map("map").setView([39.5, -98.35], 4);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
-    maxZoom: 18
-  }).addTo(map);
-});
+var unit = "in";
+var view = "hourly";
+var allRows = [];
+var allTotals = null;
 
 function cv(mm) {
-  return unit === "in" ? (mm/25.4).toFixed(3) : mm.toFixed(2);
+  if (unit === "in") return (mm / 25.4).toFixed(3);
+  return mm.toFixed(2);
 }
+
 function setUnit(u) {
   unit = u;
-  document.getElementById("btnIn").className = u==="in"?"active":"";
-  document.getElementById("btnMm").className = u==="mm"?"active":"";
-  if (allRows.length) renderAll();
+  document.getElementById("btnIn").className = (u === "in") ? "active" : "";
+  document.getElementById("btnMm").className = (u === "mm") ? "active" : "";
+  if (allRows.length) renderAll(null);
 }
+
 function setView(v) {
   view = v;
-  document.getElementById("btnHourly").className = v==="hourly"?"active":"";
-  document.getElementById("btnCumul").className  = v==="cumul"?"active":"";
-  if (allRows.length) renderAll();
+  document.getElementById("btnHourly").className = (v === "hourly") ? "active" : "";
+  document.getElementById("btnCumul").className  = (v === "cumul")  ? "active" : "";
+  if (allRows.length) renderAll(null);
 }
+
 function setStatus(msg, cls) {
   var el = document.getElementById("status");
   el.textContent = msg;
-  el.className = cls||"";
+  el.className = cls || "";
 }
 
+function initMap() { /* using iframe embed */ }
+
 function updateMap(lat, lon, label, totals) {
-  if (!map) return;
-  map.setView([lat, lon], 8);
-  if (marker) { map.removeLayer(marker); marker = null; }
-
-  var icon = L.divIcon({
-    className: "",
-    html: '<div style="width:18px;height:18px;background:#00c8ff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 14px #00c8ff,0 0 4px #fff;margin-top:-9px;margin-left:-9px;"></div>',
-    iconSize: [0,0],
-    iconAnchor: [0,0],
-    popupAnchor: [9, -4]
-  });
-
-  var modelRows = "";
-  MODELS.forEach(function(m, i) {
-    if (totals.modelTotals[i] !== null) {
-      modelRows += '<div style="display:flex;justify-content:space-between;gap:14px;margin-bottom:3px;">'
-        +'<span style="color:'+m.color+'">'+m.name+'</span>'
-        +'<span style="color:'+m.color+'">'+cv(totals.modelTotals[i])+' '+unit+'</span></div>';
-    }
-  });
-
-  var html = '<div style="font-size:13px;font-weight:bold;color:#fff;margin-bottom:8px;">'+label+'</div>'
-    +'<div style="display:flex;justify-content:space-between;gap:14px;margin-bottom:4px;">'
-    +'<span style="color:#00ffa3">BLEND AVG</span>'
-    +'<span style="color:#00ffa3;font-weight:bold">'+cv(totals.avg)+' '+unit+'</span></div>'
-    +'<hr style="border:none;border-top:1px solid #1e3a5f;margin:6px 0"/>'
-    +modelRows
-    +'<div style="font-size:9px;color:#3a6080;margin-top:6px;letter-spacing:1px;">14-DAY TOTAL PRECIP</div>';
-
-  marker = L.marker([lat, lon], {icon: icon}).addTo(map);
-  marker.bindPopup(html, {maxWidth: 230}).openPopup();
+  try {
+    var zoom = 8;
+    var url = "https://www.openstreetmap.org/export/embed.html?bbox="
+      + (lon-2) + "%2C" + (lat-1.5) + "%2C" + (lon+2) + "%2C" + (lat+1.5)
+      + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+    document.getElementById("mapFrame").src = url;
+    document.getElementById("mapSection").style.display = "block";
+  } catch(e) {
+    console.log("Map error:", e);
+  }
 }
 
 async function geocode(q) {
-  var r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(q)+"&count=1&language=en&format=json");
+  var r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=en&format=json");
   var d = await r.json();
   if (!d.results || !d.results.length) throw new Error("Location not found");
   var g = d.results[0];
-  return {lat: g.latitude, lon: g.longitude, label: [g.name, g.admin1, g.country].filter(Boolean).join(", ")};
+  return { lat: g.latitude, lon: g.longitude, label: [g.name, g.admin1, g.country].filter(Boolean).join(", ") };
 }
 
 async function fetchForecast(lat, lon, label) {
-  setStatus("Fetching models for "+label+"...");
-
+  setStatus("Fetching models for " + label + "...");
   var results = await Promise.all(MODELS.map(function(m) {
-    return fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&hourly=precipitation&forecast_days=14&models="+m.api+"&timezone=auto")
-      .then(function(r){ return r.json(); }).catch(function(){ return null; });
+    return fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&hourly=precipitation&forecast_days=14&models=" + m.api + "&timezone=auto")
+      .then(function(r) { return r.json(); })
+      .catch(function() { return null; });
   }));
-
   var base = null;
-  for (var i=0; i<results.length; i++) {
+  for (var i = 0; i < results.length; i++) {
     if (results[i] && results[i].hourly && results[i].hourly.time) { base = results[i]; break; }
   }
   if (!base) { setStatus("Error: No model data returned", "err"); return; }
-
   var times = base.hourly.time;
   var precips = results.map(function(r) {
     return (r && r.hourly && r.hourly.precipitation) ? r.hourly.precipitation : null;
   });
   var validIndices = [];
-  precips.forEach(function(p,i){ if(p) validIndices.push(i); });
-
+  for (var j = 0; j < precips.length; j++) { if (precips[j]) validIndices.push(j); }
   allRows = times.map(function(t, i) {
-    var vals = MODELS.map(function(_,mi){ return precips[mi] ? (precips[mi][i]||0) : null; });
-    var valid = vals.filter(function(v){ return v !== null; });
-    var avg = valid.length ? valid.reduce(function(a,b){return a+b;},0)/valid.length : 0;
-    return {t:t, vals:vals, avg:avg};
+    var vals = MODELS.map(function(_, mi) { return precips[mi] ? (precips[mi][i] || 0) : null; });
+    var valid = vals.filter(function(v) { return v !== null; });
+    var avg = valid.length ? valid.reduce(function(a, b) { return a + b; }, 0) / valid.length : 0;
+    return { t: t, vals: vals, avg: avg };
   });
-
-  var modelTotals = MODELS.map(function(_,mi) {
+  var modelTotals = MODELS.map(function(_, mi) {
     if (!precips[mi]) return null;
-    return precips[mi].reduce(function(s,v){ return s+(v||0); }, 0);
+    return precips[mi].reduce(function(s, v) { return s + (v || 0); }, 0);
   });
-  var validTotals = modelTotals.filter(function(v){ return v !== null; });
-  allTotals = { modelTotals: modelTotals, avg: validTotals.reduce(function(a,b){return a+b;},0)/validTotals.length };
-
+  var validTotals = modelTotals.filter(function(v) { return v !== null; });
+  allTotals = { modelTotals: modelTotals, avg: validTotals.reduce(function(a, b) { return a + b; }, 0) / validTotals.length };
   updateMap(lat, lon, label, allTotals);
-
-  var loaded = validIndices.map(function(i){ return MODELS[i].name; }).join(", ");
-  setStatus("Done: "+loaded+" loaded", "ok");
+  var loaded = validIndices.map(function(i) { return MODELS[i].name; }).join(", ");
+  setStatus("Done: " + loaded + " loaded", "ok");
   renderAll(label);
 }
 
@@ -239,43 +211,48 @@ async function run() {
     setStatus("Geocoding...");
     var geo = await geocode(q);
     await fetchForecast(geo.lat, geo.lon, geo.label);
-  } catch(e) { setStatus("Error: "+e.message, "err"); }
+  } catch(e) { setStatus("Error: " + e.message, "err"); }
 }
 
 function locate() {
-  if (!navigator.geolocation) return;
+  if (!navigator.geolocation) { setStatus("Geolocation not supported", "err"); return; }
   setStatus("Getting GPS location...");
   navigator.geolocation.getCurrentPosition(
-    function(p){ fetchForecast(p.coords.latitude, p.coords.longitude, "My Location"); },
-    function(){ setStatus("Location denied", "err"); }
+    function(p) { fetchForecast(p.coords.latitude, p.coords.longitude, "My Location"); },
+    function() { setStatus("Location denied", "err"); }
   );
 }
 
-document.getElementById("cityInput").addEventListener("keydown", function(e){ if(e.key==="Enter") run(); });
+document.getElementById("cityInput").addEventListener("keydown", function(e) { if (e.key === "Enter") run(); });
 
 function renderAll(label) {
   if (label) {
-    document.getElementById("locationName").textContent = label;
+    document.getElementById("locationName").textContent = "📍 " + label;
     document.getElementById("locationDisplay").style.display = "block";
   }
   document.getElementById("empty").style.display = "none";
   renderCards();
   renderBars();
   renderTable();
-  if (map) setTimeout(function(){ map.invalidateSize(); }, 300);
 }
 
 function renderCards() {
   var el = document.getElementById("cards");
   el.style.display = "grid";
-  var items = [{label:"BLEND AVG", val:allTotals.avg, color:"#00ffa3"}];
-  MODELS.forEach(function(m,i){ items.push({label:m.name, val:allTotals.modelTotals[i], color:m.color}); });
-  el.innerHTML = items.filter(function(c){ return c.val !== null; }).map(function(c) {
-    return '<div class="card" style="border-top:2px solid '+c.color+'">'
-      +'<div class="card-label">'+c.label+'</div>'
-      +'<div class="card-val" style="color:'+c.color+'">'+cv(c.val)+'<span class="card-unit">'+unit+'</span></div>'
-      +'<div class="card-sub">14-DAY TOTAL</div></div>';
-  }).join("");
+  var items = [{ label: "BLEND AVG", val: allTotals.avg, color: "#00ffa3" }];
+  for (var i = 0; i < MODELS.length; i++) {
+    items.push({ label: MODELS[i].name, val: allTotals.modelTotals[i], color: MODELS[i].color });
+  }
+  var html = "";
+  for (var j = 0; j < items.length; j++) {
+    if (items[j].val === null) continue;
+    html += "<div class='card' style='border-top:2px solid " + items[j].color + "'>"
+      + "<div class='card-label'>" + items[j].label + "</div>"
+      + "<div class='card-val' style='color:" + items[j].color + "'>" + cv(items[j].val)
+      + "<span class='card-unit'>" + unit + "</span></div>"
+      + "<div class='card-sub'>14-DAY TOTAL</div></div>";
+  }
+  el.innerHTML = html;
 }
 
 function renderBars() {
@@ -283,48 +260,76 @@ function renderBars() {
   var barsEl = document.getElementById("bars");
   var titleEl = document.getElementById("chartTitle");
   box.style.display = "block";
-  var isCumul = view === "cumul";
+  var isCumul = (view === "cumul");
   titleEl.textContent = isCumul ? "CUMULATIVE BLEND" : "HOURLY BLEND AVERAGE";
   var cumSum = 0;
-  var displayVals = allRows.map(function(r){ if(isCumul){cumSum+=r.avg;return cumSum;} return r.avg; });
-  var maxVal = Math.max.apply(null, displayVals.concat([0.001]));
-  barsEl.innerHTML = allRows.map(function(r,i){
-    var val = displayVals[i];
-    var h = Math.max((val/maxVal)*76, val>0?2:0);
-    var col = isCumul ? "#00c8ff" : (r.avg>2?"#00ffa3":r.avg>0?"#00c8ff":"#1e3a5f");
-    var dt = new Date(r.t);
-    var dayLabel = dt.getHours()===0 ? dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "";
-    return '<div class="bar-wrap" title="'+dt.toLocaleString()+': '+cv(val)+' '+unit+'">'
-      +'<div class="bar" style="height:'+h+'px;background:'+col+'"></div>'
-      +'<div class="bar-day">'+dayLabel+'</div></div>';
-  }).join("");
+  var displayVals = allRows.map(function(r) {
+    if (isCumul) { cumSum += r.avg; return cumSum; }
+    return r.avg;
+  });
+  var maxVal = 0.001;
+  for (var i = 0; i < displayVals.length; i++) { if (displayVals[i] > maxVal) maxVal = displayVals[i]; }
+  var html = "";
+  for (var j = 0; j < allRows.length; j++) {
+    var val = displayVals[j];
+    var h = Math.max((val / maxVal) * 76, val > 0 ? 2 : 0);
+    var col = isCumul ? "#00c8ff" : (allRows[j].avg > 2 ? "#00ffa3" : allRows[j].avg > 0 ? "#00c8ff" : "#1e3a5f");
+    var dt = new Date(allRows[j].t);
+    var dayLabel = (dt.getHours() === 0) ? dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
+    html += "<div class='bar-wrap' title='" + dt.toLocaleString() + ": " + cv(val) + " " + unit + "'>"
+      + "<div class='bar' style='height:" + h + "px;background:" + col + "'></div>"
+      + "<div class='bar-day'>" + dayLabel + "</div></div>";
+  }
+  barsEl.innerHTML = html;
 }
 
 function renderTable() {
   var wrap = document.getElementById("tableWrap");
   var tbl = document.getElementById("tbl");
   wrap.style.display = "block";
-  var isCumul = view === "cumul";
+  var isCumul = (view === "cumul");
+  var buckets = [];
+  for (var i = 0; i < allRows.length; i += 12) {
+    var slice = allRows.slice(i, i + 12);
+    var bucketAvg = slice.reduce(function(s, r) { return s + r.avg; }, 0);
+    var bucketVals = MODELS.map(function(_, mi) {
+      var allNull = true;
+      for (var k = 0; k < slice.length; k++) { if (slice[k].vals[mi] !== null) { allNull = false; break; } }
+      if (allNull) return null;
+      return slice.reduce(function(s, r) { return s + (r.vals[mi] || 0); }, 0);
+    });
+    buckets.push({ t: slice[0].t, avg: bucketAvg, vals: bucketVals });
+  }
   var cumAvg = 0;
-  var cumModel = MODELS.map(function(){ return 0; });
-  var rows = allRows.map(function(r) {
-    cumAvg += r.avg;
-    MODELS.forEach(function(_,mi){ cumModel[mi] += r.vals[mi]||0; });
-    var avg = isCumul ? cumAvg : r.avg;
-    var vals = isCumul ? cumModel.slice() : r.vals;
-    var dt = new Date(r.t);
-    var time = dt.toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true});
-    var hl = avg>2 ? "background:rgba(0,255,163,0.05)" : "";
-    return '<tr style="'+hl+'"><td>'+time+'</td>'
-      +'<td style="color:#00ffa3;font-weight:bold">'+cv(avg)+'</td>'
-      +MODELS.map(function(m,mi){
-        return '<td style="color:'+m.color+'">'+(vals[mi]!==null?cv(vals[mi]):'<span style="color:#1e3a5f">N/A</span>')+'</td>';
-      }).join("")+'</tr>';
-  });
-  tbl.innerHTML = '<thead><tr><th style="text-align:left">TIME</th><th style="color:#00ffa3">BLEND</th>'
-    +MODELS.map(function(m){ return '<th style="color:'+m.color+'">'+m.name+'</th>'; }).join("")
-    +'</tr></thead><tbody>'+rows.join("")+'</tbody>';
+  var cumModel = MODELS.map(function() { return 0; });
+  var rows = "";
+  for (var b = 0; b < buckets.length; b++) {
+    var bucket = buckets[b];
+    cumAvg += bucket.avg;
+    for (var mi = 0; mi < MODELS.length; mi++) { cumModel[mi] += bucket.vals[mi] || 0; }
+    var avg = isCumul ? cumAvg : bucket.avg;
+    var vals = isCumul ? cumModel.slice() : bucket.vals;
+    var dt = new Date(bucket.t);
+    var time = dt.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+    var hl = avg > 2 ? "background:rgba(0,255,163,0.05)" : "";
+    rows += "<tr style='" + hl + "'><td>" + time + "</td>"
+      + "<td style='color:#00ffa3;font-weight:bold'>" + cv(avg) + "</td>";
+    for (var mi2 = 0; mi2 < MODELS.length; mi2++) {
+      rows += "<td style='color:" + MODELS[mi2].color + "'>"
+        + (vals[mi2] !== null ? cv(vals[mi2]) : "<span style='color:#1e3a5f'>N/A</span>")
+        + "</td>";
+    }
+    rows += "</tr>";
+  }
+  var head = "<thead><tr><th style='text-align:left'>TIME (12-HR)</th><th style='color:#00ffa3'>BLEND</th>";
+  for (var m = 0; m < MODELS.length; m++) {
+    head += "<th style='color:" + MODELS[m].color + "'>" + MODELS[m].name + "</th>";
+  }
+  head += "</tr></thead>";
+  tbl.innerHTML = head + "<tbody>" + rows + "</tbody>";
 }
+
+
 </script>
 
 </body>
