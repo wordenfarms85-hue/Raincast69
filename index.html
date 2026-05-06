@@ -435,7 +435,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
   <div id="tab-analog" class="tab-pane" style="padding:16px;">
     <div class="section-title" style="margin-bottom:6px;">ANALOG YEAR ANALYSIS</div>
     <div style="font-size:10px;color:#7ab8d4;margin-bottom:14px;line-height:1.6;">
-      Compares current season GDU accumulation &amp; precipitation to every year since 1950.<br>
+      Compares Jan 1–today GDU accumulation, precipitation &amp; temperature to every year since 1950.<br>
       Top matches = historical years with most similar growing conditions to this year.
     </div>
     <div id="analogStatus" style="font-size:10px;color:#7ab8d4;letter-spacing:1px;min-height:16px;margin-bottom:12px;">
@@ -1141,8 +1141,8 @@ var analogRunning = false;
 
 async function runAnalogAnalysis() {
   if (analogRunning) return;
-  if (!currentLat || !currentLon || !plantingDate) {
-    document.getElementById("analogStatus").textContent = "SET PLANTING DATE AND FETCH A LOCATION FIRST";
+  if (!currentLat || !currentLon) {
+    document.getElementById("analogStatus").textContent = "FETCH A LOCATION FIRST";
     return;
   }
 
@@ -1168,7 +1168,7 @@ async function runAnalogAnalysis() {
     var endMoDay = (endDate.getMonth()+1).toString().padStart(2,"0") + "-" + endDate.getDate().toString().padStart(2,"0");
     var curData  = await fetchYearData(currentLat, currentLon, curStart, curEnd);
     if (!curData) throw new Error("Could not fetch current year data");
-    var curMetrics = calcMetrics(curData, pDate);
+    var curMetrics = calcMetrics(curData, jan1);
 
     document.getElementById("analogStatus").textContent = "CURRENT YEAR CALCULATED — SCANNING HISTORICAL YEARS...";
 
@@ -1817,9 +1817,10 @@ function renderAll(label){
   renderBars();
   renderTable();
   // Show analog run button if we have planting date
-  if(plantingDate && currentLat !== null){
+  if(currentLat !== null){
     document.getElementById("analogRunRow").style.display="block";
-    document.getElementById("analogStatus").textContent="READY — CLICK RUN ANALOG ANALYSIS";
+    document.getElementById("analogRunRow").style.display="block";
+    document.getElementById("analogStatus").textContent="READY — CLICK RUN ANALOG ANALYSIS (JAN 1 – TODAY)";
   }
 }
 
