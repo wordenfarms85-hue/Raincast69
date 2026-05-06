@@ -4,8 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PrecipBlend</title>
-
+<title>FarmCast — Precision Precip Forecast</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0a0f1a; color: #cde; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
@@ -13,8 +12,10 @@ h1 { font-size: 32px; font-weight: 900; color: #fff; letter-spacing: -1px; margi
 h1 span { color: #00c8ff; }
 .sub { font-size: 10px; color: #3a6080; letter-spacing: 3px; margin-bottom: 16px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-input { flex: 1; min-width: 160px; background: #111827; border: 1px solid #1e3a5f; color: #cde; padding: 10px 12px; font-family: monospace; font-size: 13px; outline: none; }
-input:focus { border-color: #00c8ff; }
+input, select { background: #111827; border: 1px solid #1e3a5f; color: #cde; padding: 10px 12px; font-family: monospace; font-size: 13px; outline: none; }
+input { flex: 1; min-width: 160px; }
+select { cursor: pointer; }
+input:focus, select:focus { border-color: #00c8ff; }
 button { background: #111827; border: 1px solid #1e3a5f; color: #3a6080; font-family: monospace; font-weight: bold; font-size: 12px; padding: 10px 14px; cursor: pointer; letter-spacing: 1px; }
 button.primary { background: #00c8ff; color: #000; border: none; }
 button.active { background: #00c8ff; color: #000; border-color: #00c8ff; }
@@ -23,23 +24,51 @@ button.active { background: #00c8ff; color: #000; border-color: #00c8ff; }
 #status.err { color: #f87171; }
 .toggle-row { display: flex; gap: 6px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 .toggle-label { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-right: 4px; }
+.section-title { font-size: 10px; color: #3a6080; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
+/* Cards */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 20px; }
 .card { background: #0d1520; border: 1px solid #1e3a5f; padding: 10px 12px; }
 .card-label { font-size: 9px; color: #3a6080; letter-spacing: 2px; margin-bottom: 4px; }
 .card-val { font-size: 26px; font-weight: 900; line-height: 1; }
 .card-unit { font-size: 11px; color: #3a6080; margin-left: 2px; font-weight: normal; }
 .card-sub { font-size: 9px; color: #3a6080; margin-top: 3px; }
+/* Map */
 #mapSection { margin-bottom: 20px; }
-#mapTitle { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 8px; }
-#map { width: 100%; height: 300px; border: 1px solid #1e3a5f; background: #0d1520; position: relative; overflow: hidden; }
-#mapFrame { width: 100%; height: 300px; border: none; display: block; }
+#mapFrame { width: 100%; height: 260px; border: 1px solid #1e3a5f; display: block; }
+/* Crop panel */
+#cropPanel { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+.crop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+.crop-btn { background: #111827; border: 1px solid #1e3a5f; color: #3a6080; font-family: monospace; font-size: 11px; padding: 8px 6px; cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s; }
+.crop-btn:hover { border-color: #00c8ff; color: #cde; }
+.crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
+/* Ag insight cards */
+#agCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 20px; }
+.ag-card { background: #0d1520; border: 1px solid #1e3a5f; padding: 12px 14px; }
+.ag-card-label { font-size: 9px; color: #3a6080; letter-spacing: 2px; margin-bottom: 6px; }
+.ag-card-val { font-size: 22px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+.ag-card-sub { font-size: 9px; line-height: 1.5; }
+/* Field windows */
+#fieldWindows { background: #0d1520; border: 1px solid #1e3a5f; padding: 14px 16px; margin-bottom: 20px; }
+.window-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #0a1520; font-size: 11px; }
+.window-row:last-child { border-bottom: none; }
+.window-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.window-date { color: #cde; min-width: 110px; }
+.window-len { color: #3a6080; min-width: 60px; }
+.window-tag { font-size: 9px; letter-spacing: 1px; padding: 2px 7px; border-radius: 2px; }
+/* Soil moisture bar */
+.soil-bar-wrap { margin-top: 8px; }
+.soil-bar-bg { background: #1e3a5f; height: 8px; border-radius: 4px; overflow: hidden; }
+.soil-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.soil-labels { display: flex; justify-content: space-between; font-size: 8px; color: #3a6080; margin-top: 3px; }
+/* Chart */
 .chart-box { background: #0d1520; border: 1px solid #1e3a5f; padding: 16px; margin-bottom: 20px; }
 .chart-title { font-size: 10px; color: #3a6080; letter-spacing: 2px; margin-bottom: 12px; }
 #bars { display: flex; align-items: flex-end; gap: 1px; height: 80px; overflow-x: auto; padding-bottom: 2px; }
 .bar-wrap { display: flex; flex-direction: column; align-items: center; min-width: 7px; }
-.bar { width: 6px; border-radius: 1px 1px 0 0; background: #1e3a5f; }
+.bar { width: 6px; border-radius: 1px 1px 0 0; }
 .bar-day { font-size: 7px; color: #3a6080; white-space: nowrap; margin-top: 2px; }
-.chart-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #3a6080; }
+.chart-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #3a6080; flex-wrap: wrap; }
+/* Table */
 .table-wrap { background: #0d1520; border: 1px solid #1e3a5f; overflow-x: auto; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px; }
 thead tr { background: #0a0f1a; }
@@ -49,25 +78,26 @@ td { padding: 7px 12px; text-align: right; white-space: nowrap; border-bottom: 1
 td:first-child { text-align: left; color: #3a6080; }
 .empty { text-align: center; padding: 60px 20px; color: #1e3a5f; font-size: 11px; letter-spacing: 2px; }
 .footer { font-size: 9px; color: #1a2d40; letter-spacing: 1px; line-height: 2; margin-top: 20px; border-top: 1px solid #0d1520; padding-top: 12px; }
-
+.badge-good { background: rgba(0,255,163,0.15); color: #00ffa3; }
+.badge-warn { background: rgba(255,179,0,0.15); color: #ffb300; }
+.badge-bad  { background: rgba(248,113,113,0.15); color: #f87171; }
 </style>
-
 </head>
 <body>
 
-<div class="sub">MULTI-MODEL PRECIP BLEND</div>
-<h1>PRECIP<span>BLEND</span></h1>
+<div class="sub">PRECISION AG WEATHER PLATFORM</div>
+<h1>FARM<span>CAST</span></h1>
 
 <div class="row">
-  <input id="cityInput" type="text" placeholder="City, state, or ZIP..." />
+  <input id="cityInput" type="text" placeholder="Field location, city, or ZIP..." />
   <button onclick="locate()">GPS</button>
   <button class="primary" onclick="run()">FETCH FORECAST</button>
 </div>
 
-<div id="locationDisplay" style="display:none;font-size:20px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:6px;">
+<div id="locationDisplay" style="display:none;font-size:18px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:6px;">
   <span id="locationName"></span>
 </div>
-<div id="status">ENTER A LOCATION ABOVE</div>
+<div id="status">ENTER YOUR FIELD LOCATION ABOVE</div>
 
 <div class="toggle-row">
   <span class="toggle-label">UNITS:</span>
@@ -79,12 +109,36 @@ td:first-child { text-align: left; color: #3a6080; }
   <button id="btnCumul" onclick="setView('cumul')">CUMULATIVE</button>
 </div>
 
+<!-- Crop selector -->
+
+<div id="cropPanel">
+  <div class="section-title">SELECT YOUR CROP</div>
+  <div class="crop-grid" id="cropGrid"></div>
+</div>
+
+<!-- Model total cards -->
+
 <div class="cards" id="cards" style="display:none"></div>
 
-<div id="mapSection">
-  <div id="mapTitle">FORECAST LOCATION</div>
+<!-- Map -->
+
+<div id="mapSection" style="display:none;margin-bottom:20px;">
+  <div class="section-title">FIELD LOCATION</div>
   <iframe id="mapFrame" src="" title="Map"></iframe>
 </div>
+
+<!-- Ag insight cards -->
+
+<div id="agCards" style="display:none"></div>
+
+<!-- Field work windows -->
+
+<div id="fieldWindows" style="display:none">
+  <div class="section-title">FIELD WORK WINDOWS</div>
+  <div id="windowsList"></div>
+</div>
+
+<!-- Precip chart -->
 
 <div class="chart-box" id="chartBox" style="display:none">
   <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
@@ -96,15 +150,17 @@ td:first-child { text-align: left; color: #3a6080; }
   </div>
 </div>
 
+<!-- Table -->
+
 <div class="table-wrap" id="tableWrap" style="display:none">
   <table id="tbl"></table>
 </div>
 
-<div class="empty" id="empty">&#127783; AWAITING FORECAST DATA</div>
+<div class="empty" id="empty">&#127807; SELECT A CROP AND ENTER YOUR FIELD LOCATION</div>
 
 <div class="footer">
-  SOURCE: OPEN-METEO.COM &middot; MODELS: GFS / ECMWF-IFS025 / ICON-EU / GEM<br>
-  MAP: &copy; OPENSTREETMAP CONTRIBUTORS &middot; 14-DAY FORECAST
+  SOURCE: OPEN-METEO.COM &middot; MODELS: GFS / ECMWF-IFS / ICON-EU / GEM &middot; 14-DAY FORECAST<br>
+  MAP: &copy; OPENSTREETMAP CONTRIBUTORS &middot; ET DATA: FAO PENMAN-MONTEITH METHOD
 </div>
 
 <script>
@@ -115,14 +171,53 @@ var MODELS = [
   { key:"gem",   name:"GEM",     api:"gem_seamless",   color:"#c084fc" }
 ];
 
+// Crop data: daily water need (mm), flood threshold (mm/day), label, icon
+var CROPS = {
+  corn:     { name:"CORN",     icon:"&#127805;", need:6,  flood:50, droughtDays:5,  kc:1.2 },
+  soybeans: { name:"SOYBEANS", icon:"&#129359;", need:5,  flood:40, droughtDays:7,  kc:1.1 },
+  wheat:    { name:"WHEAT",    icon:"&#127807;", need:4,  flood:35, droughtDays:10, kc:1.0 },
+  cotton:   { name:"COTTON",   icon:"&#127774;", need:5,  flood:45, droughtDays:8,  kc:1.1 },
+  sorghum:  { name:"SORGHUM",  icon:"&#127806;", need:4,  flood:45, droughtDays:12, kc:0.9 },
+  canola:   { name:"CANOLA",   icon:"&#127804;", need:4,  flood:35, droughtDays:8,  kc:1.0 },
+  pasture:  { name:"PASTURE",  icon:"&#127807;", need:3,  flood:60, droughtDays:14, kc:0.8 },
+  hay:      { name:"HAY",      icon:"&#129360;", need:4,  flood:40, droughtDays:10, kc:0.9 }
+};
+
 var unit = "in";
 var view = "hourly";
 var allRows = [];
 var allTotals = null;
+var etRows = [];
+var selectedCrop = "corn";
+var currentLat = null, currentLon = null, currentLabel = null;
+
+// Build crop selector
+(function() {
+  var grid = document.getElementById("cropGrid");
+  var html = "";
+  Object.keys(CROPS).forEach(function(k) {
+    var c = CROPS[k];
+    html += "<button class='crop-btn" + (k === selectedCrop ? " selected" : "") + "' onclick='selectCrop(\"" + k + "\")'>"
+      + c.icon + "<br>" + c.name + "</button>";
+  });
+  grid.innerHTML = html;
+})();
+
+function selectCrop(k) {
+  selectedCrop = k;
+  var btns = document.querySelectorAll(".crop-btn");
+  btns.forEach(function(b) { b.className = "crop-btn"; });
+  event.target.closest(".crop-btn").className = "crop-btn selected";
+  if (allRows.length) renderAgSection();
+}
 
 function cv(mm) {
   if (unit === "in") return (mm / 25.4).toFixed(3);
   return mm.toFixed(2);
+}
+function cvNum(mm) {
+  if (unit === "in") return mm / 25.4;
+  return mm;
 }
 
 function setUnit(u) {
@@ -131,33 +226,24 @@ function setUnit(u) {
   document.getElementById("btnMm").className = (u === "mm") ? "active" : "";
   if (allRows.length) renderAll(null);
 }
-
 function setView(v) {
   view = v;
   document.getElementById("btnHourly").className = (v === "hourly") ? "active" : "";
   document.getElementById("btnCumul").className  = (v === "cumul")  ? "active" : "";
   if (allRows.length) renderAll(null);
 }
-
 function setStatus(msg, cls) {
   var el = document.getElementById("status");
   el.textContent = msg;
   el.className = cls || "";
 }
 
-function initMap() { /* using iframe embed */ }
-
-function updateMap(lat, lon, label, totals) {
-  try {
-    var zoom = 8;
-    var url = "https://www.openstreetmap.org/export/embed.html?bbox="
-      + (lon-2) + "%2C" + (lat-1.5) + "%2C" + (lon+2) + "%2C" + (lat+1.5)
-      + "&layer=mapnik&marker=" + lat + "%2C" + lon;
-    document.getElementById("mapFrame").src = url;
-    document.getElementById("mapSection").style.display = "block";
-  } catch(e) {
-    console.log("Map error:", e);
-  }
+function updateMap(lat, lon) {
+  var url = "https://www.openstreetmap.org/export/embed.html?bbox="
+    + (lon-2) + "%2C" + (lat-1.5) + "%2C" + (lon+2) + "%2C" + (lat+1.5)
+    + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+  document.getElementById("mapFrame").src = url;
+  document.getElementById("mapSection").style.display = "block";
 }
 
 async function geocode(q) {
@@ -169,36 +255,59 @@ async function geocode(q) {
 }
 
 async function fetchForecast(lat, lon, label) {
-  setStatus("Fetching models for " + label + "...");
-  var results = await Promise.all(MODELS.map(function(m) {
-    return fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&hourly=precipitation&forecast_days=14&models=" + m.api + "&timezone=auto")
-      .then(function(r) { return r.json(); })
-      .catch(function() { return null; });
-  }));
+  setStatus("Fetching weather models for " + label + "...");
+  currentLat = lat; currentLon = lon; currentLabel = label;
+
+  // Fetch precip + ET + temp from open-meteo
+  var modelFetches = MODELS.map(function(m) {
+    return fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
+      + "&hourly=precipitation&forecast_days=14&models=" + m.api + "&timezone=auto")
+      .then(function(r) { return r.json(); }).catch(function() { return null; });
+  });
+
+  // Also fetch ET and temp from default model
+  var agFetch = fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
+    + "&hourly=et0_fao_evapotranspiration,temperature_2m,precipitation&daily=precipitation_sum,et0_fao_evapotranspiration&forecast_days=14&timezone=auto")
+    .then(function(r) { return r.json(); }).catch(function() { return null; });
+
+  var allResults = await Promise.all(modelFetches.concat([agFetch]));
+  var results = allResults.slice(0, 4);
+  var agData = allResults[4];
+
   var base = null;
   for (var i = 0; i < results.length; i++) {
     if (results[i] && results[i].hourly && results[i].hourly.time) { base = results[i]; break; }
   }
   if (!base) { setStatus("Error: No model data returned", "err"); return; }
+
   var times = base.hourly.time;
   var precips = results.map(function(r) {
     return (r && r.hourly && r.hourly.precipitation) ? r.hourly.precipitation : null;
   });
   var validIndices = [];
   for (var j = 0; j < precips.length; j++) { if (precips[j]) validIndices.push(j); }
+
   allRows = times.map(function(t, i) {
     var vals = MODELS.map(function(_, mi) { return precips[mi] ? (precips[mi][i] || 0) : null; });
     var valid = vals.filter(function(v) { return v !== null; });
     var avg = valid.length ? valid.reduce(function(a, b) { return a + b; }, 0) / valid.length : 0;
     return { t: t, vals: vals, avg: avg };
   });
+
+  // ET data per hour
+  etRows = [];
+  if (agData && agData.hourly && agData.hourly.et0_fao_evapotranspiration) {
+    etRows = agData.hourly.et0_fao_evapotranspiration;
+  }
+
   var modelTotals = MODELS.map(function(_, mi) {
     if (!precips[mi]) return null;
     return precips[mi].reduce(function(s, v) { return s + (v || 0); }, 0);
   });
   var validTotals = modelTotals.filter(function(v) { return v !== null; });
   allTotals = { modelTotals: modelTotals, avg: validTotals.reduce(function(a, b) { return a + b; }, 0) / validTotals.length };
-  updateMap(lat, lon, label, allTotals);
+
+  updateMap(lat, lon);
   var loaded = validIndices.map(function(i) { return MODELS[i].name; }).join(", ");
   setStatus("Done: " + loaded + " loaded", "ok");
   renderAll(label);
@@ -218,7 +327,7 @@ function locate() {
   if (!navigator.geolocation) { setStatus("Geolocation not supported", "err"); return; }
   setStatus("Getting GPS location...");
   navigator.geolocation.getCurrentPosition(
-    function(p) { fetchForecast(p.coords.latitude, p.coords.longitude, "My Location"); },
+    function(p) { fetchForecast(p.coords.latitude, p.coords.longitude, "My Field"); },
     function() { setStatus("Location denied", "err"); }
   );
 }
@@ -232,6 +341,7 @@ function renderAll(label) {
   }
   document.getElementById("empty").style.display = "none";
   renderCards();
+  renderAgSection();
   renderBars();
   renderTable();
 }
@@ -253,6 +363,133 @@ function renderCards() {
       + "<div class='card-sub'>14-DAY TOTAL</div></div>";
   }
   el.innerHTML = html;
+}
+
+function renderAgSection() {
+  var crop = CROPS[selectedCrop];
+  var totalPrecip = allTotals.avg; // mm over 14 days
+  var totalET = 0;
+  for (var i = 0; i < etRows.length; i++) { totalET += (etRows[i] || 0); }
+  // Apply crop coefficient
+  var cropET = totalET * crop.kc;
+  // Net water balance
+  var netBalance = totalPrecip - cropET;
+  // Daily rain buckets
+  var daily = [];
+  for (var d = 0; d < allRows.length; d += 24) {
+    var daySlice = allRows.slice(d, d + 24);
+    var dayTotal = daySlice.reduce(function(s, r) { return s + r.avg; }, 0);
+    var dayET = 0;
+    for (var e = d; e < d + 24 && e < etRows.length; e++) { dayET += (etRows[e] || 0); }
+    daily.push({ t: daySlice[0].t, precip: dayTotal, et: dayET * crop.kc, net: dayTotal - dayET * crop.kc });
+  }
+
+  // Soil moisture running estimate (start at 50% field capacity = ~75mm)
+  var soilMM = 75;
+  var fieldCap = 150;
+  for (var di = 0; di < daily.length; di++) {
+    soilMM += daily[di].net;
+    soilMM = Math.max(0, Math.min(fieldCap, soilMM));
+  }
+  var soilPct = Math.round((soilMM / fieldCap) * 100);
+
+  // Count drought days (consecutive days with <2mm)
+  var droughtCount = 0, maxDrought = 0, cur = 0;
+  for (var di2 = 0; di2 < daily.length; di2++) {
+    if (daily[di2].precip < 2) { cur++; maxDrought = Math.max(maxDrought, cur); }
+    else { cur = 0; }
+  }
+
+  // Flood risk days
+  var floodDays = daily.filter(function(d) { return d.precip > crop.flood; }).length;
+
+  // Water status
+  var balColor, balLabel, balSub;
+  if (netBalance > 20) { balColor = "#f87171"; balLabel = "SURPLUS"; balSub = "Excess runoff risk"; }
+  else if (netBalance < -20) { balColor = "#ffb300"; balLabel = "DEFICIT"; balSub = "Irrigation may be needed"; }
+  else { balColor = "#00ffa3"; balLabel = "BALANCED"; balSub = "Good moisture outlook"; }
+
+  var soilColor = soilPct > 80 ? "#f87171" : soilPct > 40 ? "#00ffa3" : "#ffb300";
+  var soilLabel = soilPct > 80 ? "SATURATED" : soilPct > 40 ? "ADEQUATE" : "DRY";
+
+  var droughtColor = maxDrought >= crop.droughtDays ? "#f87171" : maxDrought > 4 ? "#ffb300" : "#00ffa3";
+  var floodColor = floodDays > 2 ? "#f87171" : floodDays > 0 ? "#ffb300" : "#00ffa3";
+
+  // Render ag cards
+  var ac = document.getElementById("agCards");
+  ac.style.display = "grid";
+  ac.innerHTML =
+    agCard("WATER BALANCE", cv(netBalance) + "<span style='font-size:11px;color:#3a6080;margin-left:2px;'>" + unit + "</span>",
+      balColor, balLabel, balSub) +
+    agCard("SOIL MOISTURE EST.", soilPct + "<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>",
+      soilColor, soilLabel, "End of 14-day period") +
+    agCard("TOTAL CROP ET", cv(cropET) + "<span style='font-size:11px;color:#3a6080;margin-left:2px;'>" + unit + "</span>",
+      "#c084fc", "EVAPOTRANSPIRATION", "Crop water demand") +
+    agCard("MAX DRY STREAK", maxDrought + "<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",
+      droughtColor, maxDrought >= crop.droughtDays ? "DROUGHT RISK" : "ACCEPTABLE", "Consecutive days &lt;2mm") +
+    agCard("FLOOD RISK DAYS", floodDays + "<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",
+      floodColor, floodDays > 0 ? "MONITOR" : "LOW RISK", "Days &gt;" + crop.flood + "mm");
+
+  // Field work windows
+  renderFieldWindows(daily);
+}
+
+function agCard(label, valHtml, color, badge, sub) {
+  var badgeClass = badge === "BALANCED" || badge === "ADEQUATE" || badge === "ACCEPTABLE" || badge === "LOW RISK" ? "badge-good"
+    : badge === "DEFICIT" || badge === "MONITOR" ? "badge-warn" : "badge-bad";
+  return "<div class='ag-card' style='border-top:2px solid " + color + "'>"
+    + "<div class='ag-card-label'>" + label + "</div>"
+    + "<div class='ag-card-val' style='color:" + color + "'>" + valHtml + "</div>"
+    + "<span class='window-tag " + badgeClass + "'>" + badge + "</span>"
+    + "<div class='ag-card-sub' style='color:#3a6080;margin-top:4px;'>" + sub + "</div>"
+    + "</div>";
+}
+
+function renderFieldWindows(daily) {
+  var box = document.getElementById("fieldWindows");
+  box.style.display = "block";
+  var list = document.getElementById("windowsList");
+
+  // Find runs of dry days (good for field work: <5mm/day)
+  var windows = [];
+  var start = -1;
+  for (var i = 0; i < daily.length; i++) {
+    if (daily[i].precip < 5) {
+      if (start === -1) start = i;
+    } else {
+      if (start !== -1 && (i - start) >= 2) {
+        windows.push({ start: start, end: i - 1, len: i - start });
+      }
+      start = -1;
+    }
+  }
+  if (start !== -1 && (daily.length - start) >= 2) {
+    windows.push({ start: start, end: daily.length - 1, len: daily.length - start });
+  }
+
+  if (!windows.length) {
+    list.innerHTML = "<div style='color:#3a6080;font-size:11px;padding:8px 0;'>No extended dry windows in forecast period.</div>";
+    return;
+  }
+
+  var html = "";
+  windows.forEach(function(w) {
+    var dt = new Date(daily[w.start].t);
+    var dt2 = new Date(daily[w.end].t);
+    var dateStr = dt.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      + " – " + dt2.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    var tag, tagClass, col;
+    if (w.len >= 5) { tag = "EXCELLENT"; tagClass = "badge-good"; col = "#00ffa3"; }
+    else if (w.len >= 3) { tag = "GOOD"; tagClass = "badge-good"; col = "#00c8ff"; }
+    else { tag = "MARGINAL"; tagClass = "badge-warn"; col = "#ffb300"; }
+    html += "<div class='window-row'>"
+      + "<div class='window-dot' style='background:" + col + "'></div>"
+      + "<div class='window-date'>" + dateStr + "</div>"
+      + "<div class='window-len'>" + w.len + " days</div>"
+      + "<span class='window-tag " + tagClass + "'>" + tag + "</span>"
+      + "</div>";
+  });
+  list.innerHTML = html;
 }
 
 function renderBars() {
@@ -292,13 +529,15 @@ function renderTable() {
   for (var i = 0; i < allRows.length; i += 12) {
     var slice = allRows.slice(i, i + 12);
     var bucketAvg = slice.reduce(function(s, r) { return s + r.avg; }, 0);
+    var bucketET = 0;
+    for (var e = i; e < i + 12 && e < etRows.length; e++) { bucketET += (etRows[e] || 0); }
     var bucketVals = MODELS.map(function(_, mi) {
       var allNull = true;
       for (var k = 0; k < slice.length; k++) { if (slice[k].vals[mi] !== null) { allNull = false; break; } }
       if (allNull) return null;
       return slice.reduce(function(s, r) { return s + (r.vals[mi] || 0); }, 0);
     });
-    buckets.push({ t: slice[0].t, avg: bucketAvg, vals: bucketVals });
+    buckets.push({ t: slice[0].t, avg: bucketAvg, et: bucketET * CROPS[selectedCrop].kc, vals: bucketVals });
   }
   var cumAvg = 0;
   var cumModel = MODELS.map(function() { return 0; });
@@ -309,11 +548,15 @@ function renderTable() {
     for (var mi = 0; mi < MODELS.length; mi++) { cumModel[mi] += bucket.vals[mi] || 0; }
     var avg = isCumul ? cumAvg : bucket.avg;
     var vals = isCumul ? cumModel.slice() : bucket.vals;
+    var net = bucket.avg - bucket.et;
+    var netColor = net > 5 ? "#f87171" : net < -5 ? "#ffb300" : "#00ffa3";
     var dt = new Date(bucket.t);
     var time = dt.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
-    var hl = avg > 2 ? "background:rgba(0,255,163,0.05)" : "";
+    var hl = avg > 10 ? "background:rgba(0,255,163,0.04)" : "";
     rows += "<tr style='" + hl + "'><td>" + time + "</td>"
-      + "<td style='color:#00ffa3;font-weight:bold'>" + cv(avg) + "</td>";
+      + "<td style='color:#00ffa3;font-weight:bold'>" + cv(avg) + "</td>"
+      + "<td style='color:#c084fc'>" + cv(bucket.et) + "</td>"
+      + "<td style='color:" + netColor + "'>" + (net >= 0 ? "+" : "") + cv(net) + "</td>";
     for (var mi2 = 0; mi2 < MODELS.length; mi2++) {
       rows += "<td style='color:" + MODELS[mi2].color + "'>"
         + (vals[mi2] !== null ? cv(vals[mi2]) : "<span style='color:#1e3a5f'>N/A</span>")
@@ -321,15 +564,17 @@ function renderTable() {
     }
     rows += "</tr>";
   }
-  var head = "<thead><tr><th style='text-align:left'>TIME (12-HR)</th><th style='color:#00ffa3'>BLEND</th>";
+  var head = "<thead><tr>"
+    + "<th style='text-align:left'>TIME (12-HR)</th>"
+    + "<th style='color:#00ffa3'>BLEND</th>"
+    + "<th style='color:#c084fc'>CROP ET</th>"
+    + "<th style='color:#cde'>NET BAL</th>";
   for (var m = 0; m < MODELS.length; m++) {
     head += "<th style='color:" + MODELS[m].color + "'>" + MODELS[m].name + "</th>";
   }
   head += "</tr></thead>";
   tbl.innerHTML = head + "<tbody>" + rows + "</tbody>";
 }
-
-
 </script>
 
 </body>
