@@ -122,6 +122,22 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .spray-hour-wind { font-size:10px; font-weight:bold; }
 .spray-hour-bar { height:4px; margin:2px auto; border-radius:2px; }
 
+/* Hybrid selector */
+#hybridPanel { background:#0d1520; border:1px solid #2a5278; padding:14px 16px; margin-bottom:20px; }
+.hybrid-search-row { display:flex; gap:8px; margin-bottom:8px; }
+.hybrid-search-row input { flex:1; font-size:12px; padding:8px 10px; }
+#hybridResults { max-height:200px; overflow-y:auto; border:1px solid #2a5278; background:#060f1a; display:none; margin-bottom:8px; }
+.hybrid-item { padding:9px 12px; cursor:pointer; border-bottom:1px solid #0d1a28; font-size:11px; display:flex; align-items:center; gap:10px; }
+.hybrid-item:hover { background:rgba(0,200,255,0.08); }
+.hybrid-name { font-weight:bold; color:#e8f4ff; flex:1; }
+.hybrid-rm   { font-size:10px; color:#ffb300; font-weight:bold; min-width:52px; text-align:right; }
+.hybrid-gdu  { font-size:9px; color:#7ab8d4; min-width:70px; text-align:right; }
+#selectedHybridCard { background:#060f1a; border:1px solid #2a5278; padding:10px 12px; margin-top:8px; display:none; }
+.sel-hybrid-name { font-size:15px; font-weight:900; color:#ffb300; margin-bottom:5px; }
+.sel-hybrid-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:6px; margin-top:6px; }
+.sel-hybrid-stat { background:#0a0f1a; border:1px solid #1e3a5f; padding:6px 8px; }
+.sel-hybrid-stat-label { font-size:8px; color:#7ab8d4; letter-spacing:1px; margin-bottom:2px; }
+.sel-hybrid-stat-val { font-size:15px; font-weight:900; color:#e8f4ff; }
 /* Map */
 
 /* Map */
@@ -347,6 +363,31 @@ td:first-child { text-align: left; color: #7ab8d4; }
     </div>
   </div>
   <div id="maturityResult" style="display:none;margin-top:12px;"></div>
+</div>
+
+<!-- Hybrid selector -->
+
+<div id="hybridPanel">
+  <div class="section-title">SEED HYBRID</div>
+  <div class="hybrid-search-row">
+    <input id="hybridSearch" type="text" placeholder="Search Pioneer hybrid (e.g. P1366, P0622)..." autocomplete="off" oninput="searchHybrids()" onfocus="searchHybrids()" />
+    <button onclick="clearHybrid()" style="font-size:10px;padding:8px 10px;color:#f87171;border-color:#f87171;">CLEAR</button>
+  </div>
+  <div id="hybridResults"></div>
+  <div id="selectedHybridCard"></div>
+  <div style="margin-top:6px;font-size:9px;color:#3a6a94;">
+    Not listed? &nbsp;<span style="color:#00c8ff;cursor:pointer;" onclick="toggleCustomHybrid()">+ Enter custom hybrid</span>
+  </div>
+  <div id="customHybridForm" style="display:none;margin-top:10px;background:#060f1a;border:1px solid #2a5278;padding:10px 12px;">
+    <div style="font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;">CUSTOM HYBRID</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:3px;"><div style="font-size:8px;color:#7ab8d4;">NAME</div><input id="cHybName" type="text" placeholder="P1234AM" style="width:130px;font-size:12px;padding:7px 9px;"/></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><div style="font-size:8px;color:#7ab8d4;">BRAND</div><input id="cHybBrand" type="text" placeholder="Pioneer" style="width:100px;font-size:12px;padding:7px 9px;"/></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><div style="font-size:8px;color:#7ab8d4;">CRM</div><input id="cHybRM" type="number" placeholder="108" style="width:70px;font-size:12px;padding:7px 9px;"/></div>
+      <div style="display:flex;flex-direction:column;gap:3px;"><div style="font-size:8px;color:#7ab8d4;">GDU TO MAT</div><input id="cHybGDU" type="number" placeholder="2650" style="width:80px;font-size:12px;padding:7px 9px;"/></div>
+      <button onclick="saveCustomHybrid()" class="primary" style="padding:8px 14px;font-size:11px;">SAVE</button>
+    </div>
+  </div>
 </div>
 
 <!-- Growth stage timeline -->
@@ -839,6 +880,69 @@ var CROPS = {
     ]
   }
 };
+
+// ─── HYBRID DATABASE ─────────────────────────────────────────────────────────
+// Source: Pioneer 2025 Seed Corn Catalog (photographed)
+// Fields: name, brand, crop, rm (CRM), silkCRM, physCRM, gduSilk, gduMat, stalkStr, traits, notes
+var HYBRIDS = [
+  // ── FROM IMAGE 2 (short/mid season) ──
+  {name:"P92399V/P92399PCE",  brand:"Pioneer",crop:"corn",rm:92, silkCRM:92, physCRM:92,  gduSilk:1150,gduMat:2190,stalkStr:5, traits:"AQ",          notes:"Intro. Early maturity, AQ market segment"},
+  {name:"P95819V",            brand:"Pioneer",crop:"corn",rm:95, silkCRM:97, physCRM:99,  gduSilk:1210,gduMat:2370,stalkStr:5, traits:"New",          notes:"New 2025"},
+  {name:"P9845V/P9845PCE",    brand:"Pioneer",crop:"corn",rm:98, silkCRM:101,physCRM:99,  gduSilk:1260,gduMat:2370,stalkStr:5, traits:"AQ",           notes:"AQ market segment"},
+  {name:"P9955V",             brand:"Pioneer",crop:"corn",rm:99, silkCRM:99, physCRM:100, gduSilk:1240,gduMat:2400,stalkStr:6, traits:"",             notes:""},
+  {name:"P00549V/P00549PCE",  brand:"Pioneer",crop:"corn",rm:100,silkCRM:96, physCRM:101, gduSilk:1200,gduMat:2420,stalkStr:6, traits:"New",          notes:"New 2025"},
+  {name:"P0075Q/P0075AM",     brand:"Pioneer",crop:"corn",rm:100,silkCRM:103,physCRM:104, gduSilk:1280,gduMat:2500,stalkStr:6, traits:"",             notes:""},
+  {name:"P02405V",            brand:"Pioneer",crop:"corn",rm:102,silkCRM:100,physCRM:100, gduSilk:1250,gduMat:2400,stalkStr:6, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P03115V",            brand:"Pioneer",crop:"corn",rm:103,silkCRM:102,physCRM:102, gduSilk:1270,gduMat:2450,stalkStr:4, traits:"AQ/New",       notes:"New, AQ market segment"},
+  {name:"P03357PCUE",         brand:"Pioneer",crop:"corn",rm:103,silkCRM:103,physCRM:105, gduSilk:1280,gduMat:2530,stalkStr:5, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P03951PCE",          brand:"Pioneer",crop:"corn",rm:103,silkCRM:100,physCRM:105, gduSilk:1250,gduMat:2530,stalkStr:6, traits:"New",          notes:"New 2025"},
+  {name:"P05081AML",          brand:"Pioneer",crop:"corn",rm:105,silkCRM:106,physCRM:107, gduSilk:1320,gduMat:2580,stalkStr:6, traits:"AQ/New",       notes:"New, AQ market segment"},
+  {name:"P05466V",            brand:"Pioneer",crop:"corn",rm:105,silkCRM:102,physCRM:104, gduSilk:1270,gduMat:2500,stalkStr:6, traits:"",             notes:""},
+  {name:"P0622Q/P0622AML",    brand:"Pioneer",crop:"corn",rm:106,silkCRM:102,physCRM:106, gduSilk:1270,gduMat:2550,stalkStr:6, traits:"AQ",           notes:"AQ market segment"},
+  {name:"P07340Q",            brand:"Pioneer",crop:"corn",rm:107,silkCRM:111,physCRM:110, gduSilk:1380,gduMat:2650,stalkStr:5, traits:"",             notes:""},
+  {name:"P08527V",            brand:"Pioneer",crop:"corn",rm:108,silkCRM:111,physCRM:107, gduSilk:1380,gduMat:2580,stalkStr:4, traits:"New",          notes:"New 2025"},
+  {name:"P0859AM",            brand:"Pioneer",crop:"corn",rm:108,silkCRM:111,physCRM:111, gduSilk:1380,gduMat:2680,stalkStr:5, traits:"",             notes:""},
+  {name:"P09076PCE",          brand:"Pioneer",crop:"corn",rm:109,silkCRM:110,physCRM:110, gduSilk:1370,gduMat:2650,stalkStr:6, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P0924Q",             brand:"Pioneer",crop:"corn",rm:109,silkCRM:109,physCRM:112, gduSilk:1360,gduMat:2700,stalkStr:5, traits:"",             notes:""},
+  {name:"P0995AM",            brand:"Pioneer",crop:"corn",rm:109,silkCRM:109,physCRM:107, gduSilk:1360,gduMat:2580,stalkStr:5, traits:"AQ",           notes:"AQ market segment"},
+  {name:"P10300PCE",          brand:"Pioneer",crop:"corn",rm:110,silkCRM:107,physCRM:109, gduSilk:1330,gduMat:2630,stalkStr:5, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P10625V/P10625PCUE", brand:"Pioneer",crop:"corn",rm:110,silkCRM:109,physCRM:113, gduSilk:1360,gduMat:2730,stalkStr:5, traits:"New",          notes:"New 2025"},
+  {name:"P1122AML",           brand:"Pioneer",crop:"corn",rm:111,silkCRM:110,physCRM:112, gduSilk:1370,gduMat:2700,stalkStr:6, traits:"AQ",           notes:"AQ market segment"},
+  {name:"P12393V",            brand:"Pioneer",crop:"corn",rm:112,silkCRM:112,physCRM:115, gduSilk:1390,gduMat:2780,stalkStr:5, traits:"New",          notes:"New 2025"},
+  {name:"P12517V",            brand:"Pioneer",crop:"corn",rm:112,silkCRM:114,physCRM:106, gduSilk:1420,gduMat:2550,stalkStr:6, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P1278Q",             brand:"Pioneer",crop:"corn",rm:112,silkCRM:112,physCRM:114, gduSilk:1390,gduMat:2760,stalkStr:6, traits:"",             notes:""},
+  {name:"P12904V/P12904AML",  brand:"Pioneer",crop:"corn",rm:112,silkCRM:113,physCRM:112, gduSilk:1400,gduMat:2700,stalkStr:6, traits:"",             notes:""},
+  // ── FROM IMAGE 1 (mid/full season) ──
+  {name:"P13476Q",            brand:"Pioneer",crop:"corn",rm:113,silkCRM:111,physCRM:116, gduSilk:1380,gduMat:2810,stalkStr:5, traits:"AQ/YFC",       notes:"AQ and YFC market segment"},
+  {name:"P1366Q",             brand:"Pioneer",crop:"corn",rm:113,silkCRM:111,physCRM:114, gduSilk:1380,gduMat:2760,stalkStr:6, traits:"",             notes:""},
+  {name:"P13777V/P13777PCE",  brand:"Pioneer",crop:"corn",rm:113,silkCRM:112,physCRM:111, gduSilk:1390,gduMat:2690,stalkStr:5, traits:"New",          notes:"New 2025"},
+  {name:"P14364PCUE",         brand:"Pioneer",crop:"corn",rm:114,silkCRM:111,physCRM:111, gduSilk:1380,gduMat:2680,stalkStr:5, traits:"AQ/Intro",     notes:"Intro, AQ market segment"},
+  {name:"P14830AML",          brand:"Pioneer",crop:"corn",rm:114,silkCRM:112,physCRM:112, gduSilk:1390,gduMat:2700,stalkStr:6, traits:"",             notes:""},
+  {name:"P1548AM",            brand:"Pioneer",crop:"corn",rm:115,silkCRM:112,physCRM:110, gduSilk:1390,gduMat:2650,stalkStr:5, traits:"AQ",           notes:"AQ market segment"},
+  {name:"P1718AML",           brand:"Pioneer",crop:"corn",rm:117,silkCRM:117,physCRM:116, gduSilk:1450,gduMat:2810,stalkStr:6, traits:"",             notes:""},
+  {name:"P1742Q/P1742PCE",    brand:"Pioneer",crop:"corn",rm:117,silkCRM:115,physCRM:117, gduSilk:1430,gduMat:2830,stalkStr:6, traits:"",             notes:""},
+  {name:"P17677V",            brand:"Pioneer",crop:"corn",rm:117,silkCRM:118,physCRM:117, gduSilk:1460,gduMat:2830,stalkStr:6, traits:"",             notes:""},
+  {name:"P18216PCUE",         brand:"Pioneer",crop:"corn",rm:118,silkCRM:120,physCRM:118, gduSilk:1490,gduMat:2860,stalkStr:5, traits:"Intro",        notes:"Intro 2025"},
+  {name:"P1828Q",             brand:"Pioneer",crop:"corn",rm:118,silkCRM:114,physCRM:115, gduSilk:1420,gduMat:2780,stalkStr:8, traits:"",             notes:""},
+  {name:"P1847AML",           brand:"Pioneer",crop:"corn",rm:118,silkCRM:112,physCRM:115, gduSilk:1390,gduMat:2780,stalkStr:5, traits:"YFC",          notes:"YFC market segment"},
+  {name:"P2042AML",           brand:"Pioneer",crop:"corn",rm:120,silkCRM:116,physCRM:118, gduSilk:1440,gduMat:2860,stalkStr:7, traits:"YFC",          notes:"YFC market segment"},
+  // ── CONVENTIONAL HYBRIDS (Image 1 bottom) ──
+  {name:"P9955",              brand:"Pioneer",crop:"corn",rm:99, silkCRM:99, physCRM:100, gduSilk:1240,gduMat:2400,stalkStr:6, traits:"Conventional", notes:"Conventional hybrid"},
+  {name:"P0075",              brand:"Pioneer",crop:"corn",rm:100,silkCRM:103,physCRM:104, gduSilk:1280,gduMat:2500,stalkStr:6, traits:"Conventional", notes:"Conventional hybrid"},
+  {name:"P0487",              brand:"Pioneer",crop:"corn",rm:104,silkCRM:103,physCRM:105, gduSilk:1280,gduMat:2530,stalkStr:5, traits:"AQ/Conv",      notes:"AQ conventional"},
+  {name:"P05081",             brand:"Pioneer",crop:"corn",rm:105,silkCRM:106,physCRM:107, gduSilk:1320,gduMat:2580,stalkStr:5, traits:"AQ/Conv/New",  notes:"New, AQ conventional"},
+  {name:"P08527",             brand:"Pioneer",crop:"corn",rm:108,silkCRM:111,physCRM:107, gduSilk:1380,gduMat:2580,stalkStr:5, traits:"Conv/New",     notes:"New conventional"},
+  {name:"P13777",             brand:"Pioneer",crop:"corn",rm:113,silkCRM:112,physCRM:111, gduSilk:1390,gduMat:2690,stalkStr:5, traits:"Conv/New",     notes:"New conventional"},
+  {name:"P17677",             brand:"Pioneer",crop:"corn",rm:117,silkCRM:118,physCRM:117, gduSilk:1460,gduMat:2830,stalkStr:6, traits:"Conventional", notes:"Conventional hybrid"},
+];
+
+var selectedHybrid = null;
+var customHybrids = [];
+try { customHybrids = JSON.parse(localStorage.getItem("farmcast_custom_hybrids") || "[]"); } catch(e){}
+
+var BRAND_COLORS = {"Pioneer":"#ffb300","DeKalb":"#00c8ff","Channel":"#fb923c","Asgrow":"#4ade80","NK":"#c084fc","Becks":"#38bdf8","Custom":"#7ab8d4"};
+
+function getAllHybrids() { return HYBRIDS.concat(customHybrids); }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 var unit = "in", view = "hourly";
@@ -2132,6 +2236,122 @@ function setStatus(msg,cls){
   el.textContent=msg; el.className=cls||"";
 }
 function cv(mm){return unit==="in"?(mm/25.4).toFixed(3):mm.toFixed(2);}
+
+function searchHybrids() {
+  var q = document.getElementById("hybridSearch").value.trim().toLowerCase();
+  var resultsEl = document.getElementById("hybridResults");
+  var all = getAllHybrids().filter(function(h){ return h.crop === selectedCrop; });
+  var filtered = q.length < 1 ? all.slice(0,30) : all.filter(function(h){
+    return h.name.toLowerCase().includes(q) || String(h.rm).includes(q) || (h.traits||"").toLowerCase().includes(q);
+  }).slice(0,40);
+  if (!filtered.length) {
+    resultsEl.style.display = "block";
+    resultsEl.innerHTML = "<div style='padding:10px 12px;color:#7ab8d4;font-size:11px;'>No matches — try custom entry</div>";
+    return;
+  }
+  resultsEl.style.display = "block";
+  resultsEl.innerHTML = filtered.map(function(h,i){
+    var bc = BRAND_COLORS[h.brand] || "#7ab8d4";
+    var allH = getAllHybrids();
+    var idx = allH.indexOf(h);
+    return "<div class='hybrid-item' onclick='selectHybrid("+idx+")'>"
+      + "<div style='width:9px;height:9px;border-radius:50%;background:"+bc+";flex-shrink:0;'></div>"
+      + "<div class='hybrid-name'>"+h.name+"<span style='color:#7ab8d4;font-size:9px;font-weight:normal;margin-left:6px;'>"+h.brand+"</span></div>"
+      + "<div style='font-size:9px;color:#7ab8d4;'>GDU Mat: "+h.gduMat+"</div>"
+      + "<div class='hybrid-rm'>CRM "+h.rm+"</div>"
+      + "</div>";
+  }).join("");
+}
+
+function selectHybrid(idx) {
+  var h = getAllHybrids()[idx];
+  if (!h) return;
+  selectedHybrid = h;
+  document.getElementById("hybridSearch").value = h.name;
+  document.getElementById("hybridResults").style.display = "none";
+  showSelectedHybridCard(h);
+  // Auto-set maturity select to closest RM
+  autoSetMaturity(h.rm, h.gduMat);
+  setStatus("Hybrid: "+h.name+" — "+h.gduMat+" GDU to maturity", "ok");
+  if (activeField !== null && fields[activeField]) {
+    fields[activeField].hybrid = {name:h.name,brand:h.brand,rm:h.rm,gduMat:h.gduMat,traits:h.traits||""};
+    saveFieldToDB(fields[activeField]);
+  }
+}
+
+function autoSetMaturity(rm, gduMat) {
+  var sel = document.getElementById("maturitySelect");
+  if (!sel || !CROPS[selectedCrop]) return;
+  var opts = CROPS[selectedCrop].rmOptions;
+  var bestIdx = 0, bestDiff = 9999;
+  for (var i=0;i<opts.length;i++){
+    // Match by GDU if available, else by RM days
+    var diff = gduMat ? Math.abs(opts[i].g - gduMat) : Math.abs(parseInt(opts[i].l) - rm);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  sel.selectedIndex = bestIdx + 1; // +1 for blank first option
+  onPlantingChange();
+}
+
+function showSelectedHybridCard(h) {
+  var card = document.getElementById("selectedHybridCard");
+  card.style.display = "block";
+  var bc = BRAND_COLORS[h.brand] || "#7ab8d4";
+  card.innerHTML = "<div style='display:flex;justify-content:space-between;align-items:start;'>"
+    + "<div class='sel-hybrid-name' style='color:"+bc+";'>"+h.name+"</div>"
+    + "<span style='font-size:9px;color:#f87171;cursor:pointer;' onclick='clearHybrid()'>&#10005; CLEAR</span>"
+    + "</div>"
+    + "<div style='font-size:10px;color:#7ab8d4;margin-bottom:6px;'>"+h.brand+(h.traits?" &middot; "+h.traits:"")+(h.notes?" &middot; "+h.notes:"")+"</div>"
+    + "<div class='sel-hybrid-grid'>"
+    + statBox("CRM", h.rm, "#ffb300")
+    + (h.silkCRM ? statBox("SILK CRM", h.silkCRM, "#00c8ff") : "")
+    + (h.physCRM ? statBox("PHYS CRM", h.physCRM, "#7ab8d4") : "")
+    + (h.gduSilk ? statBox("GDU TO SILK", h.gduSilk, "#4ade80") : "")
+    + statBox("GDU TO MAT", h.gduMat, "#00ffa3")
+    + (h.stalkStr ? statBox("STALK STR", h.stalkStr+"/9", "#fb923c") : "")
+    + "</div>";
+}
+
+function statBox(label, val, color) {
+  return "<div class='sel-hybrid-stat' style='border-top:2px solid "+color+";'>"
+    + "<div class='sel-hybrid-stat-label'>"+label+"</div>"
+    + "<div class='sel-hybrid-stat-val' style='color:"+color+";'>"+val+"</div>"
+    + "</div>";
+}
+
+function clearHybrid() {
+  selectedHybrid = null;
+  document.getElementById("hybridSearch").value = "";
+  document.getElementById("hybridResults").style.display = "none";
+  document.getElementById("selectedHybridCard").style.display = "none";
+}
+
+function toggleCustomHybrid() {
+  var f = document.getElementById("customHybridForm");
+  f.style.display = f.style.display === "none" ? "block" : "none";
+}
+
+function saveCustomHybrid() {
+  var name  = document.getElementById("cHybName").value.trim();
+  var brand = document.getElementById("cHybBrand").value.trim() || "Custom";
+  var rm    = parseInt(document.getElementById("cHybRM").value) || 0;
+  var gdu   = parseInt(document.getElementById("cHybGDU").value) || 2500;
+  if (!name) return;
+  var h = {name:name, brand:brand, crop:selectedCrop, rm:rm, gduMat:gdu, traits:"Custom", notes:"Custom entry"};
+  customHybrids.push(h);
+  try { localStorage.setItem("farmcast_custom_hybrids", JSON.stringify(customHybrids)); } catch(e){}
+  document.getElementById("customHybridForm").style.display = "none";
+  selectHybrid(HYBRIDS.length + customHybrids.length - 1);
+}
+
+document.addEventListener("click", function(e){
+  if (!e.target.closest("#hybridPanel")) {
+    var r = document.getElementById("hybridResults");
+    if (r) r.style.display = "none";
+  }
+});
+
+document.getElementById("hybridSearch") && document.getElementById("hybridSearch").addEventListener("keydown", function(e){ if(e.key==="Enter") { var r=document.getElementById("hybridResults"); var first=r&&r.querySelector(".hybrid-item"); if(first) first.click(); }});
 
 function switchTab(name) {
   var tabs = ['overview','soil','chart','table','windows','analog','spray'];
