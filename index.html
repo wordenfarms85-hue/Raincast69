@@ -748,11 +748,19 @@ saveFields();
 }
 
 function locate(){
-if(!navigator.geolocation){setStatus(“Geolocation not supported”,“err”);return;}
+if(!navigator.geolocation){setStatus(“Geolocation not supported — use HTTPS”,“err”);return;}
 setStatus(“Getting GPS location…”);
 navigator.geolocation.getCurrentPosition(
-function(p){fetchForecast(p.coords.latitude,p.coords.longitude,“My Field”);},
-function(){setStatus(“Location denied”,“err”);}
+function(p){
+var lat=p.coords.latitude, lon=p.coords.longitude;
+document.getElementById(“cityInput”).value=lat.toFixed(5)+”, “+lon.toFixed(5);
+fetchForecast(lat, lon, “My Field (GPS)”);
+},
+function(err){
+var msgs={1:“Location permission denied — allow in browser settings”,2:“Location unavailable”,3:“GPS timed out — try again”};
+setStatus(msgs[err.code]||“GPS error: “+err.message,“err”);
+},
+{enableHighAccuracy:true, timeout:15000, maximumAge:0}
 );
 }
 
