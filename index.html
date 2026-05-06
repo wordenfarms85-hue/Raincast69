@@ -1155,16 +1155,17 @@ async function runAnalogAnalysis() {
   try {
     var today = new Date();
     var cropYear = today.getFullYear();
-    var pDate = plantingDate;
-    var endOfSeason = new Date(pDate.getTime() + 160 * 86400000); // ~160 days after planting
+    // Always start from Jan 1 of the current crop year
+    var jan1 = new Date(cropYear + "-01-01T12:00:00");
+    var endOfSeason = new Date(jan1.getTime() + 365 * 86400000); // full year window
     var endDate = endOfSeason > today ? today : endOfSeason;
 
-    var plantMoDay = (pDate.getMonth()+1).toString().padStart(2,"0") + "-" + pDate.getDate().toString().padStart(2,"0");
-    var endMoDay   = (endDate.getMonth()+1).toString().padStart(2,"0") + "-" + endDate.getDate().toString().padStart(2,"0");
-
-    // --- Fetch current year ---
-    var curStart = pDate.toISOString().split("T")[0];
+    // Current year: Jan 1 through today (or end of season)
+    var curStart = cropYear + "-01-01";
     var curEnd   = endDate.toISOString().split("T")[0];
+
+    // Historical years also use Jan 1 – same end month/day
+    var endMoDay = (endDate.getMonth()+1).toString().padStart(2,"0") + "-" + endDate.getDate().toString().padStart(2,"0");
     var curData  = await fetchYearData(currentLat, currentLon, curStart, curEnd);
     if (!curData) throw new Error("Could not fetch current year data");
     var curMetrics = calcMetrics(curData, pDate);
@@ -1176,11 +1177,7 @@ async function runAnalogAnalysis() {
     var endYear   = cropYear - 1;
     var yearResults = [];
 
-    // Batch: fetch all years in one large request using multi-year date range
-    // Open-Meteo handles multi-decade requests fine
-    var batchStart = startYear + "-" + plantMoDay;
-    // We fetch one big chunk and split by year client-side
-    // Actually fetch per-decade to avoid timeout
+    // Fetch per-decade to avoid timeout
     var decades = [];
     for (var y = startYear; y <= endYear; y += 10) {
       decades.push({ from: y, to: Math.min(y+9, endYear) });
@@ -1203,8 +1200,8 @@ async function runAnalogAnalysis() {
       var hist = allHistorical[hi];
       for (var yr = hist.fromYear; yr <= hist.toYear; yr++) {
         if (yr === cropYear) continue;
-        var yStart = new Date(yr + "-" + plantMoDay + "T12:00:00");
-        var yEnd   = new Date(yr + "-" + endMoDay   + "T12:00:00");
+        var yStart = new Date(yr + "-01-01T12:00:00");
+        var yEnd   = new Date(yr + "-" + endMoDay + "T12:00:00");
         // Slice data for this year's window
         var slice = sliceData(hist.data, yStart, yEnd);
         if (!slice || slice.tmax.length < 30) continue;
