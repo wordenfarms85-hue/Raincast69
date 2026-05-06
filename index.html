@@ -2426,10 +2426,16 @@ function showSelectedHybridCard(h) {
   var card = document.getElementById("selectedHybridCard");
   card.style.display = "block";
   var bc = BRAND_COLORS[h.brand] || "#7ab8d4";
-  card.innerHTML = "<div style='display:flex;justify-content:space-between;align-items:start;'>"
+  var fieldName = (activeField !== null && fields[activeField]) ? fields[activeField].name : null;
+  var savedLabel = (activeField !== null && fields[activeField] && fields[activeField].hybrid && fields[activeField].hybrid.name === h.name)
+    ? "<span id='hybridSaveStatus' style='font-size:9px;color:#00ffa3;letter-spacing:1px;'>&#10003; SAVED TO " + (fieldName||"FIELD").toUpperCase() + "</span>"
+    : "<button id='hybridSaveBtn' onclick='saveHybridToField()' style='background:#00c8ff;color:#000;border:none;font-family:monospace;font-weight:bold;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:1px;'>&#128190; SAVE TO " + (fieldName||"FIELD").toUpperCase() + "</button>";
+  card.innerHTML = "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>"
     + "<div class='sel-hybrid-name' style='color:"+bc+";'>"+h.name+"</div>"
-    + "<span style='font-size:9px;color:#f87171;cursor:pointer;' onclick='clearHybrid()'>&#10005; CLEAR</span>"
-    + "</div>"
+    + "<div style='display:flex;gap:8px;align-items:center;'>"
+    + savedLabel
+    + "<span style='font-size:9px;color:#f87171;cursor:pointer;' onclick='clearHybrid()'>&#10005;</span>"
+    + "</div></div>"
     + "<div style='font-size:10px;color:#7ab8d4;margin-bottom:6px;'>"+h.brand+(h.traits?" &middot; "+h.traits:"")+(h.notes?" &middot; "+h.notes:"")+"</div>"
     + "<div class='sel-hybrid-grid'>"
     + statBox("CRM", h.rm, "#ffb300")
@@ -2439,6 +2445,29 @@ function showSelectedHybridCard(h) {
     + statBox("GDU TO MAT", h.gduMat, "#00ffa3")
     + (h.stalkStr ? statBox("STALK STR", h.stalkStr+"/9", "#fb923c") : "")
     + "</div>";
+}
+
+async function saveHybridToField() {
+  if (activeField === null || !fields[activeField]) {
+    setStatus("Select a field first to save hybrid", "err");
+    return;
+  }
+  if (!selectedHybrid) return;
+  var h = selectedHybrid;
+  fields[activeField].hybrid = {
+    name:h.name, brand:h.brand, rm:h.rm, gduMat:h.gduMat,
+    gduSilk:h.gduSilk||null, silkCRM:h.silkCRM||null,
+    physCRM:h.physCRM||null, stalkStr:h.stalkStr||null,
+    traits:h.traits||"", notes:h.notes||""
+  };
+  await saveFieldToDB(fields[activeField]);
+  // Update button to saved state
+  var btn = document.getElementById("hybridSaveBtn");
+  if (btn) {
+    btn.outerHTML = "<span id='hybridSaveStatus' style='font-size:9px;color:#00ffa3;letter-spacing:1px;'>&#10003; SAVED TO " + fields[activeField].name.toUpperCase() + "</span>";
+  }
+  setStatus("Hybrid " + h.name + " saved to " + fields[activeField].name, "ok");
+  renderTags();
 }
 
 function statBox(label, val, color) {
