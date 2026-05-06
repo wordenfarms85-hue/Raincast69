@@ -100,6 +100,28 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
 .soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
 
+/* Spray weather */
+.spray-day { background:#0d1520; border:1px solid #2a5278; margin-bottom:10px; overflow:hidden; }
+.spray-day-header { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid #1e3a5f; flex-wrap:wrap; }
+.spray-day-name { font-size:15px; font-weight:900; color:#e8f4ff; min-width:100px; }
+.spray-day-date { font-size:10px; color:#7ab8d4; letter-spacing:1px; }
+.spray-rating { font-size:9px; font-weight:bold; padding:3px 10px; border-radius:2px; letter-spacing:2px; margin-left:auto; }
+.spray-rating.good { background:rgba(0,255,163,0.15); color:#00ffa3; border:1px solid #00ffa3; }
+.spray-rating.marginal { background:rgba(255,179,0,0.15); color:#ffb300; border:1px solid #ffb300; }
+.spray-rating.poor { background:rgba(248,113,113,0.15); color:#f87171; border:1px solid #f87171; }
+.spray-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(90px,1fr)); gap:1px; background:#1e3a5f; }
+.spray-metric { background:#060f1a; padding:10px 12px; text-align:center; }
+.spray-metric-label { font-size:8px; color:#7ab8d4; letter-spacing:1px; margin-bottom:3px; }
+.spray-metric-val { font-size:18px; font-weight:900; line-height:1; }
+.spray-metric-sub { font-size:8px; color:#3a6a94; margin-top:2px; }
+.spray-hourly { padding:10px 14px; overflow-x:auto; }
+.spray-hour-row { display:flex; gap:0; min-width:500px; }
+.spray-hour { flex:1; text-align:center; padding:5px 2px; border-right:1px solid #0d1520; min-width:36px; }
+.spray-hour:last-child { border-right:none; }
+.spray-hour-time { font-size:7px; color:#3a6a94; }
+.spray-hour-wind { font-size:10px; font-weight:bold; }
+.spray-hour-bar { height:4px; margin:2px auto; border-radius:2px; }
+
 /* Map */
 
 /* Map */
@@ -361,6 +383,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <button class="tab-btn" onclick="switchTab('table')">&#128203; TABLE</button>
     <button class="tab-btn" onclick="switchTab('windows')">&#9728; FIELD OPS</button>
     <button class="tab-btn" onclick="switchTab('analog')">&#128202; ANALOG YRS</button>
+    <button class="tab-btn" onclick="switchTab('spray')">&#128167; SPRAY</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -472,6 +495,24 @@ td:first-child { text-align: left; color: #7ab8d4; }
       <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;">FETCHES ~75 YEARS OF ERA5 DATA &nbsp;&middot;&nbsp; AUTO MODE SCALES TOLERANCE WITH SEASON PROGRESS</div>
     </div>
     <div id="analogResults"></div>
+  </div>
+
+  <!-- SPRAY WEATHER TAB -->
+
+  <div id="tab-spray" class="tab-pane" style="padding:16px;">
+    <div class="section-title" style="margin-bottom:6px;">&#128167; SPRAY WEATHER FORECAST</div>
+    <div style="font-size:10px;color:#7ab8d4;margin-bottom:14px;line-height:1.6;">
+      5-day high/low temps, wind speed &amp; direction, humidity, and spray window ratings.<br>
+      GREEN = good to spray &nbsp;&middot;&nbsp; YELLOW = marginal &nbsp;&middot;&nbsp; RED = do not spray
+    </div>
+    <div id="sprayStatus" style="font-size:10px;color:#7ab8d4;letter-spacing:1px;min-height:16px;margin-bottom:12px;">FETCH A LOCATION TO SEE SPRAY FORECAST</div>
+    <div id="sprayCards"></div>
+    <div id="sprayTable" style="display:none;overflow-x:auto;margin-top:16px;"></div>
+    <div style="font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:14px;line-height:1.9;">
+      SPRAY RATING CRITERIA: WIND &lt;10 MPH = GOOD &nbsp;&middot;&nbsp; 10-15 MPH = MARGINAL &nbsp;&middot;&nbsp; &gt;15 MPH = DO NOT SPRAY<br>
+      TEMP &lt;40°F OR &gt;90°F = AVOID &nbsp;&middot;&nbsp; HUMIDITY &lt;40% = DRIFT RISK &nbsp;&middot;&nbsp; RAIN WITHIN 4HR = WASHOFF RISK<br>
+      SOURCE: OPEN-METEO GFS &nbsp;&middot;&nbsp; WIND AT 10M HEIGHT
+    </div>
   </div>
 
 </div>
@@ -1477,6 +1518,152 @@ function diffCard(label, val, diff, sub, color) {
     + "</div>";
 }
 
+// ─── SPRAY WEATHER ───────────────────────────────────────────────────────────
+var sprayData = null;
+
+async function fetchSprayForecast(lat, lon) {
+  try {
+    var url = "https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+      +"&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
+      +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max"
+      +"&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=5&timezone=auto";
+    var r = await fetch(url);
+    var d = await r.json();
+    if (!d.daily) return;
+    sprayData = d;
+    renderSprayForecast(d);
+    document.getElementById("sprayStatus").textContent = "SPRAY FORECAST LOADED — 5 DAYS";
+  } catch(e) {
+    document.getElementById("sprayStatus").textContent = "Error loading spray data";
+    console.log(e);
+  }
+}
+
+function sprayRating(windMax, windGust, tmin, tmax, humidity, rainMm, rainProb) {
+  var reasons = [];
+  var score = 0; // 0=good, 1=marginal, 2=poor
+
+  if (windMax > 15)  { score = 2; reasons.push("Wind >15 mph"); }
+  else if (windMax > 10) { score = Math.max(score,1); reasons.push("Wind 10-15 mph"); }
+
+  if (windGust > 20) { score = 2; reasons.push("Gusts >20 mph"); }
+
+  if (tmin < 40)  { score = Math.max(score,2); reasons.push("Temp <40°F"); }
+  if (tmax > 90)  { score = Math.max(score,1); reasons.push("Temp >90°F"); }
+
+  if (humidity < 40) { score = Math.max(score,1); reasons.push("Humidity <40% drift risk"); }
+  if (humidity > 90) { score = Math.max(score,1); reasons.push("Humidity >90%"); }
+
+  if (rainMm > 2)   { score = 2; reasons.push("Rain forecast"); }
+  else if (rainProb > 40) { score = Math.max(score,1); reasons.push("Rain chance >40%"); }
+
+  var label = score === 0 ? "GOOD TO SPRAY" : score === 1 ? "MARGINAL" : "DO NOT SPRAY";
+  var cls   = score === 0 ? "good" : score === 1 ? "marginal" : "poor";
+  return { score:score, label:label, cls:cls, reasons:reasons };
+}
+
+function windDir(deg) {
+  if (deg === null || deg === undefined) return "–";
+  var dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return dirs[Math.round(deg/22.5) % 16];
+}
+
+function renderSprayForecast(d) {
+  var cards = document.getElementById("sprayCards");
+  var days = d.daily.time;
+  var html = "";
+
+  days.forEach(function(date, di) {
+    var dt = new Date(date + "T12:00:00");
+    var dayName = di === 0 ? "TODAY"
+                : di === 1 ? "TOMORROW"
+                : dt.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase();
+    var dateStr = dt.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+
+    var tmax     = d.daily.temperature_2m_max[di];
+    var tmin     = d.daily.temperature_2m_min[di];
+    var rainMm   = d.daily.precipitation_sum[di] || 0;
+    var windMax  = d.daily.wind_speed_10m_max[di] || 0;
+    var windGust = d.daily.wind_gusts_10m_max[di] || 0;
+
+    // Get hourly data for this day (8 3-hour slots: 0,3,6,9,12,15,18,21)
+    var hourBase = di * 24;
+    var avgHumidity = 0, humCount = 0, maxRainProb = 0;
+    for (var h = hourBase; h < hourBase+24 && h < d.hourly.relative_humidity_2m.length; h++) {
+      if (d.hourly.relative_humidity_2m[h] !== null) { avgHumidity += d.hourly.relative_humidity_2m[h]; humCount++; }
+      if (d.hourly.precipitation_probability[h] > maxRainProb) maxRainProb = d.hourly.precipitation_probability[h];
+    }
+    avgHumidity = humCount ? Math.round(avgHumidity/humCount) : 50;
+
+    var rating = sprayRating(windMax, windGust, tmin, tmax, avgHumidity, rainMm, maxRainProb);
+
+    // Wind color
+    var windCol = windMax > 15 ? "#f87171" : windMax > 10 ? "#ffb300" : "#00ffa3";
+    var gustCol = windGust > 20 ? "#f87171" : "#ffb300";
+    var tmaxStr = tmax !== null ? Math.round(tmax)+"°" : "–";
+    var tminStr = tmin !== null ? Math.round(tmin)+"°" : "–";
+    var precipStr = unit === "in" ? (rainMm/25.4).toFixed(2)+'"' : rainMm.toFixed(1)+"mm";
+    var tempLoCol = tmin < 40 ? "#f87171" : "#7ab8d4";
+    var tempHiCol = tmax > 90 ? "#f87171" : tmax > 85 ? "#ffb300" : "#e8f4ff";
+    var humCol = avgHumidity < 40 ? "#ffb300" : avgHumidity > 90 ? "#ffb300" : "#7ab8d4";
+    var rainCol = rainMm > 2 ? "#f87171" : rainMm > 0 ? "#ffb300" : "#00ffa3";
+
+    // Hourly wind strip (every 3 hrs: 6am, 9am, noon, 3pm, 6pm)
+    var hourSlots = [6,9,12,15,18];
+    var hourHtml = "<div class='spray-hourly'><div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:4px;'>HOURLY WIND (MPH) &amp; DIRECTION</div><div class='spray-hour-row'>";
+    hourSlots.forEach(function(hr) {
+      var idx = hourBase + hr;
+      var ws  = d.hourly.wind_speed_10m[idx] !== null ? Math.round(d.hourly.wind_speed_10m[idx]) : null;
+      var wd  = windDir(d.hourly.wind_direction_10m[idx]);
+      var wg  = d.hourly.wind_gusts_10m[idx] !== null ? Math.round(d.hourly.wind_gusts_10m[idx]) : null;
+      var wCol = ws > 15 ? "#f87171" : ws > 10 ? "#ffb300" : "#00ffa3";
+      var barW = ws ? Math.min(100, Math.round(ws/20*100)) : 0;
+      var hrLabel = hr >= 12 ? (hr===12?"12PM":(hr-12)+"PM") : hr+"AM";
+      hourHtml += "<div class='spray-hour'>"
+        + "<div class='spray-hour-time'>"+hrLabel+"</div>"
+        + "<div class='spray-hour-wind' style='color:"+wCol+"'>"+(ws !== null ? ws : "–")+"</div>"
+        + "<div class='spray-hour-bar' style='width:"+barW+"%;background:"+wCol+";'></div>"
+        + "<div style='font-size:7px;color:#3a6a94;'>"+wd+"</div>"
+        + (wg ? "<div style='font-size:7px;color:#ffb300;'>G"+wg+"</div>" : "")
+        + "</div>";
+    });
+    hourHtml += "</div></div>";
+
+    // Reasons string
+    var reasonsHtml = rating.reasons.length
+      ? "<div style='font-size:9px;color:#7ab8d4;padding:6px 14px 10px;'>"
+        + rating.reasons.map(function(r){return "&#9679; "+r;}).join(" &nbsp; ")
+        + "</div>"
+      : "<div style='font-size:9px;color:#00ffa3;padding:6px 14px 10px;'>&#10003; No spray restrictions</div>";
+
+    html += "<div class='spray-day'>"
+      // Header
+      + "<div class='spray-day-header'>"
+      + "<div>"
+      +   "<div class='spray-day-name'>"+dayName+"</div>"
+      +   "<div class='spray-day-date'>"+dateStr+"</div>"
+      + "</div>"
+      + "<span class='spray-rating "+rating.cls+"'>"+rating.label+"</span>"
+      + "</div>"
+      // Metrics
+      + "<div class='spray-metrics'>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>HIGH</div><div class='spray-metric-val' style='color:"+tempHiCol+";'>"+tmaxStr+"</div><div class='spray-metric-sub'>temp</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>LOW</div><div class='spray-metric-val' style='color:"+tempLoCol+";'>"+tminStr+"</div><div class='spray-metric-sub'>temp</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>WIND MAX</div><div class='spray-metric-val' style='color:"+windCol+";'>"+Math.round(windMax)+"</div><div class='spray-metric-sub'>mph</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>GUSTS</div><div class='spray-metric-val' style='color:"+gustCol+";'>"+Math.round(windGust)+"</div><div class='spray-metric-sub'>mph</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>HUMIDITY</div><div class='spray-metric-val' style='color:"+humCol+";'>"+avgHumidity+"%</div><div class='spray-metric-sub'>avg</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>PRECIP</div><div class='spray-metric-val' style='color:"+rainCol+";'>"+precipStr+"</div><div class='spray-metric-sub'>"+maxRainProb+"% chance</div></div>"
+      + "</div>"
+      // Hourly strip
+      + hourHtml
+      // Reasons
+      + reasonsHtml
+      + "</div>";
+  });
+
+  cards.innerHTML = html || "<div style='color:#3a6a94;font-size:11px;'>No spray data available</div>";
+}
+
 // ─── SEASONAL RAIN ───────────────────────────────────────────────────────────
 async function fetchSeasonalRain(lat, lon) {
   try {
@@ -1802,6 +1989,8 @@ async function fetchForecast(lat, lon, label) {
 
   // Fetch seasonal rain totals
   fetchSeasonalRain(lat, lon);
+  // Fetch spray forecast
+  fetchSprayForecast(lat, lon);
 }
 
 async function run() {
@@ -1868,7 +2057,7 @@ function setStatus(msg,cls){
 function cv(mm){return unit==="in"?(mm/25.4).toFixed(3):mm.toFixed(2);}
 
 function switchTab(name) {
-  var tabs = ['overview','soil','chart','table','windows','analog'];
+  var tabs = ['overview','soil','chart','table','windows','analog','spray'];
   tabs.forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('tab-visible', t===name);
   });
