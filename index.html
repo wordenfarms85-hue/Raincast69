@@ -300,6 +300,13 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div id="agCards" style="display:none"></div>
 
+<!-- Soil depth panel -->
+
+<div id="soilDepthPanel" style="background:#0d1520;border:1px solid #1e3a5f;padding:14px 16px;margin-bottom:20px;display:none;">
+  <div class="section-title">SOIL MOISTURE BY DEPTH — ERA5-LAND</div>
+  <div id="soilDepthContent"></div>
+</div>
+
 <!-- Field work windows -->
 
 <div id="fieldWindows" style="display:none">
@@ -591,7 +598,7 @@ var CROPS = {
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 var unit = "in", view = "hourly";
-var allRows = [], allTotals = null, etRows = [];
+var allRows = [], allTotals = null, etRows = [], soilRows = {};
 var selectedCrop = "corn", selectedStage = 0;
 var currentLat = null, currentLon = null;
 var plantingDate = null, maturityDate = null, maturityEarlyDate = null, maturityLateDate = null;
@@ -992,7 +999,7 @@ async function fetchForecast(lat, lon, label) {
       .then(function(r){return r.json();}).catch(function(){return null;});
   });
   var agFetch = fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
-    +"&hourly=et0_fao_evapotranspiration,temperature_2m&forecast_days=14&timezone=auto")
+    +"&hourly=et0_fao_evapotranspiration,temperature_2m,soil_moisture_0_to_1cm,soil_moisture_1_to_3cm,soil_moisture_3_to_9cm,soil_moisture_9_to_27cm&forecast_days=14&timezone=auto")
     .then(function(r){return r.json();}).catch(function(){return null;});
 
   var all = await Promise.all(modelFetches.concat([agFetch]));
@@ -1013,6 +1020,13 @@ async function fetchForecast(lat, lon, label) {
     return{t:t,vals:vals,avg:avg};
   });
   etRows=(agData&&agData.hourly&&agData.hourly.et0_fao_evapotranspiration)||[];
+  // Real soil moisture from ERA5-Land model (m³/m³ volumetric water content)
+  soilRows = {
+    surface: (agData&&agData.hourly&&agData.hourly.soil_moisture_0_to_1cm)||[],
+    shallow: (agData&&agData.hourly&&agData.hourly.soil_moisture_1_to_3cm)||[],
+    mid:     (agData&&agData.hourly&&agData.hourly.soil_moisture_3_to_9cm)||[],
+    deep:    (agData&&agData.hourly&&agData.hourly.soil_moisture_9_to_27cm)||[]
+  };
 
   var modelTotals=MODELS.map(function(_,mi){
     if(!precips[mi])return null;
@@ -1133,9 +1147,33 @@ function renderAgSection(){
     var de=0; for(var e=d;e<d+24&&e<etRows.length;e++){de+=(etRows[e]||0);}
     daily.push({t:sl[0].t,precip:dt,et:de*stageKc,net:dt-de*stageKc});
   }
-  var soilMM=75,fieldCap=150;
-  daily.forEach(function(d){soilMM=Math.max(0,Math.min(fieldCap,soilMM+d.net));});
-  var soilPct=Math.round((soilMM/fieldCap)*100);
+  // Use real ERA5-Land soil moisture data if available
+  // Volumetric water content (m³/m³): 0.0 = bone dry, ~0.4-0.5 = saturated
+  // Convert to % of field capacity using typical field cap ~0.35 m³/m³, wilting ~0.10
+  var soilPct, soilSource;
+  var latestSurface = null, latestShallow = null, latestMid = null, latestDeep = null;
+  if (soilRows.surface && soilRows.surface.length > 0) {
+    // Get current (first hour) values
+    latestSurface = soilRows.surface[0];
+    latestShallow = soilRows.shallow[0] || null;
+    latestMid     = soilRows.mid[0]     || null;
+    latestDeep    = soilRows.deep[0]    || null;
+    // Weighted average across root zone (weight by depth)
+    var weights = [1, 2, 6, 18]; // cm depth of each layer
+    var vals = [latestSurface, latestShallow, latestMid, latestDeep].map(function(v,i){return v||0;});
+    var weightedVWC = vals.reduce(function(s,v,i){return s+v*weights[i];},0) / weights.reduce(function(a,b){return a+b;},0);
+    // Convert VWC to % of field capacity
+    // Typical: wilting point ~0.10, field capacity ~0.33, saturation ~0.47
+    var wiltPoint = 0.10, fieldCapVWC = 0.33, satVWC = 0.47;
+    soilPct = Math.round(Math.max(0, Math.min(100, ((weightedVWC - wiltPoint) / (fieldCapVWC - wiltPoint)) * 100)));
+    soilSource = "ERA5-LAND";
+  } else {
+    // Fallback to bucket model
+    var soilMM=75, fieldCap=150;
+    daily.forEach(function(d){soilMM=Math.max(0,Math.min(fieldCap,soilMM+d.net));});
+    soilPct=Math.round((soilMM/fieldCap)*100);
+    soilSource = "EST";
+  }
   var maxDry=0,cur=0;
   daily.forEach(function(d){if(d.precip<2){cur++;if(cur>maxDry)maxDy=cur;}else cur=0;});
   var maxDrought=0,c2=0;
@@ -1152,11 +1190,55 @@ function renderAgSection(){
   ac.style.display="grid";
   ac.innerHTML=
     agCard("WATER BALANCE",cv(netBalance)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
-    agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>",soilColor,soilLabel,"End of 14-day period")+
+    agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>",soilColor,soilLabel,
+      soilSource === "ERA5-LAND"
+        ? "ERA5-Land satellite model"
+        : "Estimated water balance")+
     agCard("CROP ET",cv(cropET)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>","#c084fc","EVAPOTRANSPIRATION","Kc="+stageKc+" for "+crop.stages[selectedStage].name)+
     agCard("MAX DRY STREAK",maxDrought+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",droughtColor,maxDrought>=crop.droughtDays?"DROUGHT RISK":"ACCEPTABLE","Consecutive days <2mm")+
     agCard("FLOOD RISK DAYS",floodDays+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",floodColor,floodDays>0?"MONITOR":"LOW RISK","Days >"+crop.flood+"mm");
   renderFieldWindows(daily);
+  renderSoilDepthPanel(latestSurface, latestShallow, latestMid, latestDeep, soilSource);
+}
+
+function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
+  var panel = document.getElementById("soilDepthPanel");
+  if (!panel) return;
+  if (!surface && surface !== 0) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  var fmt = function(v) {
+    if (v === null || v === undefined) return "N/A";
+    return (v * 100).toFixed(1) + "%";
+  };
+  var bar = function(v) {
+    // VWC to bar width: 0-50% range
+    var pct = v ? Math.min(100, (v / 0.50) * 100) : 0;
+    var col = v > 0.35 ? "#f87171" : v > 0.20 ? "#00ffa3" : v > 0.12 ? "#ffb300" : "#3a6080";
+    return "<div style='background:#0a0f1a;height:8px;border-radius:4px;overflow:hidden;margin-top:3px;'>"
+      + "<div style='width:"+pct+"%;height:100%;background:"+col+";border-radius:4px;'></div></div>";
+  };
+
+  var depths = [
+    { label:"0–1 cm (SURFACE)", val:surface },
+    { label:"1–3 cm (TOPSOIL)", val:shallow },
+    { label:"3–9 cm (ROOT ZONE)", val:mid },
+    { label:"9–27 cm (SUBSOIL)", val:deep }
+  ];
+
+  var html = "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;'>";
+  depths.forEach(function(d) {
+    var col = !d.val ? "#3a6080" : d.val > 0.35 ? "#f87171" : d.val > 0.20 ? "#00ffa3" : d.val > 0.12 ? "#ffb300" : "#3a6080";
+    html += "<div style='background:#060f1a;border:1px solid #1e3a5f;padding:8px 10px;'>"
+      + "<div style='font-size:8px;color:#3a6080;letter-spacing:1px;margin-bottom:2px;'>"+d.label+"</div>"
+      + "<div style='font-size:18px;font-weight:900;color:"+col+";'>"+fmt(d.val)+"</div>"
+      + "<div style='font-size:8px;color:#3a6080;'>VWC m³/m³</div>"
+      + bar(d.val)
+      + "</div>";
+  });
+  html += "</div>"
+    + "<div style='font-size:9px;color:#1e3a5f;margin-top:8px;letter-spacing:1px;text-align:right;'>SOURCE: "+source+" &middot; VOLUMETRIC WATER CONTENT &middot; FIELD CAP ~0.33 m³/m³</div>";
+  document.getElementById("soilDepthContent").innerHTML = html;
 }
 
 function agCard(label,valHtml,color,badge,sub){
