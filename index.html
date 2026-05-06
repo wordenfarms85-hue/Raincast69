@@ -1092,8 +1092,10 @@ function onPlantingChange() {
   // Estimate maturity: GDD base 50F (10C), assume avg 15 GDD/day peak season, 8-10 early/late
   // Simple: days to maturity = GDD / avg_daily_gdd
   // More useful: give a calendar range
+  // Use actual hybrid GDU if selected, otherwise use RM option estimate
+  var gddToUse = (selectedHybrid && selectedHybrid.gduMat) ? selectedHybrid.gduMat : rm.g;
   var avgGDD = 18; // approximate growing season daily GDD
-  var daysToMat = Math.round(rm.g / avgGDD);
+  var daysToMat = Math.round(gddToUse / avgGDD);
   var earlyDays = Math.round(daysToMat * 0.93);
   var lateDays  = Math.round(daysToMat * 1.07);
 
@@ -1107,25 +1109,31 @@ function onPlantingChange() {
 
   var fmt = function(d) { return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); };
 
+  // Add silk milestone from hybrid if available
+  var silkNote = (selectedHybrid && selectedHybrid.gduSilk)
+    ? "<div style='font-size:10px;color:#7ab8d4;margin-top:4px;'>Silk (pollination): <span style='color:#4ade80;font-weight:bold;'>"
+      + selectedHybrid.gduSilk + " GDU</span> from planting</div>"
+    : "";
   resultDiv.style.display = "block";
   resultDiv.innerHTML = "<div style='background:#060f1a;border:1px solid #2a5278;padding:12px 14px;font-size:11px;'>"
     + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>"
     + "<div style='display:flex;gap:20px;flex-wrap:wrap;margin-bottom:6px;'>"
     + "<div style='color:#7ab8d4;'>Planted: <span style='color:#e8f4ff;'>" + fmt(pDate) + "</span></div>"
-    + "<div style='color:#7ab8d4;'>RM / GDD Target: <span style='color:#e8f4ff;'>" + rm.l + " &mdash; " + rm.g + " GDD</span></div>"
+    + "<div style='color:#7ab8d4;'>" + (selectedHybrid ? "Hybrid: <span style='color:#ffb300;font-weight:bold;'>"+selectedHybrid.name+"</span> &mdash; " : "RM / GDD: <span style='color:#e8f4ff;'>"+rm.l+" &mdash; ") + gddToUse + " GDU</span></div>"
     + "<div style='color:#7ab8d4;'>Est. Days: <span style='color:#e8f4ff;'>" + earlyDays + "–" + lateDays + " days</span></div>"
     + "</div>"
     + "<div style='font-size:14px;font-weight:900;color:#ffb300;margin-bottom:2px;'>&#128197; " + fmt(earlyMat) + " – " + fmt(lateMat) + "</div>"
+    + silkNote
     + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>"
     + "</div>";
 
-  gddTarget = rm.g;
+  gddTarget = gddToUse;
 
   renderStagePanel();
 
   // Fetch accumulated GDD from planting date if we have a location
   if (currentLat !== null && currentLon !== null) {
-    fetchAccumulatedGDD(pDate, currentLat, currentLon, rm.g, resultDiv);
+    fetchAccumulatedGDD(pDate, currentLat, currentLon, gddToUse, resultDiv);
   }
 
   // Update field if active
