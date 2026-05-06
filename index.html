@@ -360,6 +360,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <button class="tab-btn" onclick="switchTab('chart')">&#128200; CHART</button>
     <button class="tab-btn" onclick="switchTab('table')">&#128203; TABLE</button>
     <button class="tab-btn" onclick="switchTab('windows')">&#9728; FIELD OPS</button>
+    <button class="tab-btn" onclick="switchTab('analog')">&#128202; ANALOG YRS</button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -427,6 +428,26 @@ td:first-child { text-align: left; color: #7ab8d4; }
   <div id="tab-windows" class="tab-pane" style="padding:16px;">
     <div class="section-title">FIELD WORK WINDOWS</div>
     <div id="windowsList"></div>
+  </div>
+
+  <!-- ANALOG YEARS TAB -->
+
+  <div id="tab-analog" class="tab-pane" style="padding:16px;">
+    <div class="section-title" style="margin-bottom:6px;">ANALOG YEAR ANALYSIS</div>
+    <div style="font-size:10px;color:#7ab8d4;margin-bottom:14px;line-height:1.6;">
+      Compares current season GDU accumulation &amp; precipitation to every year since 1950.<br>
+      Top matches = historical years with most similar growing conditions to this year.
+    </div>
+    <div id="analogStatus" style="font-size:10px;color:#7ab8d4;letter-spacing:1px;min-height:16px;margin-bottom:12px;">
+      SET PLANTING DATE &amp; FETCH A LOCATION TO RUN ANALOG ANALYSIS
+    </div>
+    <div id="analogRunRow" style="display:none;margin-bottom:16px;">
+      <button onclick="runAnalogAnalysis()" class="primary" style="padding:10px 20px;font-size:12px;letter-spacing:2px;">
+        &#128202; RUN ANALOG ANALYSIS
+      </button>
+      <span style="font-size:9px;color:#3a6a94;margin-left:10px;letter-spacing:1px;">FETCHES ~75 YEARS OF HISTORICAL DATA</span>
+    </div>
+    <div id="analogResults"></div>
   </div>
 
 </div>
@@ -1095,6 +1116,238 @@ function selectStage(idx) {
   if (allRows.length) renderAgSection();
 }
 
+// ─── ANALOG YEAR ANALYSIS ────────────────────────────────────────────────────
+var analogRunning = false;
+
+async function runAnalogAnalysis() {
+  if (analogRunning) return;
+  if (!currentLat || !currentLon || !plantingDate) {
+    document.getElementById("analogStatus").textContent = "SET PLANTING DATE AND FETCH A LOCATION FIRST";
+    return;
+  }
+
+  analogRunning = true;
+  var btn = document.querySelector("#tab-analog .primary");
+  if (btn) btn.textContent = "LOADING...";
+  document.getElementById("analogStatus").textContent = "FETCHING HISTORICAL DATA 1950–PRESENT...";
+  document.getElementById("analogResults").innerHTML = "";
+
+  try {
+    var today = new Date();
+    var cropYear = today.getFullYear();
+    var pDate = plantingDate;
+    var endOfSeason = new Date(pDate.getTime() + 160 * 86400000); // ~160 days after planting
+    var endDate = endOfSeason > today ? today : endOfSeason;
+
+    var plantMoDay = (pDate.getMonth()+1).toString().padStart(2,"0") + "-" + pDate.getDate().toString().padStart(2,"0");
+    var endMoDay   = (endDate.getMonth()+1).toString().padStart(2,"0") + "-" + endDate.getDate().toString().padStart(2,"0");
+
+    // --- Fetch current year ---
+    var curStart = pDate.toISOString().split("T")[0];
+    var curEnd   = endDate.toISOString().split("T")[0];
+    var curData  = await fetchYearData(currentLat, currentLon, curStart, curEnd);
+    if (!curData) throw new Error("Could not fetch current year data");
+    var curMetrics = calcMetrics(curData, pDate);
+
+    document.getElementById("analogStatus").textContent = "CURRENT YEAR CALCULATED — SCANNING HISTORICAL YEARS...";
+
+    // --- Fetch historical years 1950 to last year ---
+    var startYear = 1950;
+    var endYear   = cropYear - 1;
+    var yearResults = [];
+
+    // Batch: fetch all years in one large request using multi-year date range
+    // Open-Meteo handles multi-decade requests fine
+    var batchStart = startYear + "-" + plantMoDay;
+    // We fetch one big chunk and split by year client-side
+    // Actually fetch per-decade to avoid timeout
+    var decades = [];
+    for (var y = startYear; y <= endYear; y += 10) {
+      decades.push({ from: y, to: Math.min(y+9, endYear) });
+    }
+
+    var allHistorical = [];
+    for (var di = 0; di < decades.length; di++) {
+      var dec = decades[di];
+      var dStart = dec.from + "-01-01";
+      var dEnd   = dec.to   + "-12-31";
+      document.getElementById("analogStatus").textContent =
+        "SCANNING " + dec.from + "–" + dec.to + "... (" + Math.round((di/decades.length)*100) + "%)";
+
+      var dData = await fetchYearData(currentLat, currentLon, dStart, dEnd);
+      if (dData) allHistorical.push({ data: dData, fromYear: dec.from, toYear: dec.to });
+    }
+
+    // Split into individual crop seasons
+    for (var hi = 0; hi < allHistorical.length; hi++) {
+      var hist = allHistorical[hi];
+      for (var yr = hist.fromYear; yr <= hist.toYear; yr++) {
+        if (yr === cropYear) continue;
+        var yStart = new Date(yr + "-" + plantMoDay + "T12:00:00");
+        var yEnd   = new Date(yr + "-" + endMoDay   + "T12:00:00");
+        // Slice data for this year's window
+        var slice = sliceData(hist.data, yStart, yEnd);
+        if (!slice || slice.tmax.length < 30) continue;
+        var metrics = calcMetrics(slice, yStart);
+        yearResults.push({ year: yr, metrics: metrics });
+      }
+    }
+
+    // Score each year vs current (weighted GDU + precip similarity)
+    var scored = yearResults.map(function(yr) {
+      var gduDiff   = Math.abs(yr.metrics.gdu - curMetrics.gdu);
+      var precipDiff = Math.abs(yr.metrics.precip - curMetrics.precip);
+      var gduPct     = curMetrics.gdu > 0 ? gduDiff / curMetrics.gdu : 1;
+      var precipPct  = curMetrics.precip > 0 ? precipDiff / curMetrics.precip : 1;
+      // Score: lower = better match (60% GDU weight, 40% precip)
+      var score = (gduPct * 0.6) + (precipPct * 0.4);
+      return { year: yr.year, metrics: yr.metrics, score: score };
+    });
+
+    scored.sort(function(a,b){return a.score - b.score;});
+    var top10 = scored.slice(0, 10);
+
+    document.getElementById("analogStatus").textContent =
+      "ANALYSIS COMPLETE — " + yearResults.length + " YEARS COMPARED";
+    renderAnalogResults(top10, curMetrics, cropYear);
+
+  } catch(e) {
+    document.getElementById("analogStatus").textContent = "ERROR: " + e.message;
+    console.error(e);
+  }
+
+  analogRunning = false;
+  if (btn) btn.textContent = "&#128202; RERUN ANALYSIS";
+}
+
+async function fetchYearData(lat, lon, startDate, endDate) {
+  try {
+    var url = "https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
+      +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum"
+      +"&temperature_unit=fahrenheit&start_date="+startDate+"&end_date="+endDate+"&timezone=auto";
+    var r = await fetch(url);
+    var d = await r.json();
+    if (!d.daily || !d.daily.temperature_2m_max) return null;
+    return { time: d.daily.time, tmax: d.daily.temperature_2m_max, tmin: d.daily.temperature_2m_min, precip: d.daily.precipitation_sum };
+  } catch(e) { return null; }
+}
+
+function sliceData(data, startDate, endDate) {
+  var tmax=[], tmin=[], precip=[], times=[];
+  for (var i=0; i<data.time.length; i++) {
+    var dt = new Date(data.time[i]+"T12:00:00");
+    if (dt >= startDate && dt <= endDate) {
+      tmax.push(data.tmax[i]);
+      tmin.push(data.tmin[i]);
+      precip.push(data.precip[i]);
+      times.push(data.time[i]);
+    }
+  }
+  return { time:times, tmax:tmax, tmin:tmin, precip:precip };
+}
+
+function calcMetrics(data, pDate) {
+  var totalGDU = 0, totalPrecip = 0;
+  var hotDays=0, coldDays=0, wetDays=0, dryStreak=0, maxDryStreak=0, curDryStreak=0;
+
+  for (var i=0; i<data.tmax.length; i++) {
+    var tx = data.tmax[i], tn = data.tmin[i], p = data.precip[i]||0;
+    if (tx===null||tn===null) continue;
+    // GDU base 50F cap 86F
+    var capMax = Math.min(tx, 86);
+    var capMin = Math.max(tn, 50);
+    var gdu = ((capMax + capMin)/2) - 50;
+    if (gdu > 0) totalGDU += gdu;
+    totalPrecip += p;
+    if (tx > 95) hotDays++;
+    if (tn < 32) coldDays++;
+    if (p > 1) wetDays++;
+    if (p < 2) { curDryStreak++; if(curDryStreak>maxDryStreak) maxDryStreak=curDryStreak; }
+    else curDryStreak=0;
+  }
+  return {
+    gdu: Math.round(totalGDU),
+    precip: Math.round(totalPrecip * 10)/10,
+    hotDays: hotDays,
+    coldDays: coldDays,
+    wetDays: wetDays,
+    maxDryStreak: maxDryStreak,
+    days: data.tmax.length
+  };
+}
+
+function renderAnalogResults(top10, curMetrics, curYear) {
+  var el = document.getElementById("analogResults");
+
+  // Yield implication labels based on precip + GDU vs current
+  function yieldImpact(m, cur) {
+    var gduDiff   = m.gdu   - cur.gdu;
+    var precipDiff = m.precip - cur.precip;
+    // Rough heuristic: high GDU + adequate rain = good; low precip + high heat = poor
+    if (precipDiff < -25 && gduDiff > 100) return { label:"BELOW AVG", color:"#f87171" };
+    if (precipDiff > 30  && gduDiff < -50) return { label:"ABOVE AVG", color:"#4ade80" };
+    if (precipDiff < -50) return { label:"DROUGHT YEAR",  color:"#f87171" };
+    if (precipDiff > 50)  return { label:"WET YEAR",      color:"#38bdf8" };
+    if (gduDiff > 200)    return { label:"HOT/DRY STRESS",color:"#ffb300" };
+    return { label:"NEAR NORMAL", color:"#00ffa3" };
+  }
+
+  // Current year summary
+  var curHtml = "<div style='background:#060f1a;border:1px solid #2a5278;padding:12px 14px;margin-bottom:16px;'>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CURRENT YEAR (" + curYear + ") — SEASON TO DATE</div>"
+    + "<div style='display:flex;gap:16px;flex-wrap:wrap;'>"
+    + metricChip("GDU ACCUM", curMetrics.gdu, "#00ffa3")
+    + metricChip("PRECIP (mm)", curMetrics.precip, "#00c8ff")
+    + metricChip("HOT DAYS >95F", curMetrics.hotDays, "#f87171")
+    + metricChip("MAX DRY STREAK", curMetrics.maxDryStreak + "d", "#ffb300")
+    + "</div></div>";
+
+  var rowsHtml = top10.map(function(r, i) {
+    var matchPct = Math.round((1 - Math.min(r.score, 1)) * 100);
+    var yi = yieldImpact(r.metrics, curMetrics);
+    var gduDiff   = r.metrics.gdu   - curMetrics.gdu;
+    var precipDiff = r.metrics.precip - curMetrics.precip;
+    var barW = matchPct;
+
+    return "<div style='background:" + (i===0?"rgba(0,200,255,0.06)":"#060f1a") + ";border:1px solid " + (i===0?"#00c8ff":"#1e3a5f") + ";padding:12px 14px;margin-bottom:8px;'>"
+      + "<div style='display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;'>"
+      + "<div style='font-size:20px;font-weight:900;color:" + (i===0?"#00c8ff":"#7ab8d4") + ";min-width:48px;'>"
+        + (i===0?"#1":"#"+(i+1)) + " &nbsp;" + r.year + "</div>"
+      + "<div style='flex:1;'>"
+      + "<div style='background:#0a0f1a;height:8px;border-radius:3px;overflow:hidden;border:1px solid #2a5278;'>"
+      + "<div style='width:"+barW+"%;height:100%;background:" + (i===0?"#00c8ff":"#2a5278") + ";border-radius:3px;'></div></div>"
+      + "<div style='font-size:8px;color:#3a6a94;margin-top:2px;letter-spacing:1px;'>"+matchPct+"% MATCH</div>"
+      + "</div>"
+      + "<span style='font-size:9px;font-weight:bold;color:"+yi.color+";background:rgba(0,0,0,0.3);padding:3px 8px;border:1px solid "+yi.color+";letter-spacing:1px;'>"+yi.label+"</span>"
+      + "</div>"
+      + "<div style='display:flex;gap:12px;flex-wrap:wrap;font-size:10px;'>"
+      + diffChip("GDU", r.metrics.gdu, gduDiff)
+      + diffChip("PRECIP mm", r.metrics.precip, precipDiff)
+      + diffChip("HOT DAYS", r.metrics.hotDays, r.metrics.hotDays - curMetrics.hotDays)
+      + diffChip("DRY STREAK", r.metrics.maxDryStreak+"d", r.metrics.maxDryStreak - curMetrics.maxDryStreak)
+      + "</div>"
+      + "</div>";
+  }).join("");
+
+  el.innerHTML = curHtml
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:10px;'>TOP 10 ANALOG YEARS — CLOSEST GDU + PRECIP MATCH</div>"
+    + rowsHtml
+    + "<div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:10px;line-height:1.8;'>"
+    + "MATCH SCORE: 60% GDU WEIGHT + 40% PRECIP WEIGHT &middot; DATA: ERA5 REANALYSIS 1950–PRESENT<br>"
+    + "YIELD IMPACT IS ILLUSTRATIVE — BASED ON HEAT/MOISTURE STRESS HEURISTICS, NOT ACTUAL YIELD RECORDS"
+    + "</div>";
+}
+
+function metricChip(label, val, color) {
+  return "<div style='color:#7ab8d4;font-size:10px;'>" + label + ": <span style='color:"+color+";font-weight:bold;font-size:13px;'>" + val + "</span></div>";
+}
+function diffChip(label, val, diff) {
+  var col = Math.abs(diff) < 10 ? "#7ab8d4" : diff > 0 ? "#f87171" : "#4ade80";
+  var sign = diff > 0 ? "+" : "";
+  return "<div style='color:#7ab8d4;'>" + label + ": <span style='color:#e8f4ff;'>" + val + "</span>"
+    + " <span style='color:"+col+";font-size:9px;'>("+sign+diff+")</span></div>";
+}
+
 // ─── SEASONAL RAIN ───────────────────────────────────────────────────────────
 async function fetchSeasonalRain(lat, lon) {
   try {
@@ -1486,7 +1739,7 @@ function setStatus(msg,cls){
 function cv(mm){return unit==="in"?(mm/25.4).toFixed(3):mm.toFixed(2);}
 
 function switchTab(name) {
-  var tabs = ['overview','soil','chart','table','windows'];
+  var tabs = ['overview','soil','chart','table','windows','analog'];
   tabs.forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('tab-visible', t===name);
   });
@@ -1506,6 +1759,11 @@ function renderAll(label){
   renderAgSection();
   renderBars();
   renderTable();
+  // Show analog run button if we have planting date
+  if(plantingDate && currentLat !== null){
+    document.getElementById("analogRunRow").style.display="block";
+    document.getElementById("analogStatus").textContent="READY — CLICK RUN ANALOG ANALYSIS";
+  }
 }
 
 function renderCards(){
