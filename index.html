@@ -669,14 +669,36 @@ var CROPS = {
   },
   wheat: {
     name:"WHEAT", icon:"&#127807;", flood:35, droughtDays:10,
+    winterWheat: true,
     rmOptions:[{l:"Soft Red Winter",g:1200},{l:"Hard Red Winter",g:1300},{l:"Hard Red Spring",g:1100},{l:"Durum",g:1200},{l:"Soft White",g:1100}],
+    // For winter wheat, stages use calendar months relative to fall planting
+    // calStart/calEnd = [month(1-12), day] anchored to planting year
+    // Months >12 = next calendar year (e.g. month 17 = May of harvest year)
     stages:[
-      {name:"GERMINATION",     pct:[0,8],   kc:0.3, need:2,  color:"#4ade80", note:"Fall planting needs 20-30mm. Cool temps ideal.", critical:"Dry fall delays emergence."},
-      {name:"TILLERING",       pct:[8,30],  kc:0.6, need:3,  color:"#00c8ff", note:"Tiller development sets yield potential.", critical:"Drought limits tiller count."},
-      {name:"STEM EXTENSION",  pct:[30,55], kc:0.9, need:5,  color:"#00c8ff", note:"Rapid growth. Increasing water need.", critical:"Frost + wet conditions risks disease."},
-      {name:"HEADING",         pct:[55,70], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Head emergence and pollination.", critical:"Rain during heading causes fusarium blight."},
-      {name:"GRAIN FILL",      pct:[70,90], kc:1.0, need:5,  color:"#fb923c", note:"Kernel weight determined.", critical:"Hot dry winds reduce test weight."},
-      {name:"RIPENING",        pct:[90,100],kc:0.4, need:1,  color:"#5a8aa8", note:"Crop drying. Rain risks quality loss.", critical:"Rain at harvest causes sprouting."}
+      {name:"GERMINATION",    calStart:[0,1],  calEnd:[1,15],  kc:0.3, need:2,  color:"#4ade80",
+        note:"Fall planting Sept–Oct needs 20-30mm. Soil temp below 60F ideal for slow tillering.",
+        critical:"Dry fall delays emergence and reduces fall tiller count — sets yield ceiling."},
+      {name:"FALL TILLERING", calStart:[1,15], calEnd:[2,15],  kc:0.5, need:2,  color:"#4ade80",
+        note:"Tillers develop Oct–Nov before dormancy. Each fall tiller = potential head at harvest.",
+        critical:"Warm wet fall encourages disease. Hard freeze before adequate tillering reduces yield."},
+      {name:"DORMANCY",       calStart:[2,15], calEnd:[5,1],   kc:0.2, need:0,  color:"#5a8aa8",
+        note:"Dec–Feb dormancy. Crown at soil surface survives cold. Snow cover is ideal insulation.",
+        critical:"Ice sheeting, heaving, or temps below 0°F without snow cover causes winterkill."},
+      {name:"GREEN-UP",       calStart:[5,1],  calEnd:[6,1],   kc:0.6, need:3,  color:"#4ade80",
+        note:"March green-up resumes tillering. Nitrogen topdress window. Rapidly increasing demand.",
+        critical:"Late freeze after green-up (below 24°F) kills new growth and reduces head count."},
+      {name:"STEM EXTENSION", calStart:[6,1],  calEnd:[7,15],  kc:0.9, need:5,  color:"#00c8ff",
+        note:"April–May jointing through flag leaf. Rapid growth — most critical disease window.",
+        critical:"Stripe rust and powdery mildew peak risk. Wet conditions favor Septoria."},
+      {name:"HEADING",        calStart:[7,15], calEnd:[8,15],  kc:1.0, need:6,  color:"#ffb300",
+        note:"CRITICAL: May–June heading and pollination. Anthesis takes only 3–5 days.",
+        critical:"Rain at anthesis = fusarium head blight (scab). 1-2 wet days at flowering is enough."},
+      {name:"GRAIN FILL",     calStart:[8,15], calEnd:[9,15],  kc:1.0, need:5,  color:"#fb923c",
+        note:"June kernel weight set. Hot dry winds (>90°F) force early cutoff reducing test weight.",
+        critical:"Each day of stress during grain fill costs 1-2 bu/ac. Late fungicide pays here."},
+      {name:"HARVEST",        calStart:[9,15], calEnd:[11,0],  kc:0.4, need:1,  color:"#5a8aa8",
+        note:"June–July harvest window. Target 13.5% moisture or below for safe storage.",
+        critical:"Rain on ripe wheat causes sprouting in the head and grade loss. Combine quickly."}
     ]
   },
   cotton: {
@@ -1067,34 +1089,66 @@ function renderStagePanel() {
   panel.style.display = "block";
 
   var today = new Date();
+  var isWinterWheat = crop.winterWheat && plantingDate;
+
+  // ── Winter wheat: calendar-anchored stages ─────────────────────────────────
+  // calStart/calEnd offsets are [monthsAfterPlanting, day]
+  // We anchor to planting month+day so Sept 15 planting -> stage months shift accordingly
+  function winterWheatStageDate(plantDate, monthOffset, dayOfMonth) {
+    var d = new Date(plantDate);
+    d.setMonth(d.getMonth() + monthOffset);
+    if (dayOfMonth > 0) d.setDate(dayOfMonth);
+    return d;
+  }
+
+  var currentPct = null;
   var totalDays = maturityDate ? Math.round((maturityDate - plantingDate) / 86400000) : null;
   var daysSincePlanting = (plantingDate && maturityDate) ? Math.round((today - plantingDate) / 86400000) : null;
-  var currentPct = (totalDays && daysSincePlanting !== null) ? Math.min(100, Math.max(0, (daysSincePlanting / totalDays) * 100)) : null;
+  if (!isWinterWheat) {
+    currentPct = (totalDays && daysSincePlanting !== null) ? Math.min(100, Math.max(0, (daysSincePlanting / totalDays) * 100)) : null;
+  }
 
-  // Auto-select current stage if we have planting date
-  if (currentPct !== null) {
+  // Auto-select current stage
+  if (isWinterWheat && plantingDate) {
     for (var si = 0; si < crop.stages.length; si++) {
       var s = crop.stages[si];
-      if (currentPct >= s.pct[0] && currentPct < s.pct[1]) {
-        selectedStage = si;
-        break;
-      }
+      var sStart = winterWheatStageDate(plantingDate, s.calStart[0], s.calStart[1]);
+      var sEnd   = winterWheatStageDate(plantingDate, s.calEnd[0],   s.calEnd[1]);
+      if (today >= sStart && today < sEnd) { selectedStage = si; break; }
+    }
+  } else if (currentPct !== null) {
+    for (var si = 0; si < crop.stages.length; si++) {
+      var s = crop.stages[si];
+      if (currentPct >= s.pct[0] && currentPct < s.pct[1]) { selectedStage = si; break; }
     }
   }
 
   var track = "";
   crop.stages.forEach(function(s, i) {
     var isActive = (i === selectedStage);
-    var isCurrent = (currentPct !== null && currentPct >= s.pct[0] && currentPct < s.pct[1]);
-    var width = (s.pct[1] - s.pct[0]);
+    var isCurrent = false;
     var dateRange = "";
-    if (plantingDate && totalDays) {
-      var stStart = new Date(plantingDate.getTime() + (s.pct[0]/100) * totalDays * 86400000);
-      var stEnd   = new Date(plantingDate.getTime() + (s.pct[1]/100) * totalDays * 86400000);
-      dateRange = stStart.toLocaleDateString("en-US",{month:"short",day:"numeric"})
-        + " – " + stEnd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    var width = 12; // default equal width for winter wheat
+
+    if (isWinterWheat && plantingDate) {
+      var sStart = winterWheatStageDate(plantingDate, s.calStart[0], s.calStart[1]);
+      var sEnd   = winterWheatStageDate(plantingDate, s.calEnd[0],   s.calEnd[1]);
+      isCurrent  = (today >= sStart && today < sEnd);
+      dateRange  = sStart.toLocaleDateString("en-US",{month:"short",day:"numeric"})
+        + " – " + sEnd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      // Width proportional to stage duration in days
+      width = Math.round((sEnd - sStart) / 86400000);
     } else {
-      dateRange = "Day " + (Math.round(s.pct[0]/100*120)) + "–" + (Math.round(s.pct[1]/100*120));
+      isCurrent  = (currentPct !== null && currentPct >= s.pct[0] && currentPct < s.pct[1]);
+      width      = (s.pct[1] - s.pct[0]);
+      if (plantingDate && totalDays) {
+        var stStart = new Date(plantingDate.getTime() + (s.pct[0]/100) * totalDays * 86400000);
+        var stEnd   = new Date(plantingDate.getTime() + (s.pct[1]/100) * totalDays * 86400000);
+        dateRange = stStart.toLocaleDateString("en-US",{month:"short",day:"numeric"})
+          + " – " + stEnd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      } else {
+        dateRange = "Day " + (Math.round(s.pct[0]/100*120)) + "–" + (Math.round(s.pct[1]/100*120));
+      }
     }
 
     track += "<div class='stage-seg" + (isActive ? " active-stage" : "") + (isCurrent ? " current-stage" : "") + "'"
@@ -1943,11 +1997,23 @@ function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
     return p > 100 ? "SATURATED" : p > 60 ? "ADEQUATE" : p > 30 ? "LOW" : "VERY DRY";
   }
 
+  // Top 3 (surface + topsoil + root zone) combined into one weighted card
+  var topVals = [surface, shallow, mid].filter(function(v){ return v !== null && v !== undefined; });
+  var topWeights = [1, 2, 6]; // weight by depth thickness
+  var weightedSum = 0, weightTotal = 0;
+  [surface, shallow, mid].forEach(function(v, i) {
+    if (v !== null && v !== undefined) { weightedSum += v * topWeights[i]; weightTotal += topWeights[i]; }
+  });
+  var combinedTop = weightTotal > 0 ? weightedSum / weightTotal : null;
+  var combinedPct = vwcToPct(combinedTop);
+  var combinedCol = pctColor(combinedPct);
+  var combinedLbl = pctLabel(combinedPct);
+
   var layers = [
-    { name:"SURFACE",   depth:"0–0.4 in",  val:surface },
-    { name:"TOPSOIL",   depth:"0.4–1.2 in",val:shallow },
-    { name:"ROOT ZONE", depth:"1.2–3.5 in",val:mid     },
-    { name:"SUBSOIL",   depth:"3.5–10.6 in",val:deep  }
+    { name:"ROOT ZONE", depth:"0–3.5 in",    val:combinedTop, combined:true,
+      sub:"Surface + Topsoil + Root Zone (weighted)" },
+    { name:"SUBSOIL",   depth:"3.5–10.6 in", val:deep,        combined:false,
+      sub:"Deep reserve layer" }
   ];
 
   // Summary zone cards
@@ -1956,11 +2022,31 @@ function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
     var p = vwcToPct(l.val);
     var col = pctColor(p);
     var lbl = pctLabel(p);
-    zoneHtml += "<div class='soil-zone-card' style='border-top:2px solid "+col+"'>"
-      + "<div class='soil-zone-label'>"+l.name+"<br>"+l.depth+"</div>"
-      + "<div class='soil-zone-val' style='color:"+col+"'>"+(p !== null ? p+"%" : "N/A")+"</div>"
-      + "<div class='soil-zone-sub' style='color:"+col+"'>"+lbl+"</div>"
-      + "<div class='soil-zone-sub'>VWC: "+(l.val !== null ? (l.val*100).toFixed(1)+"%" : "N/A")+"</div>"
+    // For combined card also show individual layer values
+    var individualHtml = "";
+    if (l.combined) {
+      var indLayers = [
+        { n:"Surface",  d:"0–0.4 in",   v:surface },
+        { n:"Topsoil",  d:"0.4–1.2 in", v:shallow },
+        { n:"Root",     d:"1.2–3.5 in", v:mid }
+      ];
+      individualHtml = "<div style='margin-top:6px;border-top:1px solid #1e3a5f;padding-top:5px;'>";
+      indLayers.forEach(function(il) {
+        var ip = vwcToPct(il.v);
+        var ic = pctColor(ip);
+        individualHtml += "<div style='display:flex;justify-content:space-between;font-size:9px;margin-bottom:2px;'>"
+          + "<span style='color:#7ab8d4;'>"+il.n+" "+il.d+"</span>"
+          + "<span style='color:"+ic+";font-weight:bold;'>"+(ip !== null ? ip+"%" : "N/A")+"</span>"
+          + "</div>";
+      });
+      individualHtml += "</div>";
+    }
+    zoneHtml += "<div class='soil-zone-card' style='border-top:2px solid "+col+";"+(l.combined?"grid-column:1/-1;":"")+'">'
+      + "<div class='soil-zone-label' style='font-size:"+(l.combined?"10":"9")+"px;font-weight:bold;'>"+l.name+" <span style='font-size:9px;font-weight:normal;color:#7ab8d4;'>"+l.depth+"</span></div>"
+      + "<div class='soil-zone-val' style='color:"+col+";font-size:"+(l.combined?"32":"28")+"px;'>"+(p !== null ? p+"%" : "N/A")+"</div>"
+      + "<div class='soil-zone-sub' style='color:"+col+";'>"+lbl+"</div>"
+      + "<div class='soil-zone-sub' style='color:#3a6a94;'>"+l.sub+"</div>"
+      + individualHtml
       + "</div>";
   });
   document.getElementById("soilZones").innerHTML = zoneHtml;
