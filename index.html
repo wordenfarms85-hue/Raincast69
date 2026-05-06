@@ -442,10 +442,30 @@ td:first-child { text-align: left; color: #7ab8d4; }
       SET PLANTING DATE &amp; FETCH A LOCATION TO RUN ANALOG ANALYSIS
     </div>
     <div id="analogRunRow" style="display:none;margin-bottom:16px;">
-      <button onclick="runAnalogAnalysis()" class="primary" style="padding:10px 20px;font-size:12px;letter-spacing:2px;">
-        &#128202; RUN ANALOG ANALYSIS
-      </button>
-      <span style="font-size:9px;color:#3a6a94;margin-left:10px;letter-spacing:1px;">FETCHES ~75 YEARS OF HISTORICAL DATA</span>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:8px;color:#7ab8d4;letter-spacing:2px;">GDU TOLERANCE</div>
+          <select id="gduTolerance" style="background:#111827;border:1px solid #2a5278;color:#e8f4ff;padding:7px 10px;font-family:monospace;font-size:12px;cursor:pointer;">
+            <option value="50">± 50 GDU</option>
+            <option value="100">± 100 GDU</option>
+            <option value="150">± 150 GDU</option>
+            <option value="999">Any GDU</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:8px;color:#7ab8d4;letter-spacing:2px;">PRECIP TOLERANCE</div>
+          <select id="precipTolerance" style="background:#111827;border:1px solid #2a5278;color:#e8f4ff;padding:7px 10px;font-family:monospace;font-size:12px;cursor:pointer;">
+            <option value="50.8">± 2 inches</option>
+            <option value="25.4">± 1 inch</option>
+            <option value="76.2">± 3 inches</option>
+            <option value="9999">Any precip</option>
+          </select>
+        </div>
+        <button onclick="runAnalogAnalysis()" class="primary" style="padding:10px 20px;font-size:12px;letter-spacing:2px;">
+          &#128202; RUN ANALOG ANALYSIS
+        </button>
+      </div>
+      <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;">FETCHES ~75 YEARS OF ERA5 DATA &nbsp;&middot;&nbsp; FILTER: ±GDU &amp; PRECIP WINDOW APPLIED AFTER SCORING</div>
     </div>
     <div id="analogResults"></div>
   </div>
@@ -1205,11 +1225,23 @@ async function runAnalogAnalysis() {
     });
 
     scored.sort(function(a,b){return a.score - b.score;});
-    var top10 = scored.slice(0, 10);
+
+    // Apply tolerance filters
+    var gduTol    = parseFloat(document.getElementById("gduTolerance").value)    || 50;
+    var precipTol = parseFloat(document.getElementById("precipTolerance").value) || 50.8;
+
+    var filtered = scored.filter(function(r) {
+      return Math.abs(r.metrics.gdu - curMetrics.gdu) <= gduTol
+          && Math.abs(r.metrics.precip - curMetrics.precip) <= precipTol;
+    });
+
+    var top10 = filtered.slice(0, 10);
+    var totalMatched = filtered.length;
 
     document.getElementById("analogStatus").textContent =
-      "ANALYSIS COMPLETE — " + yearResults.length + " YEARS COMPARED";
-    renderAnalogResults(top10, curMetrics, cropYear);
+      "ANALYSIS COMPLETE — " + yearResults.length + " YEARS COMPARED · "
+      + totalMatched + " WITHIN TOLERANCE WINDOW";
+    renderAnalogResults(top10, curMetrics, cropYear, gduTol, precipTol, totalMatched);
 
   } catch(e) {
     document.getElementById("analogStatus").textContent = "ERROR: " + e.message;
@@ -1248,7 +1280,8 @@ function sliceData(data, startDate, endDate) {
 
 function calcMetrics(data, pDate) {
   var totalGDU = 0, totalPrecip = 0;
-  var hotDays=0, coldDays=0, wetDays=0, dryStreak=0, maxDryStreak=0, curDryStreak=0;
+  var hotDays=0, coldDays=0, wetDays=0, maxDryStreak=0, curDryStreak=0;
+  var sumAvgTemp=0, tempCount=0;
 
   for (var i=0; i<data.tmax.length; i++) {
     var tx = data.tmax[i], tn = data.tmin[i], p = data.precip[i]||0;
@@ -1259,6 +1292,9 @@ function calcMetrics(data, pDate) {
     var gdu = ((capMax + capMin)/2) - 50;
     if (gdu > 0) totalGDU += gdu;
     totalPrecip += p;
+    // Average daily mean temp (uncapped, for display)
+    sumAvgTemp += (tx + tn) / 2;
+    tempCount++;
     if (tx > 95) hotDays++;
     if (tn < 32) coldDays++;
     if (p > 1) wetDays++;
@@ -1266,17 +1302,19 @@ function calcMetrics(data, pDate) {
     else curDryStreak=0;
   }
   return {
-    gdu: Math.round(totalGDU),
-    precip: Math.round(totalPrecip * 10)/10,
-    hotDays: hotDays,
-    coldDays: coldDays,
-    wetDays: wetDays,
+    gdu:          Math.round(totalGDU),
+    precip:       Math.round(totalPrecip * 10)/10,          // mm
+    precipIn:     Math.round((totalPrecip/25.4)*100)/100,   // inches
+    avgTemp:      tempCount ? Math.round((sumAvgTemp/tempCount)*10)/10 : null, // F
+    hotDays:      hotDays,
+    coldDays:     coldDays,
+    wetDays:      wetDays,
     maxDryStreak: maxDryStreak,
-    days: data.tmax.length
+    days:         data.tmax.length
   };
 }
 
-function renderAnalogResults(top10, curMetrics, curYear) {
+function renderAnalogResults(top10, curMetrics, curYear, gduTol, precipTol, totalMatched) {
   var el = document.getElementById("analogResults");
 
   // Yield implication labels based on precip + GDU vs current
@@ -1293,59 +1331,81 @@ function renderAnalogResults(top10, curMetrics, curYear) {
   }
 
   // Current year summary
-  var curHtml = "<div style='background:#060f1a;border:1px solid #2a5278;padding:12px 14px;margin-bottom:16px;'>"
-    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CURRENT YEAR (" + curYear + ") — SEASON TO DATE</div>"
-    + "<div style='display:flex;gap:16px;flex-wrap:wrap;'>"
-    + metricChip("GDU ACCUM", curMetrics.gdu, "#00ffa3")
-    + metricChip("PRECIP (mm)", curMetrics.precip, "#00c8ff")
-    + metricChip("HOT DAYS >95F", curMetrics.hotDays, "#f87171")
-    + metricChip("MAX DRY STREAK", curMetrics.maxDryStreak + "d", "#ffb300")
+  var gduTolLbl    = gduTol < 999 ? "±"+gduTol+" GDU" : "Any GDU";
+  var precipTolLbl = precipTol < 9999 ? "±"+(precipTol/25.4).toFixed(0)+"\"" : "Any precip";
+  var curHtml = "<div style='background:#060f1a;border:1px solid #00ffa3;padding:12px 14px;margin-bottom:16px;'>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CURRENT YEAR (" + curYear + ") — SEASON TO DATE &nbsp;·&nbsp; FILTER: "+gduTolLbl+" &amp; "+precipTolLbl+" &nbsp;·&nbsp; "+totalMatched+" YEARS MATCHED</div>"
+    + "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;'>"
+    + metricCard("GDU ACCUM", curMetrics.gdu, "GDU", "#00ffa3")
+    + metricCard("PRECIP", curMetrics.precipIn.toFixed(2)+'"', "inches", "#00c8ff")
+    + metricCard("AVG TEMP", curMetrics.avgTemp !== null ? curMetrics.avgTemp+"°F" : "N/A", "season mean", "#fb923c")
+    + metricCard("HOT DAYS", curMetrics.hotDays, ">95°F days", "#f87171")
+    + metricCard("MAX DRY STREAK", curMetrics.maxDryStreak+"d", "consecutive <2mm days", "#ffb300")
     + "</div></div>";
 
-  var rowsHtml = top10.map(function(r, i) {
-    var matchPct = Math.round((1 - Math.min(r.score, 1)) * 100);
-    var yi = yieldImpact(r.metrics, curMetrics);
-    var gduDiff   = r.metrics.gdu   - curMetrics.gdu;
-    var precipDiff = r.metrics.precip - curMetrics.precip;
-    var barW = matchPct;
+  var noResultsHtml = top10.length === 0
+    ? "<div style='padding:20px;text-align:center;color:#7ab8d4;font-size:11px;letter-spacing:1px;border:1px solid #2a5278;'>"
+      + "NO YEARS FOUND WITHIN TOLERANCE WINDOW<br>"
+      + "<span style='color:#3a6a94;font-size:9px;'>TRY WIDENING GDU OR PRECIP TOLERANCE</span></div>"
+    : "";
 
-    return "<div style='background:" + (i===0?"rgba(0,200,255,0.06)":"#060f1a") + ";border:1px solid " + (i===0?"#00c8ff":"#1e3a5f") + ";padding:12px 14px;margin-bottom:8px;'>"
-      + "<div style='display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;'>"
-      + "<div style='font-size:20px;font-weight:900;color:" + (i===0?"#00c8ff":"#7ab8d4") + ";min-width:48px;'>"
-        + (i===0?"#1":"#"+(i+1)) + " &nbsp;" + r.year + "</div>"
-      + "<div style='flex:1;'>"
-      + "<div style='background:#0a0f1a;height:8px;border-radius:3px;overflow:hidden;border:1px solid #2a5278;'>"
-      + "<div style='width:"+barW+"%;height:100%;background:" + (i===0?"#00c8ff":"#2a5278") + ";border-radius:3px;'></div></div>"
-      + "<div style='font-size:8px;color:#3a6a94;margin-top:2px;letter-spacing:1px;'>"+matchPct+"% MATCH</div>"
+  var rowsHtml = top10.map(function(r, i) {
+    var matchPct  = Math.round((1 - Math.min(r.score, 1)) * 100);
+    var yi        = yieldImpact(r.metrics, curMetrics);
+    var gduDiff   = r.metrics.gdu - curMetrics.gdu;
+    var precipInDiff = Math.round((r.metrics.precipIn - curMetrics.precipIn)*100)/100;
+    var tempDiff  = curMetrics.avgTemp !== null && r.metrics.avgTemp !== null
+                    ? Math.round((r.metrics.avgTemp - curMetrics.avgTemp)*10)/10 : null;
+    var borderCol = i===0 ? "#00c8ff" : i<3 ? "#2a5278" : "#1e3a5f";
+    var bgCol     = i===0 ? "rgba(0,200,255,0.06)" : "#060f1a";
+
+    return "<div style='background:"+bgCol+";border:1px solid "+borderCol+";padding:12px 14px;margin-bottom:8px;'>"
+      // Header row: rank + year + match bar + yield badge
+      + "<div style='display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;'>"
+      + "<div style='font-size:22px;font-weight:900;color:"+(i===0?"#00c8ff":i<3?"#7ab8d4":"#4a7090")+";min-width:52px;'>#"+(i+1)+" <span style='font-size:16px;'>"+r.year+"</span></div>"
+      + "<div style='flex:1;min-width:80px;'>"
+      +   "<div style='background:#0a0f1a;height:10px;border-radius:3px;overflow:hidden;border:1px solid #2a5278;'>"
+      +   "<div style='width:"+matchPct+"%;height:100%;background:"+(i===0?"#00c8ff":i<3?"#2a5278":"#1e3a5f")+";border-radius:3px;'></div></div>"
+      +   "<div style='font-size:8px;color:#3a6a94;margin-top:2px;letter-spacing:1px;'>"+matchPct+"% MATCH</div>"
       + "</div>"
-      + "<span style='font-size:9px;font-weight:bold;color:"+yi.color+";background:rgba(0,0,0,0.3);padding:3px 8px;border:1px solid "+yi.color+";letter-spacing:1px;'>"+yi.label+"</span>"
+      + "<span style='font-size:9px;font-weight:bold;color:"+yi.color+";padding:3px 8px;border:1px solid "+yi.color+";letter-spacing:1px;'>"+yi.label+"</span>"
       + "</div>"
-      + "<div style='display:flex;gap:12px;flex-wrap:wrap;font-size:10px;'>"
-      + diffChip("GDU", r.metrics.gdu, gduDiff)
-      + diffChip("PRECIP mm", r.metrics.precip, precipDiff)
-      + diffChip("HOT DAYS", r.metrics.hotDays, r.metrics.hotDays - curMetrics.hotDays)
-      + diffChip("DRY STREAK", r.metrics.maxDryStreak+"d", r.metrics.maxDryStreak - curMetrics.maxDryStreak)
+      // Metrics grid
+      + "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;'>"
+      + diffCard("GDU", r.metrics.gdu, gduDiff, "GDU", "#00ffa3")
+      + diffCard("PRECIP", r.metrics.precipIn.toFixed(2)+'"', precipInDiff > 0 ? "+"+precipInDiff+'"' : precipInDiff+'"', "inches", "#00c8ff")
+      + (r.metrics.avgTemp !== null ? diffCard("AVG TEMP", r.metrics.avgTemp+"°F", tempDiff !== null ? (tempDiff>0?"+":"")+tempDiff+"°F" : "–", "season mean", "#fb923c") : "")
+      + diffCard("HOT DAYS", r.metrics.hotDays, (r.metrics.hotDays-curMetrics.hotDays>0?"+":"")+(r.metrics.hotDays-curMetrics.hotDays), ">95°F", "#f87171")
+      + diffCard("DRY STREAK", r.metrics.maxDryStreak+"d", (r.metrics.maxDryStreak-curMetrics.maxDryStreak>0?"+":"")+(r.metrics.maxDryStreak-curMetrics.maxDryStreak)+"d", "max consec dry", "#ffb300")
       + "</div>"
       + "</div>";
   }).join("");
 
   el.innerHTML = curHtml
-    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:10px;'>TOP 10 ANALOG YEARS — CLOSEST GDU + PRECIP MATCH</div>"
-    + rowsHtml
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:10px;'>TOP 10 ANALOG YEARS — WITHIN TOLERANCE WINDOW</div>"
+    + (noResultsHtml || rowsHtml)
     + "<div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:10px;line-height:1.8;'>"
-    + "MATCH SCORE: 60% GDU WEIGHT + 40% PRECIP WEIGHT &middot; DATA: ERA5 REANALYSIS 1950–PRESENT<br>"
-    + "YIELD IMPACT IS ILLUSTRATIVE — BASED ON HEAT/MOISTURE STRESS HEURISTICS, NOT ACTUAL YIELD RECORDS"
+    + "SCORE: 60% GDU + 40% PRECIP &middot; TEMP SHOWN FOR REFERENCE ONLY &middot; DATA: ERA5 1950–PRESENT<br>"
+    + "YIELD IMPACT = HEAT/MOISTURE HEURISTIC — NOT ACTUAL YIELD RECORDS"
     + "</div>";
 }
 
-function metricChip(label, val, color) {
-  return "<div style='color:#7ab8d4;font-size:10px;'>" + label + ": <span style='color:"+color+";font-weight:bold;font-size:13px;'>" + val + "</span></div>";
+function metricCard(label, val, sub, color) {
+  return "<div style='background:#0a0f1a;border:1px solid #2a5278;padding:8px 10px;border-top:2px solid "+color+";'>"
+    + "<div style='font-size:8px;color:#7ab8d4;letter-spacing:1px;margin-bottom:3px;'>"+label+"</div>"
+    + "<div style='font-size:18px;font-weight:900;color:"+color+";line-height:1;'>"+val+"</div>"
+    + "<div style='font-size:8px;color:#3a6a94;margin-top:2px;'>"+sub+"</div>"
+    + "</div>";
 }
-function diffChip(label, val, diff) {
-  var col = Math.abs(diff) < 10 ? "#7ab8d4" : diff > 0 ? "#f87171" : "#4ade80";
-  var sign = diff > 0 ? "+" : "";
-  return "<div style='color:#7ab8d4;'>" + label + ": <span style='color:#e8f4ff;'>" + val + "</span>"
-    + " <span style='color:"+col+";font-size:9px;'>("+sign+diff+")</span></div>";
+function diffCard(label, val, diff, sub, color) {
+  var diffNum = parseFloat(diff);
+  var col = isNaN(diffNum) || Math.abs(diffNum) < 5 ? "#7ab8d4" : diffNum > 0 ? "#f87171" : "#4ade80";
+  return "<div style='background:#0a0f1a;border:1px solid #1e3a5f;padding:7px 9px;'>"
+    + "<div style='font-size:8px;color:#7ab8d4;letter-spacing:1px;margin-bottom:2px;'>"+label+"</div>"
+    + "<div style='font-size:16px;font-weight:900;color:"+color+";line-height:1;'>"+val+"</div>"
+    + "<div style='font-size:9px;color:"+col+";margin-top:2px;font-weight:bold;'>"+diff+"</div>"
+    + "<div style='font-size:7px;color:#3a6a94;'>"+sub+"</div>"
+    + "</div>";
 }
 
 // ─── SEASONAL RAIN ───────────────────────────────────────────────────────────
