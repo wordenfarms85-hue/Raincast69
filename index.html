@@ -446,18 +446,22 @@ td:first-child { text-align: left; color: #7ab8d4; }
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="font-size:8px;color:#7ab8d4;letter-spacing:2px;">GDU TOLERANCE</div>
           <select id="gduTolerance" style="background:#111827;border:1px solid #2a5278;color:#e8f4ff;padding:7px 10px;font-family:monospace;font-size:12px;cursor:pointer;">
+            <option value="auto" selected>AUTO (25% of accum)</option>
             <option value="50">± 50 GDU</option>
             <option value="100">± 100 GDU</option>
             <option value="150">± 150 GDU</option>
+            <option value="200">± 200 GDU</option>
             <option value="999">Any GDU</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="font-size:8px;color:#7ab8d4;letter-spacing:2px;">PRECIP TOLERANCE</div>
           <select id="precipTolerance" style="background:#111827;border:1px solid #2a5278;color:#e8f4ff;padding:7px 10px;font-family:monospace;font-size:12px;cursor:pointer;">
-            <option value="50.8">± 2 inches</option>
+            <option value="auto" selected>AUTO (30% of accum)</option>
             <option value="25.4">± 1 inch</option>
+            <option value="50.8">± 2 inches</option>
             <option value="76.2">± 3 inches</option>
+            <option value="127">± 5 inches</option>
             <option value="9999">Any precip</option>
           </select>
         </div>
@@ -465,7 +469,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
           &#128202; RUN ANALOG ANALYSIS
         </button>
       </div>
-      <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;">FETCHES ~75 YEARS OF ERA5 DATA &nbsp;&middot;&nbsp; FILTER: ±GDU &amp; PRECIP WINDOW APPLIED AFTER SCORING</div>
+      <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;">FETCHES ~75 YEARS OF ERA5 DATA &nbsp;&middot;&nbsp; AUTO MODE SCALES TOLERANCE WITH SEASON PROGRESS</div>
     </div>
     <div id="analogResults"></div>
   </div>
@@ -1223,9 +1227,19 @@ async function runAnalogAnalysis() {
 
     scored.sort(function(a,b){return a.score - b.score;});
 
-    // Apply tolerance filters
-    var gduTol    = parseFloat(document.getElementById("gduTolerance").value)    || 50;
-    var precipTol = parseFloat(document.getElementById("precipTolerance").value) || 50.8;
+    // Apply tolerance filters — auto-scale based on current accumulation
+    var gduTolVal    = document.getElementById("gduTolerance").value;
+    var precipTolVal = document.getElementById("precipTolerance").value;
+
+    // Auto GDU: 25% of accumulated GDU, minimum 75, maximum 300
+    var gduTol = gduTolVal === "auto"
+      ? Math.min(300, Math.max(75, Math.round(curMetrics.gdu * 0.25)))
+      : parseFloat(gduTolVal) || 100;
+
+    // Auto precip: 30% of accumulated precip, minimum 12.7mm (0.5in), maximum 127mm (5in)
+    var precipTol = precipTolVal === "auto"
+      ? Math.min(127, Math.max(12.7, Math.round(curMetrics.precip * 0.30)))
+      : parseFloat(precipTolVal) || 50.8;
 
     var filtered = scored.filter(function(r) {
       return Math.abs(r.metrics.gdu - curMetrics.gdu) <= gduTol
@@ -1329,7 +1343,11 @@ function renderAnalogResults(top10, curMetrics, curYear, gduTol, precipTol, tota
 
   // Current year summary
   var gduTolLbl    = gduTol < 999 ? "±"+gduTol+" GDU" : "Any GDU";
-  var precipTolLbl = precipTol < 9999 ? "±"+(precipTol/25.4).toFixed(0)+"\"" : "Any precip";
+  var precipTolLbl = precipTol < 9999 ? "±"+(precipTol/25.4).toFixed(1)+"\"" : "Any precip";
+  var gduSelVal = document.getElementById("gduTolerance") ? document.getElementById("gduTolerance").value : "";
+  var prSelVal  = document.getElementById("precipTolerance") ? document.getElementById("precipTolerance").value : "";
+  if (gduSelVal === "auto") gduTolLbl = "AUTO " + gduTolLbl;
+  if (prSelVal  === "auto") precipTolLbl = "AUTO " + precipTolLbl;
   var curHtml = "<div style='background:#060f1a;border:1px solid #00ffa3;padding:12px 14px;margin-bottom:16px;'>"
     + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CURRENT YEAR (" + curYear + ") — SEASON TO DATE &nbsp;·&nbsp; FILTER: "+gduTolLbl+" &amp; "+precipTolLbl+" &nbsp;·&nbsp; "+totalMatched+" YEARS MATCHED</div>"
     + "<div style='display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;'>"
