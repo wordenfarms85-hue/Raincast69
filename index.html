@@ -99,7 +99,9 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .soil-zone-sub { font-size:9px; color:#7ab8d4; margin-top:3px; }
 .soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
 .soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
+
 /* Map */
+
 /* Map */
 #mapSection { margin-bottom: 20px; }
 #mapSection .section-title { margin-bottom: 8px; }
@@ -168,7 +170,9 @@ td:first-child { text-align: left; color: #7ab8d4; }
 .soil-zone-sub { font-size:9px; color:#7ab8d4; margin-top:3px; }
 .soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
 .soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
+
 /* Map */
+
 /* Map */
 #mapSection { margin-bottom: 20px; }
 #map { width:100%; height:340px; border:1px solid #2a5278; background:#0d1520; cursor:crosshair; }
@@ -361,7 +365,16 @@ td:first-child { text-align: left; color: #7ab8d4; }
   <!-- OVERVIEW TAB -->
 
   <div id="tab-overview" class="tab-pane tab-visible" style="padding:16px;">
-    <div id="agCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:0;"></div>
+    <div id="agCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:16px;"></div>
+
+```
+<!-- Seasonal rain panel -->
+<div id="seasonalRainPanel" style="display:none;">
+  <div class="section-title" style="margin-bottom:10px;">SEASONAL PRECIPITATION — HISTORICAL</div>
+  <div id="seasonalRainContent"></div>
+</div>
+```
+
   </div>
 
   <!-- SOIL TAB -->
@@ -572,6 +585,7 @@ async function deleteFieldFromDB(id) {
   await supa.from('fields').delete().eq('id', id);
 }
 
+
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 var MODELS = [
   { key:"gfs",   name:"GFS",     api:"gfs_seamless",  color:"#38bdf8" },
@@ -688,6 +702,8 @@ var allRows = [], allTotals = null, etRows = [], soilRows = {};
 var selectedCrop = "corn", selectedStage = 0;
 var currentLat = null, currentLon = null;
 var plantingDate = null, maturityDate = null, maturityEarlyDate = null, maturityLateDate = null;
+var gddAccumulated = null, gddTarget = null, gddBase = 50; // base 50F
+var seasonalRain = null; // { ytd, sinceJan1, sincePlanting, last30, last7, last14 }
 var fields = [];
 var activeField = null;
 
@@ -754,6 +770,7 @@ function loadField(i) {
     document.getElementById("maturitySelect").value = f.maturitySelect;
   }
   onPlantingChange();
+
   if (f.lat && f.lon) {
     document.getElementById("cityInput").value = f.name;
     fetchForecast(f.lat, f.lon, f.name);
@@ -854,7 +871,14 @@ function onPlantingChange() {
     + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>"
     + "</div>";
 
+  gddTarget = rm.g;
+
   renderStagePanel();
+
+  // Fetch accumulated GDD from planting date if we have a location
+  if (currentLat !== null && currentLon !== null) {
+    fetchAccumulatedGDD(pDate, currentLat, currentLon, rm.g, resultDiv);
+  }
 
   // Update field if active
   if (activeField !== null && fields[activeField]) {
@@ -862,6 +886,97 @@ function onPlantingChange() {
     fields[activeField].maturitySelect = rmIdx;
     saveFieldToDB(fields[activeField]);
   }
+}
+
+async function fetchAccumulatedGDD(pDate, lat, lon, targetGDD, resultDiv) {
+  try {
+    var today = new Date();
+    // Cap start at planting date, end at today
+    var startStr = pDate.toISOString().split("T")[0];
+    var endStr = today.toISOString().split("T")[0];
+
+    // Don't fetch if planting is in the future
+    if (pDate > today) {
+      gddAccumulated = 0;
+      updateGDDDisplay(resultDiv, 0, targetGDD, pDate, true);
+      return;
+    }
+
+    // Fetch daily max/min temps from Open-Meteo historical
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
+      + "&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit"
+      + "&start_date=" + startStr + "&end_date=" + endStr + "&timezone=auto";
+
+    var r = await fetch(url);
+    var d = await r.json();
+
+    if (!d.daily || !d.daily.temperature_2m_max) {
+      // Try historical API for older dates
+      url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + lat + "&longitude=" + lon
+        + "&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit"
+        + "&start_date=" + startStr + "&end_date=" + endStr + "&timezone=auto";
+      r = await fetch(url);
+      d = await r.json();
+    }
+
+    if (!d.daily || !d.daily.temperature_2m_max) { return; }
+
+    // Calculate GDD: ((Tmax+Tmin)/2) - base, min 0
+    var totalGDD = 0;
+    var tmax = d.daily.temperature_2m_max;
+    var tmin = d.daily.temperature_2m_min;
+    for (var i = 0; i < tmax.length; i++) {
+      if (tmax[i] === null || tmin[i] === null) continue;
+      // Cap Tmax at 86F and Tmin at 50F for corn GDD
+      var capMax = Math.min(tmax[i], 86);
+      var capMin = Math.max(tmin[i], gddBase);
+      var daily = ((capMax + capMin) / 2) - gddBase;
+      if (daily > 0) totalGDD += daily;
+    }
+    gddAccumulated = Math.round(totalGDD);
+    updateGDDDisplay(resultDiv, gddAccumulated, targetGDD, pDate, false);
+  } catch(e) {
+    console.log("GDD fetch error:", e);
+  }
+}
+
+function updateGDDDisplay(resultDiv, accumulated, target, pDate, isFuture) {
+  var pct = Math.min(100, Math.round((accumulated / target) * 100));
+  var remaining = Math.max(0, target - accumulated);
+  var barColor = pct >= 100 ? "#00ffa3" : pct > 60 ? "#00c8ff" : pct > 30 ? "#ffb300" : "#7ab8d4";
+  var status = pct >= 100 ? "MATURITY REACHED" : pct > 75 ? "NEAR MATURITY" : pct > 50 ? "MID SEASON" : pct > 25 ? "EARLY SEASON" : "EARLY GROWTH";
+  var statusColor = pct >= 100 ? "#00ffa3" : pct > 75 ? "#ffb300" : "#7ab8d4";
+
+  // Find or create GDD block inside resultDiv
+  var gddBlock = resultDiv.querySelector("#gddBlock");
+  var gddHtml = "<div id='gddBlock' style='margin-top:12px;background:#060f1a;border:1px solid #2a5278;padding:12px 14px;'>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:10px;'>GDD ACCUMULATION FROM PLANTING</div>"
+    + (isFuture ? "<div style='color:#7ab8d4;font-size:11px;'>Planting date is in the future — GDD will accumulate once planted.</div>" :
+      "<div style='display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;'>"
+      + "<div style='color:#7ab8d4;font-size:11px;'>Accumulated: <span style='color:#e8f4ff;font-size:18px;font-weight:900;'>" + accumulated + "</span> <span style='color:#7ab8d4;'>GDD</span></div>"
+      + "<div style='color:#7ab8d4;font-size:11px;'>Target: <span style='color:#e8f4ff;font-size:18px;font-weight:900;'>" + target + "</span> <span style='color:#7ab8d4;'>GDD</span></div>"
+      + "<div style='color:#7ab8d4;font-size:11px;'>Remaining: <span style='color:#ffb300;font-size:18px;font-weight:900;'>" + remaining + "</span> <span style='color:#7ab8d4;'>GDD</span></div>"
+      + "</div>"
+      + "<div style='background:#0a0f1a;height:16px;border-radius:3px;overflow:hidden;border:1px solid #2a5278;margin-bottom:6px;'>"
+      + "<div style='width:" + pct + "%;height:100%;background:" + barColor + ";border-radius:3px;transition:width 0.6s;position:relative;'>"
+      + (pct > 10 ? "<span style='position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:bold;color:#000;letter-spacing:1px;'>" + pct + "%</span>" : "")
+      + "</div></div>"
+      + "<div style='display:flex;justify-content:space-between;font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:8px;'>"
+      + "<span>PLANTED</span><span>50%</span><span>MATURITY</span></div>"
+      + "<div style='display:flex;align-items:center;gap:8px;'>"
+      + "<span style='font-size:9px;font-weight:bold;color:" + statusColor + ";letter-spacing:2px;background:rgba(0,0,0,0.3);padding:3px 8px;border:1px solid " + statusColor + ";'>" + status + "</span>"
+      + "<span style='font-size:9px;color:#7ab8d4;'>" + pct + "% of GDD target reached</span>"
+      + "</div>")
+    + "</div>";
+
+  if (gddBlock) {
+    gddBlock.outerHTML = gddHtml;
+  } else {
+    resultDiv.innerHTML += gddHtml;
+  }
+
+  // Also update stage panel since GDD progress affects current stage
+  renderStagePanel();
 }
 
 // ─── STAGE PANEL ─────────────────────────────────────────────────────────────
@@ -942,6 +1057,137 @@ function selectStage(idx) {
   selectedStage = idx;
   renderStagePanel();
   if (allRows.length) renderAgSection();
+}
+
+// ─── SEASONAL RAIN ───────────────────────────────────────────────────────────
+async function fetchSeasonalRain(lat, lon) {
+  try {
+    var today = new Date();
+    var jan1 = new Date(today.getFullYear(), 0, 1);
+    var ago30 = new Date(today.getTime() - 30 * 86400000);
+    var ago7  = new Date(today.getTime() - 7  * 86400000);
+    var ago14 = new Date(today.getTime() - 14 * 86400000);
+
+    var fmt = function(d) { return d.toISOString().split("T")[0]; };
+
+    // Fetch YTD precip from Jan 1 (archive API for historical)
+    var archiveUrl = "https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
+      +"&daily=precipitation_sum&start_date="+fmt(jan1)+"&end_date="+fmt(today)+"&timezone=auto";
+
+    var r = await fetch(archiveUrl);
+    var d = await r.json();
+
+    if (!d.daily || !d.daily.precipitation_sum) return;
+
+    var dates = d.daily.time;
+    var precips = d.daily.precipitation_sum;
+
+    var sumAll = 0, sum30 = 0, sum14 = 0, sum7 = 0, sumSincePlanting = 0;
+    for (var i = 0; i < dates.length; i++) {
+      var dt = new Date(dates[i] + "T12:00:00");
+      var p = precips[i] || 0;
+      sumAll += p;
+      if (dt >= ago30) sum30 += p;
+      if (dt >= ago14) sum14 += p;
+      if (dt >= ago7)  sum7  += p;
+      if (plantingDate && dt >= plantingDate) sumSincePlanting += p;
+    }
+
+    seasonalRain = {
+      ytd: sumAll,
+      last30: sum30,
+      last14: sum14,
+      last7: sum7,
+      sincePlanting: plantingDate ? sumSincePlanting : null
+    };
+
+    renderSeasonalRain();
+  } catch(e) {
+    console.log("Seasonal rain error:", e);
+  }
+}
+
+function renderSeasonalRain() {
+  var el = document.getElementById("seasonalRainPanel");
+  if (!el || !seasonalRain) return;
+  el.style.display = "block";
+
+  var sr = seasonalRain;
+  var today = new Date();
+  var jan1 = new Date(today.getFullYear(), 0, 1);
+  var dayOfYear = Math.round((today - jan1) / 86400000);
+
+  // Historical normal ~1 inch/week = ~52 in/yr, daily = 0.14 in
+  // Show actual vs rough expectation (just contextual)
+  function row(label, val, sublabel, color) {
+    color = color || "#00c8ff";
+    return "<div style='display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #111827;'>"
+      + "<div style='flex:1;'>"
+      + "<div style='font-size:11px;color:#e8f4ff;font-weight:bold;'>" + label + "</div>"
+      + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>" + sublabel + "</div>"
+      + "</div>"
+      + "<div style='font-size:22px;font-weight:900;color:" + color + ";'>" + cv(val) + "<span style='font-size:10px;color:#7ab8d4;margin-left:2px;'>" + unit + "</span></div>"
+      + "</div>";
+  }
+
+  var html = "";
+  html += row("YEAR TO DATE", sr.ytd, "Jan 1 – Today (" + dayOfYear + " days)", "#00ffa3");
+  html += row("LAST 30 DAYS", sr.last30, "Rolling 30-day total", "#00c8ff");
+  html += row("LAST 14 DAYS", sr.last14, "Rolling 14-day total", "#00c8ff");
+  html += row("LAST 7 DAYS",  sr.last7,  "Rolling 7-day total",  "#38bdf8");
+  if (sr.sincePlanting !== null && plantingDate) {
+    var daysSincePlanting = Math.round((new Date() - plantingDate) / 86400000);
+    html += row("SINCE PLANTING", sr.sincePlanting,
+      plantingDate.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " – Today (" + daysSincePlanting + " days)",
+      "#ffb300");
+  }
+
+  // Mini sparkline using monthly breakdown
+  html += "<div style='margin-top:12px;'>"
+    + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:6px;'>MONTHLY TOTALS — CURRENT YEAR</div>"
+    + "<div id='monthlyBars' style='display:flex;align-items:flex-end;gap:3px;height:50px;'></div>"
+    + "<div style='display:flex;gap:0;margin-top:3px;'>"
+    + ["J","F","M","A","M","J","J","A","S","O","N","D"].map(function(m){
+        return "<div style='flex:1;text-align:center;font-size:7px;color:#3a6a94;'>"+m+"</div>";
+      }).join("")
+    + "</div></div>";
+
+  html += "<div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:8px;text-align:right;'>SOURCE: OPEN-METEO ARCHIVE (ERA5) &middot; ALL HISTORICAL DATA</div>";
+
+  document.getElementById("seasonalRainContent").innerHTML = html;
+
+  // Build monthly bars from archive data - re-fetch monthly sums
+  fetchMonthlyRain(currentLat, currentLon);
+}
+
+async function fetchMonthlyRain(lat, lon) {
+  try {
+    var today = new Date();
+    var jan1 = new Date(today.getFullYear(), 0, 1);
+    var fmt = function(d) { return d.toISOString().split("T")[0]; };
+    var r = await fetch("https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
+      +"&daily=precipitation_sum&start_date="+fmt(jan1)+"&end_date="+fmt(today)+"&timezone=auto");
+    var d = await r.json();
+    if (!d.daily) return;
+
+    var monthly = new Array(12).fill(0);
+    for (var i = 0; i < d.daily.time.length; i++) {
+      var mo = new Date(d.daily.time[i]+"T12:00:00").getMonth();
+      monthly[mo] += d.daily.precipitation_sum[i] || 0;
+    }
+
+    var maxM = Math.max.apply(null, monthly.concat([1]));
+    var curMo = today.getMonth();
+    var bars = monthly.map(function(v, mi) {
+      var h = Math.max(2, Math.round((v / maxM) * 46));
+      var col = mi === curMo ? "#00ffa3" : mi < curMo ? "#00c8ff" : "#2a5278";
+      return "<div style='flex:1;height:"+h+"px;background:"+col+";border-radius:1px 1px 0 0;' title='"+
+        new Date(2024,mi,1).toLocaleString("en-US",{month:"short"})+": "+cv(v)+" "+unit+"'></div>";
+    }).join("");
+
+    var el = document.getElementById("monthlyBars");
+    if (el) el.innerHTML = bars;
+  } catch(e) {}
 }
 
 // ─── MAP ──────────────────────────────────────────────────────────────────────
@@ -1127,6 +1373,17 @@ async function fetchForecast(lat, lon, label) {
   var loaded=validIdx.map(function(i){return MODELS[i].name;}).join(", ");
   setStatus("Done: "+loaded+" loaded","ok");
   renderAll(label);
+
+  // Refresh GDD if planting date is set
+  if (plantingDate && gddTarget) {
+    var rd = document.getElementById("maturityResult");
+    if (rd && rd.style.display !== "none") {
+      fetchAccumulatedGDD(plantingDate, lat, lon, gddTarget, rd);
+    }
+  }
+
+  // Fetch seasonal rain totals
+  fetchSeasonalRain(lat, lon);
 }
 
 async function run() {
