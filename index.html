@@ -620,11 +620,7 @@ function selectStage(idx) {
 // ─── MAP ──────────────────────────────────────────────────────────────────────
 function initMap(lat, lon) {
   document.getElementById("mapSection").style.display = "block";
-  // Esri satellite via iframe-compatible URL
-  var zoom = 14;
-  var url = "https://www.google.com/maps/embed/v1/view?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&center=" + lat + "," + lon + "&zoom=" + zoom + "&maptype=satellite";
-  // Fallback to OSM since we have no key
-  url = "https://www.openstreetmap.org/export/embed.html?bbox=" + (lon-0.02) + "%2C" + (lat-0.015) + "%2C" + (lon+0.02) + "%2C" + (lat+0.015) + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+  var url = "https://www.openstreetmap.org/export/embed.html?bbox=" + (lon-0.02) + "%2C" + (lat-0.015) + "%2C" + (lon+0.02) + "%2C" + (lat+0.015) + "&layer=mapnik&marker=" + lat + "%2C" + lon;
   document.getElementById("mapFrame").src = url;
 }
 
