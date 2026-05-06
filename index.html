@@ -509,7 +509,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <div id="sprayCards"></div>
     <div id="sprayTable" style="display:none;overflow-x:auto;margin-top:16px;"></div>
     <div style="font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:14px;line-height:1.9;">
-      SPRAY RATING: WIND &lt;10 = GOOD CONDITIONS · 10-15 = USE CAUTION · &gt;15 = HIGH RISK · TEMP &lt;40°F OR &gt;90°F = AVOID<br>
+      SPRAY RATING: WIND &lt;10 = GOOD CONDITIONS · 10-15 = USE CAUTION · &gt;15 = HIGH RISK · TEMP &lt;32°F = HIGH RISK · &lt;40°F = CAUTION · &gt;90°F = CAUTION<br>
       INVERSION: CALM WIND (&lt;5MPH) + CLEAR SKY + TIGHT DEWPOINT SPREAD = DROPLETS DRIFT UNPREDICTABLY<br>
       SOURCE: OPEN-METEO GFS · WIND AT 10M · INVERSION IS ESTIMATED — VERIFY WITH LOCAL CONDITIONS
     </div>
@@ -1548,7 +1548,8 @@ function sprayRating(windMax, windGust, tmin, tmax, humidity, rainMm, rainProb) 
 
   if (windGust > 20) { score = 2; reasons.push("Gusts >20 mph"); }
 
-  if (tmin < 40)  { score = Math.max(score,2); reasons.push("Temp <40°F"); }
+  if (tmin < 32)  { score = Math.max(score,2); reasons.push("Temp <32°F (freezing)"); }
+  else if (tmin < 40) { score = Math.max(score,1); reasons.push("Temp <40°F"); }
   if (tmax > 90)  { score = Math.max(score,1); reasons.push("Temp >90°F"); }
 
   if (humidity < 40) { score = Math.max(score,1); reasons.push("Humidity <40% drift risk"); }
@@ -1659,7 +1660,7 @@ function renderSprayForecast(d) {
     var tmaxStr = tmax !== null ? Math.round(tmax)+"°" : "–";
     var tminStr = tmin !== null ? Math.round(tmin)+"°" : "–";
     var precipStr = unit === "in" ? (rainMm/25.4).toFixed(2)+'"' : rainMm.toFixed(1)+"mm";
-    var tempLoCol = tmin < 40 ? "#f87171" : "#7ab8d4";
+    var tempLoCol = tmin < 32 ? "#ff6600" : tmin < 40 ? "#ffb300" : "#7ab8d4";
     var tempHiCol = tmax > 90 ? "#f87171" : tmax > 85 ? "#ffb300" : "#e8f4ff";
     var humCol = avgHumidity < 40 ? "#ffb300" : avgHumidity > 90 ? "#ffb300" : "#7ab8d4";
     var rainCol = rainMm > 2 ? "#f87171" : rainMm > 0 ? "#ffb300" : "#00ffa3";
