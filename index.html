@@ -121,6 +121,23 @@ td:first-child { text-align: left; color: #3a6080; }
 .crop-btn:hover { border-color: #00c8ff; color: #cde; }
 .crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
 
+/* Map */
+#mapSection { margin-bottom: 20px; }
+#map { width:100%; height:340px; border:1px solid #1e3a5f; background:#0d1520; cursor:crosshair; }
+.map-hint { font-size:9px; color:#3a6080; letter-spacing:1px; margin-top:5px; text-align:center; }
+.leaflet-popup-content-wrapper { background:#0d1520 !important; border:1px solid #00c8ff !important; border-radius:2px !important; box-shadow:0 0 16px rgba(0,200,255,0.2) !important; color:#cde !important; }
+.leaflet-popup-tip { background:#0d1520 !important; }
+.leaflet-popup-content { font-family:monospace !important; font-size:12px !important; margin:10px 14px !important; color:#cde !important; }
+.leaflet-control-zoom a { background:#0d1520 !important; color:#00c8ff !important; border-color:#1e3a5f !important; }
+/* Pin name modal */
+#pinModal { display:none; position:fixed; inset:0; background:rgba(4,9,15,0.88); z-index:2000; align-items:center; justify-content:center; }
+#pinModal.show { display:flex; }
+#pinModalBox { background:#0d1520; border:1px solid #1e3a5f; padding:20px; width:100%; max-width:320px; margin:16px; }
+#pinModal h3 { font-size:14px; font-weight:900; color:#fff; margin-bottom:4px; }
+#pinModal .pin-coords { font-size:9px; color:#3a6080; letter-spacing:1px; margin-bottom:14px; }
+#pinModal input { width:100%; margin-bottom:10px; display:block; flex:none; }
+#pinModal .pin-btns { display:flex; gap:8px; }
+/* Auth modal */
 /* Auth modal */
 #authOverlay { display:none; position:fixed; inset:0; background:rgba(4,9,15,0.92); z-index:1000; align-items:center; justify-content:center; }
 #authOverlay.show { display:flex; }
@@ -141,7 +158,7 @@ td:first-child { text-align: left; color: #3a6080; }
 .map-pin-popup .pin-crop { color:#3a6080; font-size:10px; }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 </head>
 <body>
 
@@ -159,8 +176,16 @@ td:first-child { text-align: left; color: #3a6080; }
     <div class="auth-switch" id="authSwitch" onclick="toggleAuthMode()">
       No account? <span>Create one free</span>
     </div>
-    <div style="font-size:9px;color:#1e3a5f;margin-top:16px;text-align:center;line-height:1.8;">
-      YOUR FIELDS ARE SAVED SECURELY TO YOUR ACCOUNT<br>ACCESS FROM ANY DEVICE
+    <div style="display:flex;align-items:center;gap:8px;margin-top:16px;">
+      <div style="flex:1;height:1px;background:#1e3a5f;"></div>
+      <div style="font-size:9px;color:#1e3a5f;letter-spacing:2px;">OR</div>
+      <div style="flex:1;height:1px;background:#1e3a5f;"></div>
+    </div>
+    <button onclick="tryItOut()" style="width:100%;padding:11px;margin-top:12px;background:transparent;border:1px solid #1e3a5f;color:#3a6080;font-family:monospace;font-weight:bold;font-size:12px;cursor:pointer;letter-spacing:2px;">
+      TRY WITHOUT ACCOUNT
+    </button>
+    <div style="font-size:9px;color:#1e3a5f;margin-top:10px;text-align:center;line-height:1.8;">
+      GUEST MODE: FORECASTS WORK BUT FIELDS WON'T BE SAVED
     </div>
   </div>
 </div>
@@ -168,8 +193,11 @@ td:first-child { text-align: left; color: #3a6080; }
 <!-- Auth bar -->
 
 <div id="authBar" style="display:none;">
-  <div class="auth-user">Signed in as <span id="authUserEmail"></span></div>
-  <button onclick="signOut()" style="font-size:10px;padding:5px 10px;border-color:#1e3a5f;">SIGN OUT</button>
+  <div class="auth-user" id="authBarLabel">Signed in as <span id="authUserEmail"></span></div>
+  <div style="display:flex;gap:6px;">
+    <button id="authSignInBtn" onclick="showLogin();tryItOut_cancel()" style="display:none;font-size:10px;padding:5px 10px;background:#00c8ff;color:#000;border:none;font-family:monospace;font-weight:bold;cursor:pointer;letter-spacing:1px;">SIGN IN</button>
+    <button id="authSignOutBtn" onclick="signOut()" style="font-size:10px;padding:5px 10px;border-color:#1e3a5f;">SIGN OUT</button>
+  </div>
 </div>
 
 <div class="sub">PRECISION AG WEATHER PLATFORM</div>
@@ -205,6 +233,17 @@ td:first-child { text-align: left; color: #3a6080; }
     <input id="tagNameInput" type="text" placeholder="Field name (e.g. North 40, Home Farm...)" maxlength="30" />
     <button onclick="addTag()" class="primary">+ ADD FIELD</button>
   </div>
+</div>
+
+<!-- Interactive Map - always visible -->
+
+<div id="mapSection" style="margin-bottom:20px;">
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>FIELD MAP — TAP TO ADD FIELD PIN</span>
+    <span id="mapModeLabel" style="color:#00c8ff;font-size:9px;">CLICK MAP TO DROP PIN</span>
+  </div>
+  <div id="map"></div>
+  <div class="map-hint">&#x1F4CD; Tap anywhere on map to place a field pin &bull; Tap existing pin to load that field</div>
 </div>
 
 <!-- Crop selector -->
@@ -250,13 +289,6 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div class="cards" id="cards" style="display:none"></div>
 
-<!-- Satellite Map -->
-
-<div id="mapSection" style="display:none;margin-bottom:20px;">
-  <div class="section-title">FIELD LOCATION — SATELLITE VIEW</div>
-  <iframe id="mapFrame" src="" title="Map" style="width:100%;height:300px;border:1px solid #1e3a5f;display:block;"></iframe>
-</div>
-
 <!-- Field pins list -->
 
 <div id="fieldPinsSection" style="background:#0d1520;border:1px solid #1e3a5f;padding:14px 16px;margin-bottom:20px;display:none;">
@@ -300,6 +332,24 @@ td:first-child { text-align: left; color: #3a6080; }
   SATELLITE MAP: &copy; ESRI / NASA / USGS &middot; ET: FAO PENMAN-MONTEITH &middot; GROWTH STAGES: UNIVERSITY EXTENSION DATA
 </div>
 
+<!-- Pin name modal -->
+
+<div id="pinModal">
+  <div id="pinModalBox">
+    <h3>&#x1F4CD; NEW FIELD PIN</h3>
+    <div class="pin-coords" id="pinModalCoords"></div>
+    <input id="pinModalName" type="text" placeholder="Field name (e.g. North 40)" maxlength="30"/>
+    <div class="pin-btns">
+      <button class="primary" style="flex:1;padding:10px;" onclick="confirmPin()">SAVE FIELD</button>
+      <button style="padding:10px;" onclick="cancelPin()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
 <script>
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 var SUPA_URL = "https://ziuvfdtemgghmwnkoxxi.supabase.co";
@@ -307,6 +357,7 @@ var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 var currentUser = null;
 var authMode = 'signin'; // or 'signup'
+var guestMode = false;
 
 async function initAuth() {
   var sess = await supa.auth.getSession();
@@ -323,15 +374,36 @@ async function initAuth() {
 }
 
 function showApp() {
+  guestMode = false;
   document.getElementById('authOverlay').classList.remove('show');
   document.getElementById('authBar').style.display = 'flex';
   document.getElementById('authUserEmail').textContent = currentUser.email;
+  document.getElementById('authBarLabel').innerHTML = 'Signed in as <span id="authUserEmail" style="color:#00ffa3">' + currentUser.email + '</span>';
+  document.getElementById('authSignInBtn').style.display = 'none';
+  document.getElementById('authSignOutBtn').style.display = '';
   loadFieldsFromDB();
 }
 
 function showLogin() {
   document.getElementById('authOverlay').classList.add('show');
   document.getElementById('authBar').style.display = 'none';
+}
+
+function tryItOut() {
+  guestMode = true;
+  currentUser = null;
+  document.getElementById('authOverlay').classList.remove('show');
+  document.getElementById('authBar').style.display = 'flex';
+  document.getElementById('authBarLabel').innerHTML = '<span style="color:#ffb300;letter-spacing:1px;">&#x26A0; GUEST MODE</span> <span style="color:#3a6080;font-size:10px;">— fields not saved</span>';
+  document.getElementById('authSignInBtn').style.display = '';
+  document.getElementById('authSignOutBtn').style.display = 'none';
+  fields = [];
+  renderTags();
+  setStatus("Running in guest mode — sign in to save fields", "");
+}
+
+function tryItOut_cancel() {
+  guestMode = false;
 }
 
 function toggleAuthMode() {
@@ -377,7 +449,7 @@ async function signOut() {
 
 // ─── DB FIELD OPERATIONS ──────────────────────────────────────────────────────
 async function loadFieldsFromDB() {
-  if (!currentUser) return;
+  if (!currentUser || guestMode) return;
   var res = await supa.from('fields').select('*').order('created_at', {ascending:true});
   if (res.error) { console.error(res.error); return; }
   fields = res.data.map(function(r) {
@@ -389,7 +461,7 @@ async function loadFieldsFromDB() {
 }
 
 async function saveFieldToDB(field) {
-  if (!currentUser) return null;
+  if (!currentUser || guestMode) return null;
   var row = { user_id:currentUser.id, name:field.name, lat:field.lat, lon:field.lon,
     crop:field.crop, planting_date:field.plantingDate||null,
     maturity_select:field.maturitySelect||null, color:field.color };
@@ -403,7 +475,7 @@ async function saveFieldToDB(field) {
 }
 
 async function deleteFieldFromDB(id) {
-  if (!currentUser || !id) return;
+  if (!currentUser || guestMode || !id) return;
   await supa.from('fields').delete().eq('id', id);
 }
 
@@ -420,7 +492,7 @@ var MODELS = [
 var CROPS = {
   corn: {
     name:"CORN", icon:"&#127805;", flood:50, droughtDays:5,
-    rmOptions:[{l:"70-day (Early)",g:1700},{l:"80-day",g:1900},{l:"90-day",g:2100},{l:"100-day (Full Season)",g:2300},{l:"110-day",g:2500},{l:"120-day (Long Season)",g:2700}],
+    rmOptions:[{l:"70-day (Very Early)",g:1600},{l:"75-day",g:1750},{l:"80-day",g:1900},{l:"85-day",g:2000},{l:"90-day",g:2100},{l:"95-day",g:2200},{l:"100-day",g:2300},{l:"105-day",g:2400},{l:"110-day",g:2500},{l:"111-day",g:2520},{l:"112-day",g:2540},{l:"113-day",g:2560},{l:"114-day",g:2580},{l:"115-day",g:2600},{l:"116-day",g:2630},{l:"117-day",g:2660},{l:"118-day",g:2690},{l:"119-day",g:2720},{l:"120-day",g:2750},{l:"121-day",g:2780},{l:"122-day",g:2810},{l:"123-day",g:2840},{l:"124-day",g:2870},{l:"125-day (Long Season)",g:2900}],
     stages:[
       {name:"GERMINATION", pct:[0,6],   kc:0.3, need:3,  color:"#4ade80", note:"Soil moisture critical for emergence. Need 12-15mm.", critical:"Dry soil prevents germination. Waterlogging rots seed."},
       {name:"EMERGENCE",   pct:[6,14],  kc:0.5, need:4,  color:"#4ade80", note:"Seedling establishment. Shallow roots vulnerable.", critical:"Drought stress causes uneven stand."},
@@ -557,6 +629,7 @@ function renderTags() {
 async function addTag() {
   var name = document.getElementById("tagNameInput").value.trim();
   if (!name) return;
+  if (guestMode) { setStatus("Sign in to save fields to your account", "err"); return; }
   var color = TAG_COLORS[fields.length % TAG_COLORS.length];
   var field = { name:name, color:color, lat:currentLat, lon:currentLon,
     crop:selectedCrop, plantingDate:document.getElementById("plantingDate").value,
@@ -779,16 +852,101 @@ function selectStage(idx) {
 }
 
 // ─── MAP ──────────────────────────────────────────────────────────────────────
-function initMap(lat, lon) {
-  document.getElementById("mapSection").style.display = "block";
-  var url = "https://www.openstreetmap.org/export/embed.html?bbox=" + (lon-0.02) + "%2C" + (lat-0.015) + "%2C" + (lon+0.02) + "%2C" + (lat+0.015) + "&layer=mapnik&marker=" + lat + "%2C" + lon;
-  document.getElementById("mapFrame").src = url;
+function ensureMap() {
+  if (leafletMap) return;
+  if (typeof L === "undefined") {
+    document.getElementById("map").innerHTML = "<div style='padding:20px;color:#3a6080;font-size:10px;text-align:center;letter-spacing:2px;'>MAP UNAVAILABLE — CHECK CONNECTION</div>";
+    return;
+  }
+  leafletMap = L.map("map").setView([39.5, -98.35], 5);
+  // Satellite base
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    attribution: "Tiles &copy; Esri", maxZoom: 19
+  }).addTo(leafletMap);
+  // Labels overlay
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+    maxZoom: 19, opacity: 0.8
+  }).addTo(leafletMap);
+  // Click to drop pin
+  leafletMap.on("click", function(e) {
+    openPinModal(e.latlng.lat, e.latlng.lng);
+  });
 }
 
-function updateMapMarker(lat, lon, label, totals) { /* shown in iframe */ }
+function initMap(lat, lon) {
+  ensureMap();
+  leafletMap.setView([lat, lon], 14);
+  setTimeout(function(){ leafletMap.invalidateSize(); }, 200);
+}
+
+function updateMapMarker(lat, lon, label, totals) {
+  if (!leafletMap) return;
+  if (forecastMarker) { leafletMap.removeLayer(forecastMarker); forecastMarker = null; }
+  var icon = L.divIcon({
+    className: "",
+    html: "<div style='width:16px;height:16px;background:#00c8ff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px #00c8ff;margin-left:-8px;margin-top:-8px;'></div>",
+    iconSize:[0,0], popupAnchor:[0,-10]
+  });
+  var modelRows = "";
+  MODELS.forEach(function(m,i){
+    if(totals.modelTotals[i]!==null)
+      modelRows += "<div style='display:flex;justify-content:space-between;gap:12px;margin-bottom:2px;'><span style='color:"+m.color+"'>"+m.name+"</span><span style='color:"+m.color+"'>"+cv(totals.modelTotals[i])+" "+unit+"</span></div>";
+  });
+  var popup = "<div style='font-weight:bold;color:#fff;margin-bottom:4px;'>"+label+"</div>"
+    +"<div style='display:flex;justify-content:space-between;gap:12px;margin-bottom:4px;'><span style='color:#00ffa3'>BLEND</span><span style='color:#00ffa3;font-weight:bold'>"+cv(totals.avg)+" "+unit+"</span></div>"
+    +"<hr style='border:none;border-top:1px solid #1e3a5f;margin:5px 0'/>"+modelRows
+    +"<div style='font-size:9px;color:#3a6080;margin-top:5px;'>14-DAY TOTAL PRECIP</div>";
+  forecastMarker = L.marker([lat,lon],{icon:icon}).addTo(leafletMap);
+  forecastMarker.bindPopup(popup,{maxWidth:230}).openPopup();
+}
+
+// ─── PIN MODAL ────────────────────────────────────────────────────────────────
+function openPinModal(lat, lon) {
+  pendingPin = {lat:lat, lon:lon};
+  document.getElementById("pinModalCoords").textContent = lat.toFixed(5) + ", " + lon.toFixed(5);
+  document.getElementById("pinModalName").value = "";
+  document.getElementById("pinModal").classList.add("show");
+  setTimeout(function(){ document.getElementById("pinModalName").focus(); }, 100);
+}
+
+function cancelPin() {
+  pendingPin = null;
+  document.getElementById("pinModal").classList.remove("show");
+}
+
+async function confirmPin() {
+  var name = document.getElementById("pinModalName").value.trim();
+  if (!name) { document.getElementById("pinModalName").focus(); return; }
+  document.getElementById("pinModal").classList.remove("show");
+  if (guestMode) {
+    // Still allow temporary pin in guest mode, just wont persist
+    setStatus("Guest mode: pin is temporary and won't be saved", "");
+  }
+  var color = TAG_COLORS[fields.length % TAG_COLORS.length];
+  var field = { name:name, color:color, lat:pendingPin.lat, lon:pendingPin.lon,
+    crop:selectedCrop,
+    plantingDate: document.getElementById("plantingDate").value || null,
+    maturitySelect: document.getElementById("maturitySelect").value || null };
+  pendingPin = null;
+  var newId = await saveFieldToDB(field);
+  field.id = newId;
+  fields.push(field);
+  activeField = fields.length - 1;
+  renderTags();
+  renderMapPins();
+  // Fly to the new pin and load its forecast
+  if (leafletMap) leafletMap.setView([field.lat, field.lon], 14);
+  fetchForecast(field.lat, field.lon, field.name);
+  setStatus("Field pinned: " + field.name, "ok");
+}
+
+document.getElementById("pinModalName").addEventListener("keydown", function(e){ if(e.key==="Enter") confirmPin(); if(e.key==="Escape") cancelPin(); });
 
 // ─── MAP PINS ────────────────────────────────────────────────────────────────
 var mapPinMarkers = [];
+var leafletMap = null;
+var forecastMarker = null;
+var pendingPin = null; // {lat, lon} waiting for name
 
 function renderMapPins() {
   // Only works if we have an iframe map - we'll use a separate Leaflet layer
@@ -1103,7 +1261,8 @@ buildMaturityOptions();
 renderStagePanel();
 renderTags();
 document.getElementById("plantingDate").value = new Date().toISOString().split("T")[0];
-// Init Supabase auth
+// Init map and Supabase auth
+ensureMap();
 initAuth();
 </script>
 
