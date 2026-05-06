@@ -121,9 +121,56 @@ td:first-child { text-align: left; color: #3a6080; }
 .crop-btn:hover { border-color: #00c8ff; color: #cde; }
 .crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
 
+/* Auth modal */
+#authOverlay { display:none; position:fixed; inset:0; background:rgba(4,9,15,0.92); z-index:1000; align-items:center; justify-content:center; }
+#authOverlay.show { display:flex; }
+#authBox { background:#0d1520; border:1px solid #1e3a5f; padding:28px 24px; width:100%; max-width:360px; margin:16px; }
+#authBox h2 { font-size:20px; font-weight:900; color:#fff; margin-bottom:4px; }
+#authBox .auth-sub { font-size:10px; color:#3a6080; letter-spacing:2px; margin-bottom:20px; }
+#authBox input { width:100%; margin-bottom:10px; display:block; flex:none; }
+#authBox .auth-err { font-size:10px; color:#f87171; min-height:16px; margin-bottom:8px; letter-spacing:1px; }
+#authBox .auth-switch { font-size:10px; color:#3a6080; margin-top:12px; text-align:center; cursor:pointer; }
+#authBox .auth-switch span { color:#00c8ff; text-decoration:underline; }
+/* Auth bar */
+#authBar { display:flex; align-items:center; justify-content:space-between; background:#0d1520; border:1px solid #1e3a5f; padding:8px 14px; margin-bottom:16px; font-size:11px; }
+#authBar .auth-user { color:#3a6080; }
+#authBar .auth-user span { color:#00ffa3; }
+/* Map pins */
+.map-pin-popup { font-family:monospace; font-size:12px; color:#cde; }
+.map-pin-popup b { color:#00c8ff; display:block; margin-bottom:4px; font-size:13px; }
+.map-pin-popup .pin-crop { color:#3a6080; font-size:10px; }
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
+
+<!-- Auth Modal -->
+
+<div id="authOverlay">
+  <div id="authBox">
+    <h2>FARM<span style="color:#00c8ff">CAST</span></h2>
+    <div class="auth-sub">PRECISION AG WEATHER PLATFORM</div>
+    <div id="authTitle" style="font-size:14px;font-weight:900;color:#cde;margin-bottom:16px;letter-spacing:1px;">SIGN IN</div>
+    <input id="authEmail" type="email" placeholder="Email address" />
+    <input id="authPassword" type="password" placeholder="Password" />
+    <div class="auth-err" id="authErr"></div>
+    <button class="primary" style="width:100%;padding:12px;" onclick="doAuth()">CONTINUE</button>
+    <div class="auth-switch" id="authSwitch" onclick="toggleAuthMode()">
+      No account? <span>Create one free</span>
+    </div>
+    <div style="font-size:9px;color:#1e3a5f;margin-top:16px;text-align:center;line-height:1.8;">
+      YOUR FIELDS ARE SAVED SECURELY TO YOUR ACCOUNT<br>ACCESS FROM ANY DEVICE
+    </div>
+  </div>
+</div>
+
+<!-- Auth bar -->
+
+<div id="authBar" style="display:none;">
+  <div class="auth-user">Signed in as <span id="authUserEmail"></span></div>
+  <button onclick="signOut()" style="font-size:10px;padding:5px 10px;border-color:#1e3a5f;">SIGN OUT</button>
+</div>
 
 <div class="sub">PRECISION AG WEATHER PLATFORM</div>
 <h1>FARM<span>CAST</span></h1>
@@ -210,6 +257,13 @@ td:first-child { text-align: left; color: #3a6080; }
   <iframe id="mapFrame" src="" title="Map" style="width:100%;height:300px;border:1px solid #1e3a5f;display:block;"></iframe>
 </div>
 
+<!-- Field pins list -->
+
+<div id="fieldPinsSection" style="background:#0d1520;border:1px solid #1e3a5f;padding:14px 16px;margin-bottom:20px;display:none;">
+  <div class="section-title">SAVED FIELDS</div>
+  <div id="pinList"></div>
+</div>
+
 <!-- Ag insight cards -->
 
 <div id="agCards" style="display:none"></div>
@@ -247,6 +301,112 @@ td:first-child { text-align: left; color: #3a6080; }
 </div>
 
 <script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+var SUPA_URL = "https://ziuvfdtemgghmwnkoxxi.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8";
+var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+var currentUser = null;
+var authMode = 'signin'; // or 'signup'
+
+async function initAuth() {
+  var sess = await supa.auth.getSession();
+  if (sess.data.session) {
+    currentUser = sess.data.session.user;
+    showApp();
+  } else {
+    document.getElementById('authOverlay').classList.add('show');
+  }
+  supa.auth.onAuthStateChange(function(event, session) {
+    if (session) { currentUser = session.user; showApp(); }
+    else { currentUser = null; showLogin(); }
+  });
+}
+
+function showApp() {
+  document.getElementById('authOverlay').classList.remove('show');
+  document.getElementById('authBar').style.display = 'flex';
+  document.getElementById('authUserEmail').textContent = currentUser.email;
+  loadFieldsFromDB();
+}
+
+function showLogin() {
+  document.getElementById('authOverlay').classList.add('show');
+  document.getElementById('authBar').style.display = 'none';
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('authTitle').textContent = authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  document.getElementById('authSwitch').innerHTML = authMode === 'signin'
+    ? 'No account? <span>Create one free</span>'
+    : 'Have an account? <span>Sign in</span>';
+  document.getElementById('authErr').textContent = '';
+}
+
+async function doAuth() {
+  var email = document.getElementById('authEmail').value.trim();
+  var pass  = document.getElementById('authPassword').value;
+  var err   = document.getElementById('authErr');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'ENTER EMAIL AND PASSWORD'; return; }
+  var result;
+  if (authMode === 'signup') {
+    result = await supa.auth.signUp({ email:email, password:pass });
+    if (!result.error && result.data.user && !result.data.session) {
+      err.style.color = '#00ffa3';
+      err.textContent = 'CHECK YOUR EMAIL TO CONFIRM YOUR ACCOUNT';
+      return;
+    }
+  } else {
+    result = await supa.auth.signInWithPassword({ email:email, password:pass });
+  }
+  if (result.error) { err.style.color='#f87171'; err.textContent = result.error.message.toUpperCase(); }
+}
+
+// Enter key on auth inputs
+['authEmail','authPassword'].forEach(function(id) {
+  document.getElementById(id).addEventListener('keydown', function(e){ if(e.key==='Enter') doAuth(); });
+});
+
+async function signOut() {
+  await supa.auth.signOut();
+  fields = []; activeField = null;
+  renderTags();
+  showLogin();
+}
+
+// ─── DB FIELD OPERATIONS ──────────────────────────────────────────────────────
+async function loadFieldsFromDB() {
+  if (!currentUser) return;
+  var res = await supa.from('fields').select('*').order('created_at', {ascending:true});
+  if (res.error) { console.error(res.error); return; }
+  fields = res.data.map(function(r) {
+    return { id:r.id, name:r.name, lat:r.lat, lon:r.lon, crop:r.crop,
+      plantingDate:r.planting_date, maturitySelect:r.maturity_select, color:r.color||'#00c8ff' };
+  });
+  renderTags();
+  renderMapPins();
+}
+
+async function saveFieldToDB(field) {
+  if (!currentUser) return null;
+  var row = { user_id:currentUser.id, name:field.name, lat:field.lat, lon:field.lon,
+    crop:field.crop, planting_date:field.plantingDate||null,
+    maturity_select:field.maturitySelect||null, color:field.color };
+  if (field.id) {
+    await supa.from('fields').update(row).eq('id', field.id);
+    return field.id;
+  } else {
+    var res = await supa.from('fields').insert(row).select().single();
+    return res.data ? res.data.id : null;
+  }
+}
+
+async function deleteFieldFromDB(id) {
+  if (!currentUser || !id) return;
+  await supa.from('fields').delete().eq('id', id);
+}
+
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 var MODELS = [
   { key:"gfs",   name:"GFS",     api:"gfs_seamless",  color:"#38bdf8" },
@@ -363,18 +523,19 @@ var allRows = [], allTotals = null, etRows = [];
 var selectedCrop = "corn", selectedStage = 0;
 var currentLat = null, currentLon = null;
 var plantingDate = null, maturityDate = null, maturityEarlyDate = null, maturityLateDate = null;
-var fields = JSON.parse(localStorage.getItem("farmcast_fields") || "[]");
+var fields = [];
 var activeField = null;
 
 // Tag colors
 var TAG_COLORS = ["#00c8ff","#00ffa3","#ffb300","#f87171","#c084fc","#fb923c","#38bdf8","#4ade80"];
 
 // ─── FIELD TAGS ───────────────────────────────────────────────────────────────
-function saveFields() {
-  try { localStorage.setItem("farmcast_fields", JSON.stringify(fields)); } catch(e){}
-}
+function saveFields() { /* now using Supabase */ }
 
 function renderTags() {
+  var fps = document.getElementById("fieldPinsSection");
+  if (fps) fps.style.display = fields.length ? "block" : "none";
+  renderMapPins();
   var list = document.getElementById("tagList");
   if (!fields.length) {
     list.innerHTML = "<div style='color:#1e3a5f;font-size:10px;letter-spacing:1px;padding:6px 0;'>NO FIELDS SAVED YET — ADD ONE BELOW</div>";
@@ -393,23 +554,21 @@ function renderTags() {
   list.innerHTML = html;
 }
 
-function addTag() {
+async function addTag() {
   var name = document.getElementById("tagNameInput").value.trim();
   if (!name) return;
   var color = TAG_COLORS[fields.length % TAG_COLORS.length];
-  fields.push({
-    name: name,
-    color: color,
-    lat: currentLat,
-    lon: currentLon,
-    crop: selectedCrop,
-    plantingDate: document.getElementById("plantingDate").value,
-    maturitySelect: document.getElementById("maturitySelect").value
-  });
-  saveFields();
+  var field = { name:name, color:color, lat:currentLat, lon:currentLon,
+    crop:selectedCrop, plantingDate:document.getElementById("plantingDate").value,
+    maturitySelect:document.getElementById("maturitySelect").value };
+  var newId = await saveFieldToDB(field);
+  field.id = newId;
+  fields.push(field);
   document.getElementById("tagNameInput").value = "";
   activeField = fields.length - 1;
   renderTags();
+  renderMapPins();
+  setStatus("Field saved to your account", "ok");
 }
 
 function loadField(i) {
@@ -435,12 +594,14 @@ function loadField(i) {
   }
 }
 
-function deleteField(evt, i) {
+async function deleteField(evt, i) {
   evt.stopPropagation();
+  var fid = fields[i].id;
   fields.splice(i, 1);
-  if (activeField >= fields.length) activeField = fields.length - 1;
-  saveFields();
+  if (activeField !== null && activeField >= fields.length) activeField = fields.length - 1;
+  await deleteFieldFromDB(fid);
   renderTags();
+  renderMapPins();
 }
 
 // ─── CROP GRID ────────────────────────────────────────────────────────────────
@@ -465,7 +626,7 @@ function selectCrop(k) {
   // Update active field
   if (activeField !== null && fields[activeField]) {
     fields[activeField].crop = k;
-    saveFields();
+    saveFieldToDB(fields[activeField]);
     renderTags();
   }
 }
@@ -533,7 +694,7 @@ function onPlantingChange() {
   if (activeField !== null && fields[activeField]) {
     fields[activeField].plantingDate = dateVal;
     fields[activeField].maturitySelect = rmIdx;
-    saveFields();
+    saveFieldToDB(fields[activeField]);
   }
 }
 
@@ -626,6 +787,34 @@ function initMap(lat, lon) {
 
 function updateMapMarker(lat, lon, label, totals) { /* shown in iframe */ }
 
+// ─── MAP PINS ────────────────────────────────────────────────────────────────
+var mapPinMarkers = [];
+
+function renderMapPins() {
+  // Only works if we have an iframe map - we'll use a separate Leaflet layer
+  // Pins are shown as overlaid labels below the map
+  var pinList = document.getElementById("pinList");
+  if (!pinList) return;
+  if (!fields.length) { pinList.innerHTML = "<div style='color:#1e3a5f;font-size:10px;'>No saved fields yet.</div>"; return; }
+  var html = "";
+  fields.forEach(function(f, i) {
+    if (!f.lat || !f.lon) return;
+    var crop = f.crop && CROPS[f.crop] ? CROPS[f.crop] : null;
+    html += "<div style='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #0a1520;cursor:pointer;' onclick='loadField(" + i + ")'>"
+      + "<div style='width:10px;height:10px;border-radius:50%;background:" + f.color + ";flex-shrink:0;box-shadow:0 0 6px " + f.color + ";'></div>"
+      + "<div style='flex:1;'>"
+      + "<div style='font-size:12px;color:#fff;font-weight:bold;'>" + f.name + "</div>"
+      + "<div style='font-size:9px;color:#3a6080;letter-spacing:1px;'>"
+      + (crop ? crop.icon + " " + crop.name : "") 
+      + (f.lat ? " &middot; " + f.lat.toFixed(3) + ", " + f.lon.toFixed(3) : "")
+      + (f.plantingDate ? " &middot; Planted " + new Date(f.plantingDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "")
+      + "</div></div>"
+      + "<div style='font-size:9px;color:#3a6080;'>&#8594;</div>"
+      + "</div>";
+  });
+  pinList.innerHTML = html || "<div style='color:#1e3a5f;font-size:10px;'>Add a location to pin fields on the map.</div>";
+}
+
 // ─── GEOCODE / FETCH ──────────────────────────────────────────────────────────
 async function geocode(q) {
   var r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=en&format=json");
@@ -691,7 +880,7 @@ async function run() {
     await fetchForecast(geo.lat,geo.lon,geo.label);
     if(activeField!==null&&fields[activeField]){
       fields[activeField].lat=geo.lat; fields[activeField].lon=geo.lon;
-      saveFields();
+      saveFieldToDB(fields[activeField]);
     }
   }catch(e){setStatus("Error: "+e.message,"err");}
 }
@@ -913,8 +1102,9 @@ renderCropGrid();
 buildMaturityOptions();
 renderStagePanel();
 renderTags();
-// Set default planting date to today
 document.getElementById("plantingDate").value = new Date().toISOString().split("T")[0];
+// Init Supabase auth
+initAuth();
 </script>
 
 </body>
