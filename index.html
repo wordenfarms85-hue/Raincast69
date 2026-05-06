@@ -509,9 +509,9 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <div id="sprayCards"></div>
     <div id="sprayTable" style="display:none;overflow-x:auto;margin-top:16px;"></div>
     <div style="font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:14px;line-height:1.9;">
-      SPRAY RATING CRITERIA: WIND &lt;10 MPH = GOOD &nbsp;&middot;&nbsp; 10-15 MPH = MARGINAL &nbsp;&middot;&nbsp; &gt;15 MPH = DO NOT SPRAY<br>
-      TEMP &lt;40°F OR &gt;90°F = AVOID &nbsp;&middot;&nbsp; HUMIDITY &lt;40% = DRIFT RISK &nbsp;&middot;&nbsp; RAIN WITHIN 4HR = WASHOFF RISK<br>
-      SOURCE: OPEN-METEO GFS &nbsp;&middot;&nbsp; WIND AT 10M HEIGHT
+      SPRAY RATING: WIND &lt;10=GOOD · 10-15=MARGINAL · &gt;15=DO NOT SPRAY · TEMP &lt;40°F OR &gt;90°F = AVOID<br>
+      INVERSION: CALM WIND (&lt;5MPH) + CLEAR SKY + TIGHT DEWPOINT SPREAD = DROPLETS DRIFT UNPREDICTABLY<br>
+      SOURCE: OPEN-METEO GFS · WIND AT 10M · INVERSION IS ESTIMATED — VERIFY WITH LOCAL CONDITIONS
     </div>
   </div>
 
@@ -1524,7 +1524,7 @@ var sprayData = null;
 async function fetchSprayForecast(lat, lon) {
   try {
     var url = "https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
-      +"&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
+      +"&hourly=temperature_2m,dew_point_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover"
       +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max"
       +"&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=5&timezone=auto";
     var r = await fetch(url);
@@ -1568,6 +1568,55 @@ function windDir(deg) {
   return dirs[Math.round(deg/22.5) % 16];
 }
 
+// Inversion risk: detect temp inversion conditions per hour
+// Criteria: low wind (<5mph) + clear sky (<30% cloud) + surface cooling (evening/night hours)
+// + tight dewpoint spread (<5F between temp and dewpoint) OR rapid temp drop
+// Returns: { risk: 'high'|'moderate'|'low'|'none', hours: [array of risky hour strings] }
+function detectInversion(d, hourBase) {
+  var riskyHours = [];
+  var maxRisk = 'none';
+
+  // Check hours most prone to inversions: 6PM-8AM (hours 18-24 + 0-8)
+  var checkHours = [18,19,20,21,22,23,0,1,2,3,4,5,6,7,8];
+
+  for (var ci = 0; ci < checkHours.length; ci++) {
+    var hr = checkHours[ci];
+    var idx = hourBase + hr;
+    if (idx >= d.hourly.temperature_2m.length) continue;
+
+    var temp    = d.hourly.temperature_2m[idx];
+    var dew     = d.hourly.dew_point_2m ? d.hourly.dew_point_2m[idx] : null;
+    var wind    = d.hourly.wind_speed_10m[idx];
+    var cloud   = d.hourly.cloud_cover ? d.hourly.cloud_cover[idx] : 50;
+
+    if (temp === null || wind === null) continue;
+
+    var spread  = dew !== null ? (temp - dew) : 999;
+    var isNight = (hr >= 19 || hr <= 8);
+    var isCalm  = wind < 5;
+    var isClear = cloud < 30;
+
+    var score = 0;
+    if (isCalm)  score += 2;
+    if (isClear) score += 2;
+    if (isNight) score += 1;
+    if (spread < 10 && spread >= 0) score += 2;  // humid/tight spread = inversion prone
+    if (spread < 5  && spread >= 0) score += 1;  // very tight
+
+    var hrLabel = hr === 0 ? "12AM" : hr < 12 ? hr+"AM" : hr === 12 ? "12PM" : (hr-12)+"PM";
+
+    if (score >= 6) {
+      riskyHours.push(hrLabel);
+      maxRisk = 'high';
+    } else if (score >= 4) {
+      riskyHours.push(hrLabel);
+      if (maxRisk !== 'high') maxRisk = 'moderate';
+    }
+  }
+
+  return { risk: maxRisk, hours: riskyHours };
+}
+
 function renderSprayForecast(d) {
   var cards = document.getElementById("sprayCards");
   var days = d.daily.time;
@@ -1596,6 +1645,13 @@ function renderSprayForecast(d) {
     avgHumidity = humCount ? Math.round(avgHumidity/humCount) : 50;
 
     var rating = sprayRating(windMax, windGust, tmin, tmax, avgHumidity, rainMm, maxRainProb);
+    var inversion = detectInversion(d, hourBase);
+    // Upgrade rating if inversion risk is high
+    if (inversion.risk === 'high' && rating.score < 2) {
+      rating.score = Math.max(rating.score, 1);
+      rating.reasons.push("Inversion risk: "+inversion.hours.slice(0,3).join(", "));
+      if (rating.score < 2) { rating.label = "MARGINAL"; rating.cls = "marginal"; }
+    }
 
     // Wind color
     var windCol = windMax > 15 ? "#f87171" : windMax > 10 ? "#ffb300" : "#00ffa3";
@@ -1629,6 +1685,24 @@ function renderSprayForecast(d) {
     });
     hourHtml += "</div></div>";
 
+    // Inversion warning banner
+    var inversionHtml = "";
+    if (inversion.risk === 'high' || inversion.risk === 'moderate') {
+      var invCol = inversion.risk === 'high' ? "#f87171" : "#ffb300";
+      var invBg  = inversion.risk === 'high' ? "rgba(248,113,113,0.08)" : "rgba(255,179,0,0.08)";
+      var invMsg = inversion.risk === 'high'
+        ? "HIGH INVERSION RISK"
+        : "MODERATE INVERSION RISK";
+      var invHours = inversion.hours.length ? " · Risky hours: "+inversion.hours.slice(0,4).join(", ") : "";
+      inversionHtml = "<div style='margin:0 14px 8px;padding:8px 10px;background:"+invBg+";border-left:3px solid "+invCol+";font-size:10px;'>"
+        + "<div style='font-weight:bold;color:"+invCol+";letter-spacing:1px;margin-bottom:3px;'>&#9888; "+invMsg+invHours+"</div>"
+        + "<div style='color:#7ab8d4;font-size:9px;line-height:1.6;'>"
+        + "Temperature inversion detected: calm wind + clear sky conditions cause spray droplets to "
+        + "hang in a stable air layer and drift long distances — even at low wind speeds. "
+        + "Avoid spraying during these hours. Inversions are most common 2 hrs before sunset through 2 hrs after sunrise."
+        + "</div></div>";
+    }
+
     // Reasons string
     var reasonsHtml = rating.reasons.length
       ? "<div style='font-size:9px;color:#7ab8d4;padding:6px 14px 10px;'>"
@@ -1656,6 +1730,8 @@ function renderSprayForecast(d) {
       + "</div>"
       // Hourly strip
       + hourHtml
+      // Inversion warning
+      + inversionHtml
       // Reasons
       + reasonsHtml
       + "</div>";
