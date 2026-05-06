@@ -686,8 +686,11 @@ async function loadFieldsFromDB() {
   var res = await supa.from('fields').select('*').order('created_at', {ascending:true});
   if (res.error) { console.error(res.error); return; }
   fields = res.data.map(function(r) {
+    var hyb = null;
+    try { if (r.hybrid_json) hyb = JSON.parse(r.hybrid_json); } catch(e){}
     return { id:r.id, name:r.name, lat:r.lat, lon:r.lon, crop:r.crop,
-      plantingDate:r.planting_date, maturitySelect:r.maturity_select, color:r.color||'#00c8ff' };
+      plantingDate:r.planting_date, maturitySelect:r.maturity_select,
+      color:r.color||'#00c8ff', hybrid:hyb };
   });
   renderTags();
   renderMapPins();
@@ -697,7 +700,8 @@ async function saveFieldToDB(field) {
   if (!currentUser || guestMode) return null;
   var row = { user_id:currentUser.id, name:field.name, lat:field.lat, lon:field.lon,
     crop:field.crop, planting_date:field.plantingDate||null,
-    maturity_select:field.maturitySelect||null, color:field.color };
+    maturity_select:field.maturitySelect||null, color:field.color,
+    hybrid_json: field.hybrid ? JSON.stringify(field.hybrid) : null };
   if (field.id) {
     await supa.from('fields').update(row).eq('id', field.id);
     return field.id;
@@ -1017,6 +1021,14 @@ function loadField(i) {
   if (f.maturitySelect) {
     document.getElementById("maturitySelect").value = f.maturitySelect;
   }
+  // Restore hybrid selector for this field
+  clearHybrid();
+  if (f.hybrid && f.hybrid.name) {
+    selectedHybrid = f.hybrid;
+    document.getElementById("hybridSearch").value = f.hybrid.name;
+    showSelectedHybridCard(f.hybrid);
+  }
+
   onPlantingChange();
 
   if (f.lat && f.lon) {
@@ -1050,6 +1062,8 @@ function renderCropGrid() {
 function selectCrop(k) {
   selectedCrop = k;
   selectedStage = 0;
+  // Clear hybrid if switching to a non-corn crop
+  if (k !== "corn") { clearHybrid(); }
   renderCropGrid();
   buildMaturityOptions();
   renderStagePanel();
@@ -1057,6 +1071,7 @@ function selectCrop(k) {
   // Update active field
   if (activeField !== null && fields[activeField]) {
     fields[activeField].crop = k;
+    if (k !== "corn") fields[activeField].hybrid = null;
     saveFieldToDB(fields[activeField]);
     renderTags();
   }
