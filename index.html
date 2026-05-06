@@ -461,8 +461,15 @@ td:first-child { text-align: left; color: #7ab8d4; }
   <span>TODAY</span><span>DAY 7</span><span>DAY 14</span>
 </div>
 
+<!-- Soil temp section -->
+<div class="soil-section-title" style="margin-top:20px;">SOIL TEMPERATURE BY DEPTH</div>
+<div id="soilTempCards" style="display:none;margin-bottom:12px;"></div>
+<div id="soilTempBars" style="display:none;margin-bottom:8px;"></div>
+<div id="soilTempCropNote" style="display:none;"></div>
+
 <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;margin-top:12px;line-height:1.8;">
   VWC = VOLUMETRIC WATER CONTENT (m&#179;/m&#179;) &middot; FIELD CAPACITY ~0.33 &middot; WILTING POINT ~0.10<br>
+  SOIL TEMP SOURCE: GFS MODEL VIA OPEN-METEO &middot; DEPTHS: 0, 6, 18, 54 cm (0, 2.4, 7, 21 in)<br>
   SOURCE: ERA5-LAND (ECMWF) VIA OPEN-METEO &middot; ~9KM RESOLUTION &middot; UPDATED DAILY
 </div>
 ```
@@ -881,6 +888,78 @@ var CROPS = {
       {name:"REGROWTH 1",  pct:[42,60], kc:0.9, need:5,  color:"#00c8ff", note:"Recovery after 1st cut. 28-35 day rest ideal.", critical:"Drought extends regrowth interval."},
       {name:"REGROWTH 2",  pct:[60,80], kc:0.8, need:4,  color:"#ffb300", note:"Heat slows growth. Quality still good.", critical:"Heat + drought reduces yield."},
       {name:"FALL CUTTING",pct:[80,100],kc:0.7, need:3,  color:"#4ade80", note:"Final cut. Leave 3-4 inch stubble.", critical:"Too late cutting weakens winter survival."}
+    ]
+  },
+  chilipepper: {
+    name:"CHILI", icon:"&#127798;", flood:25, droughtDays:7,
+    rmOptions:[
+      {l:"Anaheim/NuMex (75d)",g:1400},
+      {l:"Jalapeño (70d)",g:1300},
+      {l:"Serrano (75d)",g:1400},
+      {l:"Hatch Green (80d)",g:1500},
+      {l:"Hatch Red/Dried (100d)",g:1900},
+      {l:"Cayenne (70d)",g:1300},
+      {l:"Habanero (100d)",g:1900},
+      {l:"Paprika (80d)",g:1500}
+    ],
+    stages:[
+      {name:"TRANSPLANT",  pct:[0,8],   kc:0.4, need:4, color:"#4ade80",
+        note:"Transplant after last frost with soil temp 65F+. Set 18-24 inches apart. Water in well.",
+        critical:"Cold soil below 60F causes transplant shock and stunted growth. Frost kills seedlings."},
+      {name:"ESTABLISHMENT",pct:[8,20], kc:0.5, need:4, color:"#4ade80",
+        note:"Root system establishing. Consistent moisture critical. Avoid waterlogging.",
+        critical:"Wilting during establishment permanently stunts plants. Phytophthora root rot risk in wet soils."},
+      {name:"VEGETATIVE",  pct:[20,38], kc:0.7, need:5, color:"#00c8ff",
+        note:"Rapid canopy development. Side-dress nitrogen at first branching. Weed control critical.",
+        critical:"Water stress during vegetative growth reduces final fruit load. Aphid/mite pressure increases in heat."},
+      {name:"FLOWERING",   pct:[38,55], kc:1.0, need:6, color:"#ffb300",
+        note:"CRITICAL: Blossom set determines yield. Temps above 95F cause blossom drop.",
+        critical:"Temps >95°F or <55°F cause flower abortion. Inconsistent moisture = blossom end rot."},
+      {name:"FRUIT SET",   pct:[55,72], kc:1.1, need:7, color:"#ffb300",
+        note:"CRITICAL: Fruit sizing and early development. Peak water and calcium demand.",
+        critical:"Calcium deficiency + moisture stress = blossom end rot. Sunscald on exposed fruit in extreme heat."},
+      {name:"GREEN HARVEST",pct:[72,85],kc:1.0, need:6, color:"#00c8ff",
+        note:"Green chile harvest window. Hand-pick or machine harvest for roasting/fresh market.",
+        critical:"Rain at harvest increases anthracnose and soft rot. Pick before full red color for green market."},
+      {name:"RED/DRIED",   pct:[85,100],kc:0.6, need:2, color:"#fb923c",
+        note:"Full red maturity for dried, paprika, or red chile market. Dry weather preferred for field drying.",
+        critical:"Rain on red fruit causes mold and color loss. Delay harvest in wet conditions."}
+    ]
+  },
+  drybeans: {
+    name:"DRY BEANS", icon:"&#129752;", flood:20, droughtDays:8,
+    rmOptions:[
+      {l:"Pinto (85-90d)",g:1200},
+      {l:"Black Bean (85-95d)",g:1250},
+      {l:"Navy (85-90d)",g:1200},
+      {l:"Great Northern (90-100d)",g:1350},
+      {l:"Kidney (95-100d)",g:1400},
+      {l:"Chickpea/Garbanzo (90-110d)",g:1450},
+      {l:"Lentil (80-110d)",g:1100},
+      {l:"Pea/Field Pea (60-70d)",g:900}
+    ],
+    stages:[
+      {name:"GERMINATION", pct:[0,8],   kc:0.4, need:3, color:"#4ade80",
+        note:"Needs 60F+ soil temp. Plant 1-1.5 inches deep in firm seedbed. 10-14 day emergence.",
+        critical:"Soil temps below 55F cause slow emergence and seed rot. Crusting prevents emergence on fine-textured soils."},
+      {name:"EMERGENCE",   pct:[8,18],  kc:0.4, need:3, color:"#4ade80",
+        note:"Hypocotyl arch emergence. Very sensitive to soil crust and hail. Thin fragile stems.",
+        critical:"Hail on emerged plants is devastating — no recovery mechanism. Flooding >12 hours kills seedlings."},
+      {name:"VEGETATIVE",  pct:[18,38], kc:0.7, need:4, color:"#00c8ff",
+        note:"Trifoliate leaf development. Nitrogen fixation begins with rhizobium. Canopy closing.",
+        critical:"Drought stress limits nodule development. Do not apply nitrogen — disrupts fixation."},
+      {name:"FLOWERING",   pct:[38,55], kc:1.0, need:6, color:"#ffb300",
+        note:"CRITICAL: White/purple flowers appear. Pod set highly sensitive to heat and drought.",
+        critical:"Temps >86°F during flowering drops pod set 30-60%. Even one day of drought stress = significant yield loss."},
+      {name:"POD FILL",    pct:[55,80], kc:1.1, need:7, color:"#ffb300",
+        note:"CRITICAL: Seed size and weight determined. Highest water demand of season.",
+        critical:"Drought during pod fill = small shriveled seeds, poor test weight. White mold pressure in cool wet weather."},
+      {name:"MATURATION",  pct:[80,92], kc:0.7, need:3, color:"#fb923c",
+        note:"Pods yellowing and drying. Moisture declining toward 16-18%. Vine-kill or desiccation window.",
+        critical:"Rain delays drying and risks seed discoloration. Pod shatter begins once fully dry."},
+      {name:"HARVEST",     pct:[92,100],kc:0.3, need:0, color:"#5a8aa8",
+        note:"Direct combine at 16% moisture or below. Dry beans very sensitive to harvest damage.",
+        critical:"Harvest at >18% moisture = skin cracking and splits. Dry weather critical — rain darkens and stains beans."}
     ]
   }
 };
@@ -2140,7 +2219,7 @@ async function fetchForecast(lat, lon, label) {
       .then(function(r){return r.json();}).catch(function(){return null;});
   });
   var agFetch = fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
-    +"&hourly=et0_fao_evapotranspiration,temperature_2m,soil_moisture_0_to_1cm,soil_moisture_1_to_3cm,soil_moisture_3_to_9cm,soil_moisture_9_to_27cm&forecast_days=14&timezone=auto")
+    +"&hourly=et0_fao_evapotranspiration,temperature_2m,soil_moisture_0_to_1cm,soil_moisture_1_to_3cm,soil_moisture_3_to_9cm,soil_moisture_9_to_27cm,soil_temperature_0cm,soil_temperature_6cm,soil_temperature_18cm,soil_temperature_54cm&forecast_days=14&timezone=auto")
     .then(function(r){return r.json();}).catch(function(){return null;});
 
   var all = await Promise.all(modelFetches.concat([agFetch]));
@@ -2167,6 +2246,12 @@ async function fetchForecast(lat, lon, label) {
     shallow: (agData&&agData.hourly&&agData.hourly.soil_moisture_1_to_3cm)||[],
     mid:     (agData&&agData.hourly&&agData.hourly.soil_moisture_3_to_9cm)||[],
     deep:    (agData&&agData.hourly&&agData.hourly.soil_moisture_9_to_27cm)||[]
+  };
+  soilTempRows = {
+    t0cm:  (agData&&agData.hourly&&agData.hourly.soil_temperature_0cm)||[],
+    t6cm:  (agData&&agData.hourly&&agData.hourly.soil_temperature_6cm)||[],
+    t18cm: (agData&&agData.hourly&&agData.hourly.soil_temperature_18cm)||[],
+    t54cm: (agData&&agData.hourly&&agData.hourly.soil_temperature_54cm)||[]
   };
 
   var modelTotals=MODELS.map(function(_,mi){
@@ -2485,10 +2570,10 @@ function renderAgSection(){
     agCard("MAX DRY STREAK",maxDrought+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>days</span>",droughtColor,maxDrought>=crop.droughtDays?"DROUGHT RISK":"ACCEPTABLE","Consecutive days <2mm")+
     agCard("FLOOD RISK DAYS",floodDays+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>days</span>",floodColor,floodDays>0?"MONITOR":"LOW RISK","Days >"+crop.flood+"mm");
   renderFieldWindows(daily);
-  renderSoilDepthPanel(latestSurface, latestShallow, latestMid, latestDeep, soilSource);
+  renderSoilDepthPanel(latestSurface, latestShallow, latestMid, latestDeep, soilSource, soilTempRows);
 }
 
-function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
+function renderSoilDepthPanel(surface, shallow, mid, deep, source, stRows) {
   if (surface === null || surface === undefined) return;
 
   var wilt = 0.10, fc = 0.33, sat = 0.47;
@@ -2598,6 +2683,82 @@ function renderSoilDepthPanel(surface, shallow, mid, deep, source) {
     trendHtml = "<div style='color:#3a6a94;font-size:10px;letter-spacing:1px;padding:10px 0;'>NO TREND DATA</div>";
   }
   document.getElementById("soilTrend").innerHTML = trendHtml;
+
+  // ── Soil Temperature ──────────────────────────────────────────────────────
+  if (!stRows || !stRows.t0cm || !stRows.t0cm.length) return;
+  function cToF(c) { return c !== null && c !== undefined ? Math.round(c * 9/5 + 32) : null; }
+  var st0  = cToF(stRows.t0cm[0]);
+  var st6  = cToF(stRows.t6cm[0]);
+  var st18 = cToF(stRows.t18cm[0]);
+  var st54 = cToF(stRows.t54cm[0]);
+  function stColor(t) {
+    if (t===null) return "#3a6a94";
+    if (t < 32)  return "#38bdf8";
+    if (t < 50)  return "#ffb300";
+    if (t <= 95) return "#00ffa3";
+    return "#f87171";
+  }
+  function stLabel(t) {
+    if (t===null) return "N/A";
+    if (t < 32)  return "FROZEN";
+    if (t < 40)  return "COLD";
+    if (t < 50)  return "COOL";
+    if (t < 55)  return "MARGINAL";
+    if (t <= 85) return "OPTIMAL";
+    if (t <= 95) return "WARM";
+    return "TOO HOT";
+  }
+  var tempLayers = [
+    {name:"SURFACE", depth:"0 cm (0 in)",    val:st0},
+    {name:"SHALLOW", depth:"6 cm (2.4 in)",  val:st6},
+    {name:"MID",     depth:"18 cm (7 in)",   val:st18},
+    {name:"DEEP",    depth:"54 cm (21 in)",  val:st54}
+  ];
+  var tcEl = document.getElementById("soilTempCards");
+  if (tcEl) {
+    tcEl.style.display = "grid";
+    tcEl.style.gridTemplateColumns = "repeat(auto-fit,minmax(120px,1fr))";
+    tcEl.style.gap = "8px";
+    tcEl.innerHTML = tempLayers.map(function(l){
+      var col = stColor(l.val);
+      return "<div style='background:#060f1a;border:1px solid #1e3a5f;border-top:2px solid "+col+";padding:10px 12px;'>"
+        + "<div style='font-size:8px;color:#7ab8d4;letter-spacing:1px;margin-bottom:2px;'>"+l.name+"<br>"+l.depth+"</div>"
+        + "<div style='font-size:26px;font-weight:900;color:"+col+";line-height:1;'>"+(l.val!==null?l.val+"°F":"N/A")+"</div>"
+        + "<div style='font-size:9px;color:"+col+";margin-top:2px;'>"+stLabel(l.val)+"</div>"
+        + "</div>";
+    }).join("");
+  }
+  var tbEl = document.getElementById("soilTempBars");
+  if (tbEl) {
+    tbEl.style.display = "block";
+    tbEl.innerHTML = tempLayers.map(function(l){
+      var col = stColor(l.val);
+      var barW = l.val !== null ? Math.min(100,Math.max(0,Math.round((l.val/120)*100))) : 0;
+      return "<div style='display:flex;align-items:center;gap:8px;margin-bottom:8px;'>"
+        + "<div style='font-size:9px;color:#7ab8d4;width:72px;flex-shrink:0;'>"+l.name+"</div>"
+        + "<div style='font-size:14px;font-weight:900;color:"+col+";width:46px;flex-shrink:0;text-align:right;'>"+(l.val!==null?l.val+"°":"–")+"</div>"
+        + "<div style='flex:1;position:relative;'>"
+        +   "<div style='background:#0a0f1a;height:10px;border-radius:3px;overflow:visible;border:1px solid #1e3a5f;position:relative;'>"
+        +     "<div style='width:"+barW+"%;height:100%;background:"+col+";border-radius:3px;'></div>"
+        +     "<div style='position:absolute;left:42%;top:-3px;width:1px;height:16px;background:#00ffa3;opacity:0.5;'></div>"
+        +     "<div style='position:absolute;left:79%;top:-3px;width:1px;height:16px;background:#f87171;opacity:0.5;'></div>"
+        +   "</div>"
+        +   "<div style='display:flex;justify-content:space-between;font-size:7px;color:#3a6a94;margin-top:2px;'><span>0°</span><span style=\'color:#00ffa3;\'>50° ideal</span><span style=\'color:#f87171;\'>95°</span><span>120°</span></div>"
+        + "</div></div>";
+    }).join("");
+  }
+  var noteEl = document.getElementById("soilTempCropNote");
+  if (noteEl && selectedCrop && CROPS[selectedCrop]) {
+    var seedTemps = {corn:50,soybeans:50,wheat:34,cotton:65,sorghum:60,canola:41,pasture:50,tallgrass:60,shortgrass:60,hay:45,chilipepper:65,drybeans:60};
+    var minT = seedTemps[selectedCrop] || 50;
+    var ready = st6 !== null && st6 >= minT;
+    var col2 = ready ? "#00ffa3" : "#ffb300";
+    var txt = ready
+      ? "\u2713 SOIL READY FOR " + CROPS[selectedCrop].name + " — 2-inch depth " + st6 + "°F ≥ " + minT + "°F minimum"
+      : "\u26a0 SOIL TOO COLD FOR " + CROPS[selectedCrop].name + " — Need " + minT + "°F at 2-inch depth, currently " + (st6!==null?st6+"°F":"unknown");
+    noteEl.style.display = "block";
+    noteEl.innerHTML = "<div style='padding:8px 12px;border-left:3px solid "+col2+";background:rgba(0,0,0,0.2);font-size:10px;color:"+col2+";letter-spacing:1px;margin-bottom:8px;'>"+txt+"</div>";
+  }
 }
 
 function agCard(label,valHtml,color,badge,sub){
