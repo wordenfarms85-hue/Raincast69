@@ -79,7 +79,7 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 /* Map */
 #mapSection { margin-bottom: 20px; }
 #mapSection .section-title { margin-bottom: 8px; }
-#map { width: 100%; height: 300px; border: 1px solid #1e3a5f; }
+
 /* Ag cards */
 #agCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 20px; }
 .ag-card { background: #0d1520; border: 1px solid #1e3a5f; padding: 12px 14px; }
@@ -120,11 +120,7 @@ td:first-child { text-align: left; color: #3a6080; }
 .crop-btn { background: #111827; border: 1px solid #1e3a5f; color: #3a6080; font-family: monospace; font-size: 11px; padding: 8px 6px; cursor: pointer; text-align: center; letter-spacing: 1px; transition: all 0.15s; }
 .crop-btn:hover { border-color: #00c8ff; color: #cde; }
 .crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
-/* Leaflet overrides */
-.leaflet-popup-content-wrapper { background: #0d1520 !important; border: 1px solid #00c8ff !important; border-radius: 2px !important; box-shadow: 0 0 20px rgba(0,200,255,0.2) !important; }
-.leaflet-popup-tip { background: #0d1520 !important; }
-.leaflet-popup-content { color: #cde !important; font-family: monospace !important; font-size: 12px !important; margin: 10px 14px !important; }
-.leaflet-control-zoom a { background: #0d1520 !important; color: #00c8ff !important; border-color: #1e3a5f !important; }
+
 </style>
 </head>
 <body>
@@ -211,7 +207,7 @@ td:first-child { text-align: left; color: #3a6080; }
 
 <div id="mapSection" style="display:none;margin-bottom:20px;">
   <div class="section-title">FIELD LOCATION — SATELLITE VIEW</div>
-  <div id="map"></div>
+  <iframe id="mapFrame" src="" title="Map" style="width:100%;height:300px;border:1px solid #1e3a5f;display:block;"></iframe>
 </div>
 
 <!-- Ag insight cards -->
@@ -250,8 +246,6 @@ td:first-child { text-align: left; color: #3a6080; }
   SATELLITE MAP: &copy; ESRI / NASA / USGS &middot; ET: FAO PENMAN-MONTEITH &middot; GROWTH STAGES: UNIVERSITY EXTENSION DATA
 </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 var MODELS = [
@@ -264,689 +258,658 @@ var MODELS = [
 // ─── CROPS ───────────────────────────────────────────────────────────────────
 // rmOptions: [ { label, gdd } ]  (GDD base 50°F / 10°C to maturity)
 var CROPS = {
-corn: {
-name:“CORN”, icon:”🌽”, flood:50, droughtDays:5,
-rmOptions:[{l:“70-day (Early)”,g:1700},{l:“80-day”,g:1900},{l:“90-day”,g:2100},{l:“100-day (Full Season)”,g:2300},{l:“110-day”,g:2500},{l:“120-day (Long Season)”,g:2700}],
-stages:[
-{name:“GERMINATION”, pct:[0,6],   kc:0.3, need:3,  color:”#4ade80”, note:“Soil moisture critical for emergence. Need 12-15mm.”, critical:“Dry soil prevents germination. Waterlogging rots seed.”},
-{name:“EMERGENCE”,   pct:[6,14],  kc:0.5, need:4,  color:”#4ade80”, note:“Seedling establishment. Shallow roots vulnerable.”, critical:“Drought stress causes uneven stand.”},
-{name:“VEGETATIVE”,  pct:[14,40], kc:0.8, need:5,  color:”#00c8ff”, note:“Rapid leaf/stalk growth. Increasing water demand.”, critical:“Drought stunts height. Excess N causes rank growth.”},
-{name:“TASSELING”,   pct:[40,52], kc:1.2, need:8,  color:”#ffb300”, note:“CRITICAL: Peak water demand. Pollination sensitive.”, critical:“1-2 dry days during pollination cuts yield 5-8%.”},
-{name:“SILKING”,     pct:[52,62], kc:1.2, need:8,  color:”#ffb300”, note:“CRITICAL: Kernel set determined here.”, critical:“Stress reduces kernel count permanently.”},
-{name:“GRAIN FILL”,  pct:[62,88], kc:1.0, need:6,  color:”#fb923c”, note:“Starch accumulation. Steady moisture needed.”, critical:“Late drought reduces test weight and bushels.”},
-{name:“MATURITY”,    pct:[88,100],kc:0.5, need:2,  color:”#3a6080”, note:“Crop drying down. Excess rain delays harvest.”, critical:“Rain risks mold and harvest delays.”}
-]
-},
-soybeans: {
-name:“SOYBEANS”, icon:”🥏”, flood:40, droughtDays:7,
-rmOptions:[{l:“0.5 (Short Season)”,g:1200},{l:“1.5”,g:1400},{l:“2.5”,g:1550},{l:“3.5”,g:1700},{l:“4.5 (Full Season)”,g:1900},{l:“5.5 (Southern)”,g:2100}],
-stages:[
-{name:“GERMINATION”, pct:[0,8],   kc:0.3, need:3,  color:”#4ade80”, note:“Needs 25-50mm consistent moisture.”, critical:“Dry crust prevents emergence.”},
-{name:“EMERGENCE”,   pct:[8,16],  kc:0.4, need:3,  color:”#4ade80”, note:“Cotyledons unfold. Avoid standing water.”, critical:“Flooding >24hrs kills seedlings.”},
-{name:“VEGETATIVE”,  pct:[16,38], kc:0.7, need:4,  color:”#00c8ff”, note:“Node development. Relatively drought tolerant.”, critical:“Moderate stress tolerated but slows canopy.”},
-{name:“FLOWERING”,   pct:[38,55], kc:1.0, need:6,  color:”#ffb300”, note:“CRITICAL: Flower and pod set. High sensitivity.”, critical:“Drought drops pod count 30-50%.”},
-{name:“POD FILL”,    pct:[55,88], kc:1.1, need:7,  color:”#ffb300”, note:“CRITICAL: Seed size determined. Peak demand.”, critical:“Stress during R5-R6 = major yield loss.”},
-{name:“MATURITY”,    pct:[88,100],kc:0.5, need:2,  color:”#3a6080”, note:“Pod dry-down. Rain delays harvest.”, critical:“Excess rain risks pod mold and shattering.”}
-]
-},
-wheat: {
-name:“WHEAT”, icon:”🌿”, flood:35, droughtDays:10,
-rmOptions:[{l:“Soft Red Winter”,g:1200},{l:“Hard Red Winter”,g:1300},{l:“Hard Red Spring”,g:1100},{l:“Durum”,g:1200},{l:“Soft White”,g:1100}],
-stages:[
-{name:“GERMINATION”,     pct:[0,8],   kc:0.3, need:2,  color:”#4ade80”, note:“Fall planting needs 20-30mm. Cool temps ideal.”, critical:“Dry fall delays emergence.”},
-{name:“TILLERING”,       pct:[8,30],  kc:0.6, need:3,  color:”#00c8ff”, note:“Tiller development sets yield potential.”, critical:“Drought limits tiller count.”},
-{name:“STEM EXTENSION”,  pct:[30,55], kc:0.9, need:5,  color:”#00c8ff”, note:“Rapid growth. Increasing water need.”, critical:“Frost + wet conditions risks disease.”},
-{name:“HEADING”,         pct:[55,70], kc:1.0, need:6,  color:”#ffb300”, note:“CRITICAL: Head emergence and pollination.”, critical:“Rain during heading causes fusarium blight.”},
-{name:“GRAIN FILL”,      pct:[70,90], kc:1.0, need:5,  color:”#fb923c”, note:“Kernel weight determined.”, critical:“Hot dry winds reduce test weight.”},
-{name:“RIPENING”,        pct:[90,100],kc:0.4, need:1,  color:”#3a6080”, note:“Crop drying. Rain risks quality loss.”, critical:“Rain at harvest causes sprouting.”}
-]
-},
-cotton: {
-name:“COTTON”, icon:”🌞”, flood:45, droughtDays:8,
-rmOptions:[{l:“Short Season (100d)”,g:1600},{l:“Medium (120d)”,g:1900},{l:“Full Season (140d)”,g:2200}],
-stages:[
-{name:“GERMINATION”, pct:[0,7],   kc:0.3, need:3,  color:”#4ade80”, note:“Needs warm soil 65F+. 20-30mm to germinate.”, critical:“Cool wet soils cause seedling disease.”},
-{name:“EMERGENCE”,   pct:[7,18],  kc:0.4, need:3,  color:”#4ade80”, note:“Hypocotyl emergence. Avoid crusting.”, critical:“Soil crust prevents emergence.”},
-{name:“SQUARING”,    pct:[18,42], kc:0.7, need:4,  color:”#00c8ff”, note:“Square (bud) formation. Moderate demand.”, critical:“Excess N + water causes rank growth.”},
-{name:“FLOWERING”,   pct:[42,64], kc:1.1, need:7,  color:”#ffb300”, note:“CRITICAL: Boll set. Peak water demand.”, critical:“Drought drops boll retention dramatically.”},
-{name:“BOLL FILL”,   pct:[64,88], kc:1.1, need:7,  color:”#ffb300”, note:“CRITICAL: Fiber/seed development in bolls.”, critical:“Stress reduces fiber length and strength.”},
-{name:“MATURITY”,    pct:[88,100],kc:0.5, need:1,  color:”#3a6080”, note:“Boll opening. Dry weather critical.”, critical:“Rain on open bolls stains fiber.”}
-]
-},
-sorghum: {
-name:“SORGHUM”, icon:”🌾”, flood:45, droughtDays:12,
-rmOptions:[{l:“Early (80d)”,g:1600},{l:“Medium (95d)”,g:1900},{l:“Full Season (110d)”,g:2200}],
-stages:[
-{name:“GERMINATION”, pct:[0,8],   kc:0.3, need:2,  color:”#4ade80”, note:“Warm soil 60F+. Drought tolerant once emerged.”, critical:“Cold wet soil causes poor stand.”},
-{name:“VEGETATIVE”,  pct:[8,38],  kc:0.6, need:3,  color:”#00c8ff”, note:“Very drought tolerant. Can go dormant and recover.”, critical:“Exceptional tolerance but yield suffers.”},
-{name:“BOOT”,        pct:[38,55], kc:0.9, need:5,  color:”#00c8ff”, note:“Head forming. Increasing sensitivity.”, critical:“Drought causes head to not fully exert.”},
-{name:“HEADING”,     pct:[55,68], kc:1.0, need:6,  color:”#ffb300”, note:“CRITICAL: Head emergence and pollination.”, critical:“Drought during flowering cuts grain set.”},
-{name:“GRAIN FILL”,  pct:[68,90], kc:0.9, need:5,  color:”#fb923c”, note:“Kernel weight accumulation.”, critical:“Late drought reduces test weight.”},
-{name:“MATURITY”,    pct:[90,100],kc:0.4, need:1,  color:”#3a6080”, note:“Physiological maturity.”, critical:“Excess rain delays harvest and causes mold.”}
-]
-},
-canola: {
-name:“CANOLA”, icon:”🌼”, flood:35, droughtDays:8,
-rmOptions:[{l:“Early (~85d)”,g:1100},{l:“Medium (~95d)”,g:1250},{l:“Late (~105d)”,g:1400}],
-stages:[
-{name:“GERMINATION”,      pct:[0,7],   kc:0.3, need:2,  color:”#4ade80”, note:“Tiny seed needs firm seedbed.”, critical:“Dry soil or deep planting = poor stand.”},
-{name:“SEEDLING”,         pct:[7,22],  kc:0.4, need:3,  color:”#4ade80”, note:“Rosette stage. Cool tolerant.”, critical:“Flea beetle pressure high.”},
-{name:“STEM ELONGATION”,  pct:[22,48], kc:0.7, need:4,  color:”#00c8ff”, note:“Bolting and stem extension.”, critical:“Frost risk at this stage damages stems.”},
-{name:“FLOWERING”,        pct:[48,65], kc:1.0, need:6,  color:”#ffb300”, note:“CRITICAL: Frost kills flowers.”, critical:“Frost at flowering = catastrophic yield loss.”},
-{name:“POD FILL”,         pct:[65,90], kc:1.0, need:6,  color:”#ffb300”, note:“CRITICAL: Oil content determined.”, critical:“Heat + drought reduces oil % and seed size.”},
-{name:“MATURITY”,         pct:[90,100],kc:0.4, need:1,  color:”#3a6080”, note:“Pod shatter risk increases.”, critical:“Rain causes pod shatter and sprouting.”}
-]
-},
-pasture: {
-name:“PASTURE”, icon:”🌿”, flood:60, droughtDays:14,
-rmOptions:[{l:“Cool-Season Mix”,g:800},{l:“Warm-Season Mix”,g:1200},{l:“Bermudagrass”,g:1400},{l:“Fescue”,g:900}],
-stages:[
-{name:“DORMANT”,      pct:[0,12],  kc:0.3, need:1,  color:”#3a6080”, note:“Minimal water use. Soil recharge period.”, critical:“Ice sheeting can kill stands.”},
-{name:“GREEN-UP”,     pct:[12,25], kc:0.5, need:3,  color:”#4ade80”, note:“Root carbohydrate reserves drive growth.”, critical:“Late frost after green-up damages growth.”},
-{name:“VEGETATIVE”,   pct:[25,50], kc:0.8, need:4,  color:”#00c8ff”, note:“Rapid growth. Grazing management critical.”, critical:“Overgrazing during wet = compaction.”},
-{name:“HEADING”,      pct:[50,65], kc:0.9, need:5,  color:”#00c8ff”, note:“Seed head formation. Quality declines.”, critical:“Drought slows regrowth after grazing.”},
-{name:“SUMMER SLUMP”, pct:[65,82], kc:0.6, need:4,  color:”#ffb300”, note:“Heat stress slows cool-season grasses.”, critical:“Extended drought triggers summer dormancy.”},
-{name:“FALL REGROWTH”,pct:[82,100],kc:0.7, need:3,  color:”#4ade80”, note:“Second growth flush. Good quality forage.”, critical:“Early hard frost stops growth.”}
-]
-},
-hay: {
-name:“HAY”, icon:”🥐”, flood:40, droughtDays:10,
-rmOptions:[{l:“Alfalfa”,g:1100},{l:“Orchardgrass”,g:900},{l:“Timothy”,g:850},{l:“Mixed Grass”,g:950}],
-stages:[
-{name:“DORMANT”,     pct:[0,12],  kc:0.3, need:1,  color:”#3a6080”, note:“Root system maintenance.”, critical:“Winterkill from ice sheets or heaving.”},
-{name:“GREEN-UP”,    pct:[12,22], kc:0.5, need:3,  color:”#4ade80”, note:“First growth from crown.”, critical:“Late frost after 3+ inches damages crop.”},
-{name:“1ST CUTTING”, pct:[22,42], kc:0.9, need:5,  color:”#00c8ff”, note:“Rapid vegetative growth. Dry window needed to cut.”, critical:“Rain on cut hay causes quality loss and mold.”},
-{name:“REGROWTH 1”,  pct:[42,60], kc:0.9, need:5,  color:”#00c8ff”, note:“Recovery after 1st cut. 28-35 day rest ideal.”, critical:“Drought extends regrowth interval.”},
-{name:“REGROWTH 2”,  pct:[60,80], kc:0.8, need:4,  color:”#ffb300”, note:“Heat slows growth. Quality still good.”, critical:“Heat + drought reduces yield.”},
-{name:“FALL CUTTING”,pct:[80,100],kc:0.7, need:3,  color:”#4ade80”, note:“Final cut. Leave 3-4 inch stubble.”, critical:“Too late cutting weakens winter survival.”}
-]
-}
+  corn: {
+    name:"CORN", icon:"&#127805;", flood:50, droughtDays:5,
+    rmOptions:[{l:"70-day (Early)",g:1700},{l:"80-day",g:1900},{l:"90-day",g:2100},{l:"100-day (Full Season)",g:2300},{l:"110-day",g:2500},{l:"120-day (Long Season)",g:2700}],
+    stages:[
+      {name:"GERMINATION", pct:[0,6],   kc:0.3, need:3,  color:"#4ade80", note:"Soil moisture critical for emergence. Need 12-15mm.", critical:"Dry soil prevents germination. Waterlogging rots seed."},
+      {name:"EMERGENCE",   pct:[6,14],  kc:0.5, need:4,  color:"#4ade80", note:"Seedling establishment. Shallow roots vulnerable.", critical:"Drought stress causes uneven stand."},
+      {name:"VEGETATIVE",  pct:[14,40], kc:0.8, need:5,  color:"#00c8ff", note:"Rapid leaf/stalk growth. Increasing water demand.", critical:"Drought stunts height. Excess N causes rank growth."},
+      {name:"TASSELING",   pct:[40,52], kc:1.2, need:8,  color:"#ffb300", note:"CRITICAL: Peak water demand. Pollination sensitive.", critical:"1-2 dry days during pollination cuts yield 5-8%."},
+      {name:"SILKING",     pct:[52,62], kc:1.2, need:8,  color:"#ffb300", note:"CRITICAL: Kernel set determined here.", critical:"Stress reduces kernel count permanently."},
+      {name:"GRAIN FILL",  pct:[62,88], kc:1.0, need:6,  color:"#fb923c", note:"Starch accumulation. Steady moisture needed.", critical:"Late drought reduces test weight and bushels."},
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#3a6080", note:"Crop drying down. Excess rain delays harvest.", critical:"Rain risks mold and harvest delays."}
+    ]
+  },
+  soybeans: {
+    name:"SOYBEANS", icon:"&#129359;", flood:40, droughtDays:7,
+    rmOptions:[{l:"0.5 (Short Season)",g:1200},{l:"1.5",g:1400},{l:"2.5",g:1550},{l:"3.5",g:1700},{l:"4.5 (Full Season)",g:1900},{l:"5.5 (Southern)",g:2100}],
+    stages:[
+      {name:"GERMINATION", pct:[0,8],   kc:0.3, need:3,  color:"#4ade80", note:"Needs 25-50mm consistent moisture.", critical:"Dry crust prevents emergence."},
+      {name:"EMERGENCE",   pct:[8,16],  kc:0.4, need:3,  color:"#4ade80", note:"Cotyledons unfold. Avoid standing water.", critical:"Flooding >24hrs kills seedlings."},
+      {name:"VEGETATIVE",  pct:[16,38], kc:0.7, need:4,  color:"#00c8ff", note:"Node development. Relatively drought tolerant.", critical:"Moderate stress tolerated but slows canopy."},
+      {name:"FLOWERING",   pct:[38,55], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Flower and pod set. High sensitivity.", critical:"Drought drops pod count 30-50%."},
+      {name:"POD FILL",    pct:[55,88], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Seed size determined. Peak demand.", critical:"Stress during R5-R6 = major yield loss."},
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:2,  color:"#3a6080", note:"Pod dry-down. Rain delays harvest.", critical:"Excess rain risks pod mold and shattering."}
+    ]
+  },
+  wheat: {
+    name:"WHEAT", icon:"&#127807;", flood:35, droughtDays:10,
+    rmOptions:[{l:"Soft Red Winter",g:1200},{l:"Hard Red Winter",g:1300},{l:"Hard Red Spring",g:1100},{l:"Durum",g:1200},{l:"Soft White",g:1100}],
+    stages:[
+      {name:"GERMINATION",     pct:[0,8],   kc:0.3, need:2,  color:"#4ade80", note:"Fall planting needs 20-30mm. Cool temps ideal.", critical:"Dry fall delays emergence."},
+      {name:"TILLERING",       pct:[8,30],  kc:0.6, need:3,  color:"#00c8ff", note:"Tiller development sets yield potential.", critical:"Drought limits tiller count."},
+      {name:"STEM EXTENSION",  pct:[30,55], kc:0.9, need:5,  color:"#00c8ff", note:"Rapid growth. Increasing water need.", critical:"Frost + wet conditions risks disease."},
+      {name:"HEADING",         pct:[55,70], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Head emergence and pollination.", critical:"Rain during heading causes fusarium blight."},
+      {name:"GRAIN FILL",      pct:[70,90], kc:1.0, need:5,  color:"#fb923c", note:"Kernel weight determined.", critical:"Hot dry winds reduce test weight."},
+      {name:"RIPENING",        pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Crop drying. Rain risks quality loss.", critical:"Rain at harvest causes sprouting."}
+    ]
+  },
+  cotton: {
+    name:"COTTON", icon:"&#127774;", flood:45, droughtDays:8,
+    rmOptions:[{l:"Short Season (100d)",g:1600},{l:"Medium (120d)",g:1900},{l:"Full Season (140d)",g:2200}],
+    stages:[
+      {name:"GERMINATION", pct:[0,7],   kc:0.3, need:3,  color:"#4ade80", note:"Needs warm soil 65F+. 20-30mm to germinate.", critical:"Cool wet soils cause seedling disease."},
+      {name:"EMERGENCE",   pct:[7,18],  kc:0.4, need:3,  color:"#4ade80", note:"Hypocotyl emergence. Avoid crusting.", critical:"Soil crust prevents emergence."},
+      {name:"SQUARING",    pct:[18,42], kc:0.7, need:4,  color:"#00c8ff", note:"Square (bud) formation. Moderate demand.", critical:"Excess N + water causes rank growth."},
+      {name:"FLOWERING",   pct:[42,64], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Boll set. Peak water demand.", critical:"Drought drops boll retention dramatically."},
+      {name:"BOLL FILL",   pct:[64,88], kc:1.1, need:7,  color:"#ffb300", note:"CRITICAL: Fiber/seed development in bolls.", critical:"Stress reduces fiber length and strength."},
+      {name:"MATURITY",    pct:[88,100],kc:0.5, need:1,  color:"#3a6080", note:"Boll opening. Dry weather critical.", critical:"Rain on open bolls stains fiber."}
+    ]
+  },
+  sorghum: {
+    name:"SORGHUM", icon:"&#127806;", flood:45, droughtDays:12,
+    rmOptions:[{l:"Early (80d)",g:1600},{l:"Medium (95d)",g:1900},{l:"Full Season (110d)",g:2200}],
+    stages:[
+      {name:"GERMINATION", pct:[0,8],   kc:0.3, need:2,  color:"#4ade80", note:"Warm soil 60F+. Drought tolerant once emerged.", critical:"Cold wet soil causes poor stand."},
+      {name:"VEGETATIVE",  pct:[8,38],  kc:0.6, need:3,  color:"#00c8ff", note:"Very drought tolerant. Can go dormant and recover.", critical:"Exceptional tolerance but yield suffers."},
+      {name:"BOOT",        pct:[38,55], kc:0.9, need:5,  color:"#00c8ff", note:"Head forming. Increasing sensitivity.", critical:"Drought causes head to not fully exert."},
+      {name:"HEADING",     pct:[55,68], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Head emergence and pollination.", critical:"Drought during flowering cuts grain set."},
+      {name:"GRAIN FILL",  pct:[68,90], kc:0.9, need:5,  color:"#fb923c", note:"Kernel weight accumulation.", critical:"Late drought reduces test weight."},
+      {name:"MATURITY",    pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Physiological maturity.", critical:"Excess rain delays harvest and causes mold."}
+    ]
+  },
+  canola: {
+    name:"CANOLA", icon:"&#127804;", flood:35, droughtDays:8,
+    rmOptions:[{l:"Early (~85d)",g:1100},{l:"Medium (~95d)",g:1250},{l:"Late (~105d)",g:1400}],
+    stages:[
+      {name:"GERMINATION",      pct:[0,7],   kc:0.3, need:2,  color:"#4ade80", note:"Tiny seed needs firm seedbed.", critical:"Dry soil or deep planting = poor stand."},
+      {name:"SEEDLING",         pct:[7,22],  kc:0.4, need:3,  color:"#4ade80", note:"Rosette stage. Cool tolerant.", critical:"Flea beetle pressure high."},
+      {name:"STEM ELONGATION",  pct:[22,48], kc:0.7, need:4,  color:"#00c8ff", note:"Bolting and stem extension.", critical:"Frost risk at this stage damages stems."},
+      {name:"FLOWERING",        pct:[48,65], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Frost kills flowers.", critical:"Frost at flowering = catastrophic yield loss."},
+      {name:"POD FILL",         pct:[65,90], kc:1.0, need:6,  color:"#ffb300", note:"CRITICAL: Oil content determined.", critical:"Heat + drought reduces oil % and seed size."},
+      {name:"MATURITY",         pct:[90,100],kc:0.4, need:1,  color:"#3a6080", note:"Pod shatter risk increases.", critical:"Rain causes pod shatter and sprouting."}
+    ]
+  },
+  pasture: {
+    name:"PASTURE", icon:"&#127807;", flood:60, droughtDays:14,
+    rmOptions:[{l:"Cool-Season Mix",g:800},{l:"Warm-Season Mix",g:1200},{l:"Bermudagrass",g:1400},{l:"Fescue",g:900}],
+    stages:[
+      {name:"DORMANT",      pct:[0,12],  kc:0.3, need:1,  color:"#3a6080", note:"Minimal water use. Soil recharge period.", critical:"Ice sheeting can kill stands."},
+      {name:"GREEN-UP",     pct:[12,25], kc:0.5, need:3,  color:"#4ade80", note:"Root carbohydrate reserves drive growth.", critical:"Late frost after green-up damages growth."},
+      {name:"VEGETATIVE",   pct:[25,50], kc:0.8, need:4,  color:"#00c8ff", note:"Rapid growth. Grazing management critical.", critical:"Overgrazing during wet = compaction."},
+      {name:"HEADING",      pct:[50,65], kc:0.9, need:5,  color:"#00c8ff", note:"Seed head formation. Quality declines.", critical:"Drought slows regrowth after grazing."},
+      {name:"SUMMER SLUMP", pct:[65,82], kc:0.6, need:4,  color:"#ffb300", note:"Heat stress slows cool-season grasses.", critical:"Extended drought triggers summer dormancy."},
+      {name:"FALL REGROWTH",pct:[82,100],kc:0.7, need:3,  color:"#4ade80", note:"Second growth flush. Good quality forage.", critical:"Early hard frost stops growth."}
+    ]
+  },
+  hay: {
+    name:"HAY", icon:"&#129360;", flood:40, droughtDays:10,
+    rmOptions:[{l:"Alfalfa",g:1100},{l:"Orchardgrass",g:900},{l:"Timothy",g:850},{l:"Mixed Grass",g:950}],
+    stages:[
+      {name:"DORMANT",     pct:[0,12],  kc:0.3, need:1,  color:"#3a6080", note:"Root system maintenance.", critical:"Winterkill from ice sheets or heaving."},
+      {name:"GREEN-UP",    pct:[12,22], kc:0.5, need:3,  color:"#4ade80", note:"First growth from crown.", critical:"Late frost after 3+ inches damages crop."},
+      {name:"1ST CUTTING", pct:[22,42], kc:0.9, need:5,  color:"#00c8ff", note:"Rapid vegetative growth. Dry window needed to cut.", critical:"Rain on cut hay causes quality loss and mold."},
+      {name:"REGROWTH 1",  pct:[42,60], kc:0.9, need:5,  color:"#00c8ff", note:"Recovery after 1st cut. 28-35 day rest ideal.", critical:"Drought extends regrowth interval."},
+      {name:"REGROWTH 2",  pct:[60,80], kc:0.8, need:4,  color:"#ffb300", note:"Heat slows growth. Quality still good.", critical:"Heat + drought reduces yield."},
+      {name:"FALL CUTTING",pct:[80,100],kc:0.7, need:3,  color:"#4ade80", note:"Final cut. Leave 3-4 inch stubble.", critical:"Too late cutting weakens winter survival."}
+    ]
+  }
 };
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-var unit = “in”, view = “hourly”;
+var unit = "in", view = "hourly";
 var allRows = [], allTotals = null, etRows = [];
-var selectedCrop = “corn”, selectedStage = 0;
+var selectedCrop = "corn", selectedStage = 0;
 var currentLat = null, currentLon = null;
 var plantingDate = null, maturityDate = null, maturityEarlyDate = null, maturityLateDate = null;
-var fields = JSON.parse(localStorage.getItem(“farmcast_fields”) || “[]”);
+var fields = JSON.parse(localStorage.getItem("farmcast_fields") || "[]");
 var activeField = null;
-var leafletMap = null, leafletMarker = null;
 
 // Tag colors
-var TAG_COLORS = [”#00c8ff”,”#00ffa3”,”#ffb300”,”#f87171”,”#c084fc”,”#fb923c”,”#38bdf8”,”#4ade80”];
+var TAG_COLORS = ["#00c8ff","#00ffa3","#ffb300","#f87171","#c084fc","#fb923c","#38bdf8","#4ade80"];
 
 // ─── FIELD TAGS ───────────────────────────────────────────────────────────────
 function saveFields() {
-try { localStorage.setItem(“farmcast_fields”, JSON.stringify(fields)); } catch(e){}
+  try { localStorage.setItem("farmcast_fields", JSON.stringify(fields)); } catch(e){}
 }
 
 function renderTags() {
-var list = document.getElementById(“tagList”);
-if (!fields.length) {
-list.innerHTML = “<div style='color:#1e3a5f;font-size:10px;letter-spacing:1px;padding:6px 0;'>NO FIELDS SAVED YET — ADD ONE BELOW</div>”;
-return;
-}
-var html = “”;
-fields.forEach(function(f, i) {
-var isActive = (activeField === i);
-html += “<div class='field-tag" + (isActive ? " active-tag" : "") + "' onclick='loadField(" + i + ")'>”
-+ “<div class='tag-dot' style='background:" + f.color + "'></div>”
-+ “<span>” + f.name + “</span>”
-+ (f.crop ? “<span style='color:#3a6080;font-size:9px;margin-left:4px;'>[” + CROPS[f.crop].name + “]</span>” : “”)
-+ “<span class='tag-del' onclick='deleteField(event," + i + ")'>✕</span>”
-+ “</div>”;
-});
-list.innerHTML = html;
+  var list = document.getElementById("tagList");
+  if (!fields.length) {
+    list.innerHTML = "<div style='color:#1e3a5f;font-size:10px;letter-spacing:1px;padding:6px 0;'>NO FIELDS SAVED YET — ADD ONE BELOW</div>";
+    return;
+  }
+  var html = "";
+  fields.forEach(function(f, i) {
+    var isActive = (activeField === i);
+    html += "<div class='field-tag" + (isActive ? " active-tag" : "") + "' onclick='loadField(" + i + ")'>"
+      + "<div class='tag-dot' style='background:" + f.color + "'></div>"
+      + "<span>" + f.name + "</span>"
+      + (f.crop ? "<span style='color:#3a6080;font-size:9px;margin-left:4px;'>[" + CROPS[f.crop].name + "]</span>" : "")
+      + "<span class='tag-del' onclick='deleteField(event," + i + ")'>&#10005;</span>"
+      + "</div>";
+  });
+  list.innerHTML = html;
 }
 
 function addTag() {
-var name = document.getElementById(“tagNameInput”).value.trim();
-if (!name) return;
-var color = TAG_COLORS[fields.length % TAG_COLORS.length];
-fields.push({
-name: name,
-color: color,
-lat: currentLat,
-lon: currentLon,
-crop: selectedCrop,
-plantingDate: document.getElementById(“plantingDate”).value,
-maturitySelect: document.getElementById(“maturitySelect”).value
-});
-saveFields();
-document.getElementById(“tagNameInput”).value = “”;
-activeField = fields.length - 1;
-renderTags();
+  var name = document.getElementById("tagNameInput").value.trim();
+  if (!name) return;
+  var color = TAG_COLORS[fields.length % TAG_COLORS.length];
+  fields.push({
+    name: name,
+    color: color,
+    lat: currentLat,
+    lon: currentLon,
+    crop: selectedCrop,
+    plantingDate: document.getElementById("plantingDate").value,
+    maturitySelect: document.getElementById("maturitySelect").value
+  });
+  saveFields();
+  document.getElementById("tagNameInput").value = "";
+  activeField = fields.length - 1;
+  renderTags();
 }
 
 function loadField(i) {
-activeField = i;
-var f = fields[i];
-renderTags();
-if (f.crop && CROPS[f.crop]) {
-selectedCrop = f.crop;
-selectedStage = 0;
-renderCropGrid();
-buildMaturityOptions();
-}
-if (f.plantingDate) {
-document.getElementById(“plantingDate”).value = f.plantingDate;
-}
-if (f.maturitySelect) {
-document.getElementById(“maturitySelect”).value = f.maturitySelect;
-}
-onPlantingChange();
-if (f.lat && f.lon) {
-document.getElementById(“cityInput”).value = f.name;
-fetchForecast(f.lat, f.lon, f.name);
-}
+  activeField = i;
+  var f = fields[i];
+  renderTags();
+  if (f.crop && CROPS[f.crop]) {
+    selectedCrop = f.crop;
+    selectedStage = 0;
+    renderCropGrid();
+    buildMaturityOptions();
+  }
+  if (f.plantingDate) {
+    document.getElementById("plantingDate").value = f.plantingDate;
+  }
+  if (f.maturitySelect) {
+    document.getElementById("maturitySelect").value = f.maturitySelect;
+  }
+  onPlantingChange();
+  if (f.lat && f.lon) {
+    document.getElementById("cityInput").value = f.name;
+    fetchForecast(f.lat, f.lon, f.name);
+  }
 }
 
 function deleteField(evt, i) {
-evt.stopPropagation();
-fields.splice(i, 1);
-if (activeField >= fields.length) activeField = fields.length - 1;
-saveFields();
-renderTags();
+  evt.stopPropagation();
+  fields.splice(i, 1);
+  if (activeField >= fields.length) activeField = fields.length - 1;
+  saveFields();
+  renderTags();
 }
 
 // ─── CROP GRID ────────────────────────────────────────────────────────────────
 function renderCropGrid() {
-var grid = document.getElementById(“cropGrid”);
-var h = “”;
-Object.keys(CROPS).forEach(function(k) {
-var c = CROPS[k];
-h += “<button class='crop-btn" + (k === selectedCrop ? " selected" : "") + "' onclick='selectCrop(\"" + k + "\")'>”
-+ c.icon + “<br>” + c.name + “</button>”;
-});
-grid.innerHTML = h;
+  var grid = document.getElementById("cropGrid");
+  var h = "";
+  Object.keys(CROPS).forEach(function(k) {
+    var c = CROPS[k];
+    h += "<button class='crop-btn" + (k === selectedCrop ? " selected" : "") + "' onclick='selectCrop(\"" + k + "\")'>"
+      + c.icon + "<br>" + c.name + "</button>";
+  });
+  grid.innerHTML = h;
 }
 
 function selectCrop(k) {
-selectedCrop = k;
-selectedStage = 0;
-renderCropGrid();
-buildMaturityOptions();
-renderStagePanel();
-if (allRows.length) renderAgSection();
-// Update active field
-if (activeField !== null && fields[activeField]) {
-fields[activeField].crop = k;
-saveFields();
-renderTags();
-}
+  selectedCrop = k;
+  selectedStage = 0;
+  renderCropGrid();
+  buildMaturityOptions();
+  renderStagePanel();
+  if (allRows.length) renderAgSection();
+  // Update active field
+  if (activeField !== null && fields[activeField]) {
+    fields[activeField].crop = k;
+    saveFields();
+    renderTags();
+  }
 }
 
 // ─── MATURITY OPTIONS ─────────────────────────────────────────────────────────
 function buildMaturityOptions() {
-var sel = document.getElementById(“maturitySelect”);
-var crop = CROPS[selectedCrop];
-sel.innerHTML = “<option value=''>– Select RM –</option>”;
-crop.rmOptions.forEach(function(rm, i) {
-sel.innerHTML += “<option value='" + i + "'>” + rm.l + “</option>”;
-});
+  var sel = document.getElementById("maturitySelect");
+  var crop = CROPS[selectedCrop];
+  sel.innerHTML = "<option value=''>-- Select RM --</option>";
+  crop.rmOptions.forEach(function(rm, i) {
+    sel.innerHTML += "<option value='" + i + "'>" + rm.l + "</option>";
+  });
 }
 
 function onPlantingChange() {
-var dateVal = document.getElementById(“plantingDate”).value;
-var rmIdx = document.getElementById(“maturitySelect”).value;
-var resultDiv = document.getElementById(“maturityResult”);
+  var dateVal = document.getElementById("plantingDate").value;
+  var rmIdx = document.getElementById("maturitySelect").value;
+  var resultDiv = document.getElementById("maturityResult");
 
-if (!dateVal || rmIdx === “”) {
-resultDiv.style.display = “none”;
-plantingDate = null; maturityDate = null;
-renderStagePanel();
-return;
-}
+  if (!dateVal || rmIdx === "") {
+    resultDiv.style.display = "none";
+    plantingDate = null; maturityDate = null;
+    renderStagePanel();
+    return;
+  }
 
-var crop = CROPS[selectedCrop];
-var rm = crop.rmOptions[parseInt(rmIdx)];
-var pDate = new Date(dateVal + “T12:00:00”);
-plantingDate = pDate;
+  var crop = CROPS[selectedCrop];
+  var rm = crop.rmOptions[parseInt(rmIdx)];
+  var pDate = new Date(dateVal + "T12:00:00");
+  plantingDate = pDate;
 
-// Estimate maturity: GDD base 50F (10C), assume avg 15 GDD/day peak season, 8-10 early/late
-// Simple: days to maturity = GDD / avg_daily_gdd
-// More useful: give a calendar range
-var avgGDD = 18; // approximate growing season daily GDD
-var daysToMat = Math.round(rm.g / avgGDD);
-var earlyDays = Math.round(daysToMat * 0.93);
-var lateDays  = Math.round(daysToMat * 1.07);
+  // Estimate maturity: GDD base 50F (10C), assume avg 15 GDD/day peak season, 8-10 early/late
+  // Simple: days to maturity = GDD / avg_daily_gdd
+  // More useful: give a calendar range
+  var avgGDD = 18; // approximate growing season daily GDD
+  var daysToMat = Math.round(rm.g / avgGDD);
+  var earlyDays = Math.round(daysToMat * 0.93);
+  var lateDays  = Math.round(daysToMat * 1.07);
 
-var earlyMat = new Date(pDate.getTime() + earlyDays * 86400000);
-var lateMat  = new Date(pDate.getTime() + lateDays  * 86400000);
-var midMat   = new Date(pDate.getTime() + daysToMat * 86400000);
+  var earlyMat = new Date(pDate.getTime() + earlyDays * 86400000);
+  var lateMat  = new Date(pDate.getTime() + lateDays  * 86400000);
+  var midMat   = new Date(pDate.getTime() + daysToMat * 86400000);
 
-maturityDate = midMat;
-maturityEarlyDate = earlyMat;
-maturityLateDate  = lateMat;
+  maturityDate = midMat;
+  maturityEarlyDate = earlyMat;
+  maturityLateDate  = lateMat;
 
-var fmt = function(d) { return d.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”,year:“numeric”}); };
+  var fmt = function(d) { return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); };
 
-resultDiv.style.display = “block”;
-resultDiv.innerHTML = “<div style='background:#060f1a;border:1px solid #1e3a5f;padding:12px 14px;font-size:11px;'>”
-+ “<div style='font-size:9px;color:#3a6080;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>”
-+ “<div style='display:flex;gap:20px;flex-wrap:wrap;margin-bottom:6px;'>”
-+ “<div style='color:#3a6080;'>Planted: <span style='color:#cde;'>” + fmt(pDate) + “</span></div>”
-+ “<div style='color:#3a6080;'>RM / GDD Target: <span style='color:#cde;'>” + rm.l + “ — “ + rm.g + “ GDD</span></div>”
-+ “<div style='color:#3a6080;'>Est. Days: <span style='color:#cde;'>” + earlyDays + “–” + lateDays + “ days</span></div>”
-+ “</div>”
-+ “<div style='font-size:14px;font-weight:900;color:#ffb300;margin-bottom:2px;'>📅 “ + fmt(earlyMat) + “ – “ + fmt(lateMat) + “</div>”
-+ “<div style='font-size:9px;color:#3a6080;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>”
-+ “</div>”;
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = "<div style='background:#060f1a;border:1px solid #1e3a5f;padding:12px 14px;font-size:11px;'>"
+    + "<div style='font-size:9px;color:#3a6080;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>"
+    + "<div style='display:flex;gap:20px;flex-wrap:wrap;margin-bottom:6px;'>"
+    + "<div style='color:#3a6080;'>Planted: <span style='color:#cde;'>" + fmt(pDate) + "</span></div>"
+    + "<div style='color:#3a6080;'>RM / GDD Target: <span style='color:#cde;'>" + rm.l + " &mdash; " + rm.g + " GDD</span></div>"
+    + "<div style='color:#3a6080;'>Est. Days: <span style='color:#cde;'>" + earlyDays + "–" + lateDays + " days</span></div>"
+    + "</div>"
+    + "<div style='font-size:14px;font-weight:900;color:#ffb300;margin-bottom:2px;'>&#128197; " + fmt(earlyMat) + " – " + fmt(lateMat) + "</div>"
+    + "<div style='font-size:9px;color:#3a6080;letter-spacing:1px;'>ESTIMATED MATURITY WINDOW (±7%)</div>"
+    + "</div>";
 
-renderStagePanel();
+  renderStagePanel();
 
-// Update field if active
-if (activeField !== null && fields[activeField]) {
-fields[activeField].plantingDate = dateVal;
-fields[activeField].maturitySelect = rmIdx;
-saveFields();
-}
+  // Update field if active
+  if (activeField !== null && fields[activeField]) {
+    fields[activeField].plantingDate = dateVal;
+    fields[activeField].maturitySelect = rmIdx;
+    saveFields();
+  }
 }
 
 // ─── STAGE PANEL ─────────────────────────────────────────────────────────────
 function renderStagePanel() {
-var crop = CROPS[selectedCrop];
-var panel = document.getElementById(“stagePanel”);
-panel.style.display = “block”;
+  var crop = CROPS[selectedCrop];
+  var panel = document.getElementById("stagePanel");
+  panel.style.display = "block";
 
-var today = new Date();
-var totalDays = maturityDate ? Math.round((maturityDate - plantingDate) / 86400000) : null;
-var daysSincePlanting = (plantingDate && maturityDate) ? Math.round((today - plantingDate) / 86400000) : null;
-var currentPct = (totalDays && daysSincePlanting !== null) ? Math.min(100, Math.max(0, (daysSincePlanting / totalDays) * 100)) : null;
+  var today = new Date();
+  var totalDays = maturityDate ? Math.round((maturityDate - plantingDate) / 86400000) : null;
+  var daysSincePlanting = (plantingDate && maturityDate) ? Math.round((today - plantingDate) / 86400000) : null;
+  var currentPct = (totalDays && daysSincePlanting !== null) ? Math.min(100, Math.max(0, (daysSincePlanting / totalDays) * 100)) : null;
 
-// Auto-select current stage if we have planting date
-if (currentPct !== null) {
-for (var si = 0; si < crop.stages.length; si++) {
-var s = crop.stages[si];
-if (currentPct >= s.pct[0] && currentPct < s.pct[1]) {
-selectedStage = si;
-break;
-}
-}
-}
+  // Auto-select current stage if we have planting date
+  if (currentPct !== null) {
+    for (var si = 0; si < crop.stages.length; si++) {
+      var s = crop.stages[si];
+      if (currentPct >= s.pct[0] && currentPct < s.pct[1]) {
+        selectedStage = si;
+        break;
+      }
+    }
+  }
 
-var track = “”;
-crop.stages.forEach(function(s, i) {
-var isActive = (i === selectedStage);
-var isCurrent = (currentPct !== null && currentPct >= s.pct[0] && currentPct < s.pct[1]);
-var width = (s.pct[1] - s.pct[0]);
-var dateRange = “”;
-if (plantingDate && totalDays) {
-var stStart = new Date(plantingDate.getTime() + (s.pct[0]/100) * totalDays * 86400000);
-var stEnd   = new Date(plantingDate.getTime() + (s.pct[1]/100) * totalDays * 86400000);
-dateRange = stStart.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”})
-+ “ – “ + stEnd.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”});
-} else {
-dateRange = “Day “ + (Math.round(s.pct[0]/100*120)) + “–” + (Math.round(s.pct[1]/100*120));
-}
+  var track = "";
+  crop.stages.forEach(function(s, i) {
+    var isActive = (i === selectedStage);
+    var isCurrent = (currentPct !== null && currentPct >= s.pct[0] && currentPct < s.pct[1]);
+    var width = (s.pct[1] - s.pct[0]);
+    var dateRange = "";
+    if (plantingDate && totalDays) {
+      var stStart = new Date(plantingDate.getTime() + (s.pct[0]/100) * totalDays * 86400000);
+      var stEnd   = new Date(plantingDate.getTime() + (s.pct[1]/100) * totalDays * 86400000);
+      dateRange = stStart.toLocaleDateString("en-US",{month:"short",day:"numeric"})
+        + " – " + stEnd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    } else {
+      dateRange = "Day " + (Math.round(s.pct[0]/100*120)) + "–" + (Math.round(s.pct[1]/100*120));
+    }
 
-```
-track += "<div class='stage-seg" + (isActive ? " active-stage" : "") + (isCurrent ? " current-stage" : "") + "'"
-  + " style='flex:" + width + ";border-bottom:3px solid " + s.color + ";'"
-  + " onclick='selectStage(" + i + ")'>"
-  + "<div class='stage-top-bar' style='background:" + s.color + ";opacity:0.3'></div>"
-  + "<div class='stage-name' style='color:" + s.color + "'>" + s.name + "</div>"
-  + "<div class='stage-date-range'>" + dateRange + "</div>"
-  + "<div class='stage-kc'>Kc " + s.kc + "</div>"
-  + (isCurrent ? "<div style='font-size:8px;color:#ffb300;margin-top:2px;letter-spacing:1px;'>&#9660; NOW</div>" : "")
-  + "</div>";
-```
+    track += "<div class='stage-seg" + (isActive ? " active-stage" : "") + (isCurrent ? " current-stage" : "") + "'"
+      + " style='flex:" + width + ";border-bottom:3px solid " + s.color + ";'"
+      + " onclick='selectStage(" + i + ")'>"
+      + "<div class='stage-top-bar' style='background:" + s.color + ";opacity:0.3'></div>"
+      + "<div class='stage-name' style='color:" + s.color + "'>" + s.name + "</div>"
+      + "<div class='stage-date-range'>" + dateRange + "</div>"
+      + "<div class='stage-kc'>Kc " + s.kc + "</div>"
+      + (isCurrent ? "<div style='font-size:8px;color:#ffb300;margin-top:2px;letter-spacing:1px;'>&#9660; NOW</div>" : "")
+      + "</div>";
+  });
+  document.getElementById("stageTrack").innerHTML = track;
 
-});
-document.getElementById(“stageTrack”).innerHTML = track;
+  // Stage info card
+  var st = crop.stages[selectedStage];
+  var waterVal = unit === "in" ? (st.need / 25.4).toFixed(2) : st.need;
+  var stageHtml = "<div class='stage-info-name'>" + crop.name + " &mdash; " + st.name + "</div>"
+    + "<div class='stage-info-row'>"
+    + "<div class='stage-info-item'>Water Need: <span>" + waterVal + " " + unit + "/day</span></div>"
+    + "<div class='stage-info-item'>Crop Kc: <span>" + st.kc + "</span></div>"
+    + "</div>"
+    + "<div style='color:#3a6080;margin-bottom:6px;font-size:11px;'>" + st.note + "</div>"
+    + "<div class='stage-alert' style='border-color:#f87171;background:rgba(248,113,113,0.07);color:#f87171;'>&#9888; " + st.critical + "</div>";
 
-// Stage info card
-var st = crop.stages[selectedStage];
-var waterVal = unit === “in” ? (st.need / 25.4).toFixed(2) : st.need;
-var stageHtml = “<div class='stage-info-name'>” + crop.name + “ — “ + st.name + “</div>”
-+ “<div class='stage-info-row'>”
-+ “<div class='stage-info-item'>Water Need: <span>” + waterVal + “ “ + unit + “/day</span></div>”
-+ “<div class='stage-info-item'>Crop Kc: <span>” + st.kc + “</span></div>”
-+ “</div>”
-+ “<div style='color:#3a6080;margin-bottom:6px;font-size:11px;'>” + st.note + “</div>”
-+ “<div class='stage-alert' style='border-color:#f87171;background:rgba(248,113,113,0.07);color:#f87171;'>⚠ “ + st.critical + “</div>”;
-
-// Maturity range bar
-if (maturityEarlyDate && maturityLateDate) {
-var fmt2 = function(d) { return d.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”}); };
-stageHtml += “<div class='maturity-bar'>”
-+ “<div class='maturity-title'>MATURITY WINDOW</div>”
-+ “<div class='maturity-dates'>”
-+ “<div class='mat-item'>Early: <span>” + fmt2(maturityEarlyDate) + “</span></div>”
-+ “<div class='mat-item'>Mid: <span>” + fmt2(maturityDate) + “</span></div>”
-+ “<div class='mat-item'>Late: <span>” + fmt2(maturityLateDate) + “</span></div>”
-+ “</div></div>”;
-}
-document.getElementById(“stageInfo”).innerHTML = stageHtml;
+  // Maturity range bar
+  if (maturityEarlyDate && maturityLateDate) {
+    var fmt2 = function(d) { return d.toLocaleDateString("en-US",{month:"short",day:"numeric"}); };
+    stageHtml += "<div class='maturity-bar'>"
+      + "<div class='maturity-title'>MATURITY WINDOW</div>"
+      + "<div class='maturity-dates'>"
+      + "<div class='mat-item'>Early: <span>" + fmt2(maturityEarlyDate) + "</span></div>"
+      + "<div class='mat-item'>Mid: <span>" + fmt2(maturityDate) + "</span></div>"
+      + "<div class='mat-item'>Late: <span>" + fmt2(maturityLateDate) + "</span></div>"
+      + "</div></div>";
+  }
+  document.getElementById("stageInfo").innerHTML = stageHtml;
 }
 
 function selectStage(idx) {
-selectedStage = idx;
-renderStagePanel();
-if (allRows.length) renderAgSection();
+  selectedStage = idx;
+  renderStagePanel();
+  if (allRows.length) renderAgSection();
 }
 
 // ─── MAP ──────────────────────────────────────────────────────────────────────
 function initMap(lat, lon) {
-if (!leafletMap) {
-leafletMap = L.map(“map”, { center:[lat,lon], zoom:13 });
-// Satellite tiles from Esri
-L.tileLayer(“https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}”, {
-attribution: “Tiles © Esri — Source: Esri, NASA, USGS”,
-maxZoom: 19
-}).addTo(leafletMap);
-// Labels overlay
-L.tileLayer(“https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}”, {
-attribution: “”, maxZoom: 19, opacity: 0.7
-}).addTo(leafletMap);
-} else {
-leafletMap.setView([lat, lon], 13);
-if (leafletMarker) { leafletMap.removeLayer(leafletMarker); leafletMarker = null; }
-}
-document.getElementById(“mapSection”).style.display = “block”;
-setTimeout(function(){ leafletMap.invalidateSize(); }, 300);
+  document.getElementById("mapSection").style.display = "block";
+  // Esri satellite via iframe-compatible URL
+  var zoom = 14;
+  var url = "https://www.google.com/maps/embed/v1/view?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&center=" + lat + "," + lon + "&zoom=" + zoom + "&maptype=satellite";
+  // Fallback to OSM since we have no key
+  url = "https://www.openstreetmap.org/export/embed.html?bbox=" + (lon-0.02) + "%2C" + (lat-0.015) + "%2C" + (lon+0.02) + "%2C" + (lat+0.015) + "&layer=mapnik&marker=" + lat + "%2C" + lon;
+  document.getElementById("mapFrame").src = url;
 }
 
-function updateMapMarker(lat, lon, label, totals) {
-if (!leafletMap) return;
-var icon = L.divIcon({
-className: “”,
-html: “<div style='width:18px;height:18px;background:#00c8ff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 16px #00c8ff,0 0 4px #fff;'></div>”,
-iconSize:[18,18], iconAnchor:[9,9], popupAnchor:[0,-12]
-});
-var modelRows = “”;
-MODELS.forEach(function(m,i){
-if (totals.modelTotals[i] !== null) {
-modelRows += “<div style='display:flex;justify-content:space-between;gap:12px;margin-bottom:2px;'>”
-+ “<span style='color:" + m.color + "'>” + m.name + “</span>”
-+ “<span style='color:" + m.color + "'>” + cv(totals.modelTotals[i]) + “ “ + unit + “</span></div>”;
-}
-});
-var crop = CROPS[selectedCrop];
-var html = “<div style='font-size:13px;font-weight:bold;color:#fff;margin-bottom:4px;'>” + label + “</div>”
-+ “<div style='font-size:10px;color:#3a6080;margin-bottom:8px;'>” + crop.icon + “ “ + crop.name
-+ (plantingDate ? “ · Planted “ + plantingDate.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”}) : “”) + “</div>”
-+ “<div style='display:flex;justify-content:space-between;gap:12px;margin-bottom:4px;'>”
-+ “<span style='color:#00ffa3'>BLEND AVG</span>”
-+ “<span style='color:#00ffa3;font-weight:bold'>” + cv(totals.avg) + “ “ + unit + “</span></div>”
-+ “<hr style='border:none;border-top:1px solid #1e3a5f;margin:5px 0'/>”
-+ modelRows
-+ “<div style='font-size:9px;color:#3a6080;margin-top:6px;letter-spacing:1px;'>14-DAY TOTAL PRECIP</div>”;
-leafletMarker = L.marker([lat,lon],{icon:icon}).addTo(leafletMap);
-leafletMarker.bindPopup(html,{maxWidth:240}).openPopup();
-}
+function updateMapMarker(lat, lon, label, totals) { /* shown in iframe */ }
 
 // ─── GEOCODE / FETCH ──────────────────────────────────────────────────────────
 async function geocode(q) {
-var r = await fetch(“https://geocoding-api.open-meteo.com/v1/search?name=” + encodeURIComponent(q) + “&count=1&language=en&format=json”);
-var d = await r.json();
-if (!d.results || !d.results.length) throw new Error(“Location not found”);
-var g = d.results[0];
-return { lat:g.latitude, lon:g.longitude, label:[g.name,g.admin1,g.country].filter(Boolean).join(”, “) };
+  var r = await fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(q) + "&count=1&language=en&format=json");
+  var d = await r.json();
+  if (!d.results || !d.results.length) throw new Error("Location not found");
+  var g = d.results[0];
+  return { lat:g.latitude, lon:g.longitude, label:[g.name,g.admin1,g.country].filter(Boolean).join(", ") };
 }
 
 async function fetchForecast(lat, lon, label) {
-setStatus(“Fetching weather models for “ + label + “…”);
-currentLat = lat; currentLon = lon;
+  setStatus("Fetching weather models for " + label + "...");
+  currentLat = lat; currentLon = lon;
 
-var modelFetches = MODELS.map(function(m){
-return fetch(“https://api.open-meteo.com/v1/forecast?latitude=”+lat+”&longitude=”+lon
-+”&hourly=precipitation&forecast_days=14&models=”+m.api+”&timezone=auto”)
-.then(function(r){return r.json();}).catch(function(){return null;});
-});
-var agFetch = fetch(“https://api.open-meteo.com/v1/forecast?latitude=”+lat+”&longitude=”+lon
-+”&hourly=et0_fao_evapotranspiration,temperature_2m&forecast_days=14&timezone=auto”)
-.then(function(r){return r.json();}).catch(function(){return null;});
+  var modelFetches = MODELS.map(function(m){
+    return fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+      +"&hourly=precipitation&forecast_days=14&models="+m.api+"&timezone=auto")
+      .then(function(r){return r.json();}).catch(function(){return null;});
+  });
+  var agFetch = fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+    +"&hourly=et0_fao_evapotranspiration,temperature_2m&forecast_days=14&timezone=auto")
+    .then(function(r){return r.json();}).catch(function(){return null;});
 
-var all = await Promise.all(modelFetches.concat([agFetch]));
-var results = all.slice(0,4), agData = all[4];
+  var all = await Promise.all(modelFetches.concat([agFetch]));
+  var results = all.slice(0,4), agData = all[4];
 
-var base = null;
-for (var i=0;i<results.length;i++){if(results[i]&&results[i].hourly&&results[i].hourly.time){base=results[i];break;}}
-if (!base){setStatus(“Error: No model data returned”,“err”);return;}
+  var base = null;
+  for (var i=0;i<results.length;i++){if(results[i]&&results[i].hourly&&results[i].hourly.time){base=results[i];break;}}
+  if (!base){setStatus("Error: No model data returned","err");return;}
 
-var times = base.hourly.time;
-var precips = results.map(function(r){return(r&&r.hourly&&r.hourly.precipitation)?r.hourly.precipitation:null;});
-var validIdx=[];for(var j=0;j<precips.length;j++){if(precips[j])validIdx.push(j);}
+  var times = base.hourly.time;
+  var precips = results.map(function(r){return(r&&r.hourly&&r.hourly.precipitation)?r.hourly.precipitation:null;});
+  var validIdx=[];for(var j=0;j<precips.length;j++){if(precips[j])validIdx.push(j);}
 
-allRows = times.map(function(t,i){
-var vals=MODELS.map(function(_,mi){return precips[mi]?(precips[mi][i]||0):null;});
-var valid=vals.filter(function(v){return v!==null;});
-var avg=valid.length?valid.reduce(function(a,b){return a+b;},0)/valid.length:0;
-return{t:t,vals:vals,avg:avg};
-});
-etRows=(agData&&agData.hourly&&agData.hourly.et0_fao_evapotranspiration)||[];
+  allRows = times.map(function(t,i){
+    var vals=MODELS.map(function(_,mi){return precips[mi]?(precips[mi][i]||0):null;});
+    var valid=vals.filter(function(v){return v!==null;});
+    var avg=valid.length?valid.reduce(function(a,b){return a+b;},0)/valid.length:0;
+    return{t:t,vals:vals,avg:avg};
+  });
+  etRows=(agData&&agData.hourly&&agData.hourly.et0_fao_evapotranspiration)||[];
 
-var modelTotals=MODELS.map(function(_,mi){
-if(!precips[mi])return null;
-return precips[mi].reduce(function(s,v){return s+(v||0);},0);
-});
-var vt=modelTotals.filter(function(v){return v!==null;});
-allTotals={modelTotals:modelTotals,avg:vt.reduce(function(a,b){return a+b;},0)/vt.length};
+  var modelTotals=MODELS.map(function(_,mi){
+    if(!precips[mi])return null;
+    return precips[mi].reduce(function(s,v){return s+(v||0);},0);
+  });
+  var vt=modelTotals.filter(function(v){return v!==null;});
+  allTotals={modelTotals:modelTotals,avg:vt.reduce(function(a,b){return a+b;},0)/vt.length};
 
-initMap(lat, lon);
-updateMapMarker(lat, lon, label, allTotals);
+  initMap(lat, lon);
+  updateMapMarker(lat, lon, label, allTotals);
 
-var loaded=validIdx.map(function(i){return MODELS[i].name;}).join(”, “);
-setStatus(“Done: “+loaded+” loaded”,“ok”);
-renderAll(label);
+  var loaded=validIdx.map(function(i){return MODELS[i].name;}).join(", ");
+  setStatus("Done: "+loaded+" loaded","ok");
+  renderAll(label);
 }
 
 async function run() {
-var q=document.getElementById(“cityInput”).value.trim();
-if(!q){setStatus(“Please enter a location”);return;}
-try{
-setStatus(“Geocoding…”);
-var geo=await geocode(q);
-await fetchForecast(geo.lat,geo.lon,geo.label);
-if(activeField!==null&&fields[activeField]){
-fields[activeField].lat=geo.lat; fields[activeField].lon=geo.lon;
-saveFields();
-}
-}catch(e){setStatus(“Error: “+e.message,“err”);}
+  var q=document.getElementById("cityInput").value.trim();
+  if(!q){setStatus("Please enter a location");return;}
+  try{
+    setStatus("Geocoding...");
+    var geo=await geocode(q);
+    await fetchForecast(geo.lat,geo.lon,geo.label);
+    if(activeField!==null&&fields[activeField]){
+      fields[activeField].lat=geo.lat; fields[activeField].lon=geo.lon;
+      saveFields();
+    }
+  }catch(e){setStatus("Error: "+e.message,"err");}
 }
 
 function locate(){
-if(!navigator.geolocation){setStatus(“Geolocation not supported — use HTTPS”,“err”);return;}
-setStatus(“Getting GPS location…”);
-navigator.geolocation.getCurrentPosition(
-function(p){
-var lat=p.coords.latitude, lon=p.coords.longitude;
-document.getElementById(“cityInput”).value=lat.toFixed(5)+”, “+lon.toFixed(5);
-fetchForecast(lat, lon, “My Field (GPS)”);
-},
-function(err){
-var msgs={1:“Location permission denied — allow in browser settings”,2:“Location unavailable”,3:“GPS timed out — try again”};
-setStatus(msgs[err.code]||“GPS error: “+err.message,“err”);
-},
-{enableHighAccuracy:true, timeout:15000, maximumAge:0}
-);
+  // iOS Safari requires a user gesture and HTTPS - both satisfied here
+  setStatus("Requesting location...");
+  if(!navigator.geolocation){
+    setStatus("GPS not available — enter location manually","err");
+    return;
+  }
+  // Try low accuracy first (faster, more reliable on iOS)
+  navigator.geolocation.getCurrentPosition(
+    function(p){
+      var lat=p.coords.latitude, lon=p.coords.longitude;
+      document.getElementById("cityInput").value=lat.toFixed(4)+", "+lon.toFixed(4);
+      setStatus("Got location: "+lat.toFixed(4)+", "+lon.toFixed(4));
+      fetchForecast(lat, lon, "My Field");
+    },
+    function(err){
+      var msgs={
+        1:"Permission denied — go to Safari Settings > Website Settings > Location > Allow",
+        2:"Location signal unavailable — try again outdoors",
+        3:"GPS timed out — enter ZIP code instead"
+      };
+      setStatus("GPS error ("+err.code+"): "+(msgs[err.code]||err.message),"err");
+    },
+    {enableHighAccuracy:false, timeout:10000, maximumAge:60000}
+  );
 }
 
-document.getElementById(“cityInput”).addEventListener(“keydown”,function(e){if(e.key===“Enter”)run();});
-document.getElementById(“tagNameInput”).addEventListener(“keydown”,function(e){if(e.key===“Enter”)addTag();});
+document.getElementById("cityInput").addEventListener("keydown",function(e){if(e.key==="Enter")run();});
+document.getElementById("tagNameInput").addEventListener("keydown",function(e){if(e.key==="Enter")addTag();});
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function setUnit(u){
-unit=u;
-document.getElementById(“btnIn”).className=(u===“in”)?“active”:””;
-document.getElementById(“btnMm”).className=(u===“mm”)?“active”:””;
-if(allRows.length)renderAll(null);
+  unit=u;
+  document.getElementById("btnIn").className=(u==="in")?"active":"";
+  document.getElementById("btnMm").className=(u==="mm")?"active":"";
+  if(allRows.length)renderAll(null);
 }
 function setView(v){
-view=v;
-document.getElementById(“btnHourly”).className=(v===“hourly”)?“active”:””;
-document.getElementById(“btnCumul”).className=(v===“cumul”)?“active”:””;
-if(allRows.length)renderAll(null);
+  view=v;
+  document.getElementById("btnHourly").className=(v==="hourly")?"active":"";
+  document.getElementById("btnCumul").className=(v==="cumul")?"active":"";
+  if(allRows.length)renderAll(null);
 }
 function setStatus(msg,cls){
-var el=document.getElementById(“status”);
-el.textContent=msg; el.className=cls||””;
+  var el=document.getElementById("status");
+  el.textContent=msg; el.className=cls||"";
 }
-function cv(mm){return unit===“in”?(mm/25.4).toFixed(3):mm.toFixed(2);}
+function cv(mm){return unit==="in"?(mm/25.4).toFixed(3):mm.toFixed(2);}
 
 function renderAll(label){
-if(label){
-document.getElementById(“locationName”).textContent=“📍 “+label;
-document.getElementById(“locationDisplay”).style.display=“block”;
-}
-document.getElementById(“empty”).style.display=“none”;
-renderCards();
-renderAgSection();
-renderBars();
-renderTable();
+  if(label){
+    document.getElementById("locationName").textContent="📍 "+label;
+    document.getElementById("locationDisplay").style.display="block";
+  }
+  document.getElementById("empty").style.display="none";
+  renderCards();
+  renderAgSection();
+  renderBars();
+  renderTable();
 }
 
 function renderCards(){
-var el=document.getElementById(“cards”);
-el.style.display=“grid”;
-var items=[{label:“BLEND AVG”,val:allTotals.avg,color:”#00ffa3”}];
-MODELS.forEach(function(m,i){items.push({label:m.name,val:allTotals.modelTotals[i],color:m.color});});
-var html=””;
-items.forEach(function(c){
-if(c.val===null)return;
-html+=”<div class='card' style='border-top:2px solid "+c.color+"'>”
-+”<div class='card-label'>”+c.label+”</div>”
-+”<div class='card-val' style='color:"+c.color+"'>”+cv(c.val)+”<span class='card-unit'>”+unit+”</span></div>”
-+”<div class='card-sub'>14-DAY TOTAL</div></div>”;
-});
-el.innerHTML=html;
+  var el=document.getElementById("cards");
+  el.style.display="grid";
+  var items=[{label:"BLEND AVG",val:allTotals.avg,color:"#00ffa3"}];
+  MODELS.forEach(function(m,i){items.push({label:m.name,val:allTotals.modelTotals[i],color:m.color});});
+  var html="";
+  items.forEach(function(c){
+    if(c.val===null)return;
+    html+="<div class='card' style='border-top:2px solid "+c.color+"'>"
+      +"<div class='card-label'>"+c.label+"</div>"
+      +"<div class='card-val' style='color:"+c.color+"'>"+cv(c.val)+"<span class='card-unit'>"+unit+"</span></div>"
+      +"<div class='card-sub'>14-DAY TOTAL</div></div>";
+  });
+  el.innerHTML=html;
 }
 
 function renderAgSection(){
-var crop=CROPS[selectedCrop];
-var stageKc=crop.stages[selectedStage].kc;
-var totalET=etRows.reduce(function(s,v){return s+(v||0);},0);
-var cropET=totalET*stageKc;
-var netBalance=allTotals.avg-cropET;
-var daily=[];
-for(var d=0;d<allRows.length;d+=24){
-var sl=allRows.slice(d,d+24);
-var dt=sl.reduce(function(s,r){return s+r.avg;},0);
-var de=0; for(var e=d;e<d+24&&e<etRows.length;e++){de+=(etRows[e]||0);}
-daily.push({t:sl[0].t,precip:dt,et:de*stageKc,net:dt-de*stageKc});
-}
-var soilMM=75,fieldCap=150;
-daily.forEach(function(d){soilMM=Math.max(0,Math.min(fieldCap,soilMM+d.net));});
-var soilPct=Math.round((soilMM/fieldCap)*100);
-var maxDry=0,cur=0;
-daily.forEach(function(d){if(d.precip<2){cur++;if(cur>maxDry)maxDy=cur;}else cur=0;});
-var maxDrought=0,c2=0;
-for(var di=0;di<daily.length;di++){if(daily[di].precip<2){c2++;if(c2>maxDrought)maxDrought=c2;}else c2=0;}
-var floodDays=daily.filter(function(d){return d.precip>crop.flood;}).length;
-var balColor=netBalance>20?”#f87171”:netBalance<-20?”#ffb300”:”#00ffa3”;
-var balLabel=netBalance>20?“SURPLUS”:netBalance<-20?“DEFICIT”:“BALANCED”;
-var balSub=netBalance>20?“Excess runoff risk”:netBalance<-20?“Irrigation may be needed”:“Good moisture outlook”;
-var soilColor=soilPct>80?”#f87171”:soilPct>40?”#00ffa3”:”#ffb300”;
-var soilLabel=soilPct>80?“SATURATED”:soilPct>40?“ADEQUATE”:“DRY”;
-var droughtColor=maxDrought>=crop.droughtDays?”#f87171”:maxDrought>4?”#ffb300”:”#00ffa3”;
-var floodColor=floodDays>2?”#f87171”:floodDays>0?”#ffb300”:”#00ffa3”;
-var ac=document.getElementById(“agCards”);
-ac.style.display=“grid”;
-ac.innerHTML=
-agCard(“WATER BALANCE”,cv(netBalance)+”<span style='font-size:11px;color:#3a6080;margin-left:2px;'>”+unit+”</span>”,balColor,balLabel,balSub)+
-agCard(“SOIL MOISTURE”,soilPct+”<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>”,soilColor,soilLabel,“End of 14-day period”)+
-agCard(“CROP ET”,cv(cropET)+”<span style='font-size:11px;color:#3a6080;margin-left:2px;'>”+unit+”</span>”,”#c084fc”,“EVAPOTRANSPIRATION”,“Kc=”+stageKc+” for “+crop.stages[selectedStage].name)+
-agCard(“MAX DRY STREAK”,maxDrought+”<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>”,droughtColor,maxDrought>=crop.droughtDays?“DROUGHT RISK”:“ACCEPTABLE”,“Consecutive days <2mm”)+
-agCard(“FLOOD RISK DAYS”,floodDays+”<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>”,floodColor,floodDays>0?“MONITOR”:“LOW RISK”,“Days >”+crop.flood+“mm”);
-renderFieldWindows(daily);
+  var crop=CROPS[selectedCrop];
+  var stageKc=crop.stages[selectedStage].kc;
+  var totalET=etRows.reduce(function(s,v){return s+(v||0);},0);
+  var cropET=totalET*stageKc;
+  var netBalance=allTotals.avg-cropET;
+  var daily=[];
+  for(var d=0;d<allRows.length;d+=24){
+    var sl=allRows.slice(d,d+24);
+    var dt=sl.reduce(function(s,r){return s+r.avg;},0);
+    var de=0; for(var e=d;e<d+24&&e<etRows.length;e++){de+=(etRows[e]||0);}
+    daily.push({t:sl[0].t,precip:dt,et:de*stageKc,net:dt-de*stageKc});
+  }
+  var soilMM=75,fieldCap=150;
+  daily.forEach(function(d){soilMM=Math.max(0,Math.min(fieldCap,soilMM+d.net));});
+  var soilPct=Math.round((soilMM/fieldCap)*100);
+  var maxDry=0,cur=0;
+  daily.forEach(function(d){if(d.precip<2){cur++;if(cur>maxDry)maxDy=cur;}else cur=0;});
+  var maxDrought=0,c2=0;
+  for(var di=0;di<daily.length;di++){if(daily[di].precip<2){c2++;if(c2>maxDrought)maxDrought=c2;}else c2=0;}
+  var floodDays=daily.filter(function(d){return d.precip>crop.flood;}).length;
+  var balColor=netBalance>20?"#f87171":netBalance<-20?"#ffb300":"#00ffa3";
+  var balLabel=netBalance>20?"SURPLUS":netBalance<-20?"DEFICIT":"BALANCED";
+  var balSub=netBalance>20?"Excess runoff risk":netBalance<-20?"Irrigation may be needed":"Good moisture outlook";
+  var soilColor=soilPct>80?"#f87171":soilPct>40?"#00ffa3":"#ffb300";
+  var soilLabel=soilPct>80?"SATURATED":soilPct>40?"ADEQUATE":"DRY";
+  var droughtColor=maxDrought>=crop.droughtDays?"#f87171":maxDrought>4?"#ffb300":"#00ffa3";
+  var floodColor=floodDays>2?"#f87171":floodDays>0?"#ffb300":"#00ffa3";
+  var ac=document.getElementById("agCards");
+  ac.style.display="grid";
+  ac.innerHTML=
+    agCard("WATER BALANCE",cv(netBalance)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
+    agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>%</span>",soilColor,soilLabel,"End of 14-day period")+
+    agCard("CROP ET",cv(cropET)+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>"+unit+"</span>","#c084fc","EVAPOTRANSPIRATION","Kc="+stageKc+" for "+crop.stages[selectedStage].name)+
+    agCard("MAX DRY STREAK",maxDrought+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",droughtColor,maxDrought>=crop.droughtDays?"DROUGHT RISK":"ACCEPTABLE","Consecutive days <2mm")+
+    agCard("FLOOD RISK DAYS",floodDays+"<span style='font-size:11px;color:#3a6080;margin-left:2px;'>days</span>",floodColor,floodDays>0?"MONITOR":"LOW RISK","Days >"+crop.flood+"mm");
+  renderFieldWindows(daily);
 }
 
 function agCard(label,valHtml,color,badge,sub){
-var bc=badge===“BALANCED”||badge===“ADEQUATE”||badge===“ACCEPTABLE”||badge===“LOW RISK”?“badge-good”:badge===“DEFICIT”||badge===“MONITOR”?“badge-warn”:“badge-bad”;
-return “<div class='ag-card' style='border-top:2px solid "+color+"'>”
-+”<div class='ag-card-label'>”+label+”</div>”
-+”<div class='ag-card-val' style='color:"+color+"'>”+valHtml+”</div>”
-+”<span class='window-tag "+bc+"'>”+badge+”</span>”
-+”<div style='font-size:9px;color:#3a6080;margin-top:4px;'>”+sub+”</div></div>”;
+  var bc=badge==="BALANCED"||badge==="ADEQUATE"||badge==="ACCEPTABLE"||badge==="LOW RISK"?"badge-good":badge==="DEFICIT"||badge==="MONITOR"?"badge-warn":"badge-bad";
+  return "<div class='ag-card' style='border-top:2px solid "+color+"'>"
+    +"<div class='ag-card-label'>"+label+"</div>"
+    +"<div class='ag-card-val' style='color:"+color+"'>"+valHtml+"</div>"
+    +"<span class='window-tag "+bc+"'>"+badge+"</span>"
+    +"<div style='font-size:9px;color:#3a6080;margin-top:4px;'>"+sub+"</div></div>";
 }
 
 function renderFieldWindows(daily){
-var box=document.getElementById(“fieldWindows”);
-box.style.display=“block”;
-var list=document.getElementById(“windowsList”);
-var windows=[],start=-1;
-for(var i=0;i<daily.length;i++){
-if(daily[i].precip<5){if(start===-1)start=i;}
-else{if(start!==-1&&(i-start)>=2)windows.push({start:start,end:i-1,len:i-start});start=-1;}
-}
-if(start!==-1&&(daily.length-start)>=2)windows.push({start:start,end:daily.length-1,len:daily.length-start});
-if(!windows.length){list.innerHTML=”<div style='color:#3a6080;font-size:11px;padding:8px 0;'>No extended dry windows in forecast period.</div>”;return;}
-var html=””;
-windows.forEach(function(w){
-var dt=new Date(daily[w.start].t),dt2=new Date(daily[w.end].t);
-var dateStr=dt.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”})+” – “+dt2.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”});
-var tag,tc,col;
-if(w.len>=5){tag=“EXCELLENT”;tc=“badge-good”;col=”#00ffa3”;}
-else if(w.len>=3){tag=“GOOD”;tc=“badge-good”;col=”#00c8ff”;}
-else{tag=“MARGINAL”;tc=“badge-warn”;col=”#ffb300”;}
-html+=”<div class='window-row'><div class='window-dot' style='background:"+col+"'></div>”
-+”<div class='window-date'>”+dateStr+”</div><div class='window-len'>”+w.len+” days</div>”
-+”<span class='window-tag "+tc+"'>”+tag+”</span></div>”;
-});
-list.innerHTML=html;
+  var box=document.getElementById("fieldWindows");
+  box.style.display="block";
+  var list=document.getElementById("windowsList");
+  var windows=[],start=-1;
+  for(var i=0;i<daily.length;i++){
+    if(daily[i].precip<5){if(start===-1)start=i;}
+    else{if(start!==-1&&(i-start)>=2)windows.push({start:start,end:i-1,len:i-start});start=-1;}
+  }
+  if(start!==-1&&(daily.length-start)>=2)windows.push({start:start,end:daily.length-1,len:daily.length-start});
+  if(!windows.length){list.innerHTML="<div style='color:#3a6080;font-size:11px;padding:8px 0;'>No extended dry windows in forecast period.</div>";return;}
+  var html="";
+  windows.forEach(function(w){
+    var dt=new Date(daily[w.start].t),dt2=new Date(daily[w.end].t);
+    var dateStr=dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" – "+dt2.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+    var tag,tc,col;
+    if(w.len>=5){tag="EXCELLENT";tc="badge-good";col="#00ffa3";}
+    else if(w.len>=3){tag="GOOD";tc="badge-good";col="#00c8ff";}
+    else{tag="MARGINAL";tc="badge-warn";col="#ffb300";}
+    html+="<div class='window-row'><div class='window-dot' style='background:"+col+"'></div>"
+      +"<div class='window-date'>"+dateStr+"</div><div class='window-len'>"+w.len+" days</div>"
+      +"<span class='window-tag "+tc+"'>"+tag+"</span></div>";
+  });
+  list.innerHTML=html;
 }
 
 function renderBars(){
-var box=document.getElementById(“chartBox”),barsEl=document.getElementById(“bars”),titleEl=document.getElementById(“chartTitle”);
-box.style.display=“block”;
-var isCumul=(view===“cumul”);
-titleEl.textContent=isCumul?“CUMULATIVE BLEND”:“HOURLY BLEND AVERAGE”;
-var cumSum=0,displayVals=allRows.map(function(r){if(isCumul){cumSum+=r.avg;return cumSum;}return r.avg;});
-var maxVal=0.001;for(var i=0;i<displayVals.length;i++){if(displayVals[i]>maxVal)maxVal=displayVals[i];}
-var html=””;
-for(var j=0;j<allRows.length;j++){
-var val=displayVals[j],h=Math.max((val/maxVal)*76,val>0?2:0);
-var col=isCumul?”#00c8ff”:(allRows[j].avg>2?”#00ffa3”:allRows[j].avg>0?”#00c8ff”:”#1e3a5f”);
-var dt=new Date(allRows[j].t),dayLabel=(dt.getHours()===0)?dt.toLocaleDateString(“en-US”,{month:“short”,day:“numeric”}):””;
-html+=”<div class='bar-wrap' title='"+dt.toLocaleString()+": "+cv(val)+" "+unit+"'>”
-+”<div class='bar' style='height:"+h+"px;background:"+col+"'></div>”
-+”<div class='bar-day'>”+dayLabel+”</div></div>”;
-}
-barsEl.innerHTML=html;
+  var box=document.getElementById("chartBox"),barsEl=document.getElementById("bars"),titleEl=document.getElementById("chartTitle");
+  box.style.display="block";
+  var isCumul=(view==="cumul");
+  titleEl.textContent=isCumul?"CUMULATIVE BLEND":"HOURLY BLEND AVERAGE";
+  var cumSum=0,displayVals=allRows.map(function(r){if(isCumul){cumSum+=r.avg;return cumSum;}return r.avg;});
+  var maxVal=0.001;for(var i=0;i<displayVals.length;i++){if(displayVals[i]>maxVal)maxVal=displayVals[i];}
+  var html="";
+  for(var j=0;j<allRows.length;j++){
+    var val=displayVals[j],h=Math.max((val/maxVal)*76,val>0?2:0);
+    var col=isCumul?"#00c8ff":(allRows[j].avg>2?"#00ffa3":allRows[j].avg>0?"#00c8ff":"#1e3a5f");
+    var dt=new Date(allRows[j].t),dayLabel=(dt.getHours()===0)?dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    html+="<div class='bar-wrap' title='"+dt.toLocaleString()+": "+cv(val)+" "+unit+"'>"
+      +"<div class='bar' style='height:"+h+"px;background:"+col+"'></div>"
+      +"<div class='bar-day'>"+dayLabel+"</div></div>";
+  }
+  barsEl.innerHTML=html;
 }
 
 function renderTable(){
-var wrap=document.getElementById(“tableWrap”),tbl=document.getElementById(“tbl”);
-wrap.style.display=“block”;
-var isCumul=(view===“cumul”);
-var stKc=CROPS[selectedCrop].stages[selectedStage].kc;
-var buckets=[];
-for(var i=0;i<allRows.length;i+=12){
-var slice=allRows.slice(i,i+12);
-var bAvg=slice.reduce(function(s,r){return s+r.avg;},0);
-var bET=0;for(var e=i;e<i+12&&e<etRows.length;e++){bET+=(etRows[e]||0);}
-var bVals=MODELS.map(function(_,mi){
-var an=true;for(var k=0;k<slice.length;k++){if(slice[k].vals[mi]!==null){an=false;break;}}
-if(an)return null;
-return slice.reduce(function(s,r){return s+(r.vals[mi]||0);},0);
-});
-buckets.push({t:slice[0].t,avg:bAvg,et:bET*stKc,vals:bVals});
-}
-var cumAvg=0,cumModel=MODELS.map(function(){return 0;}),rows=””;
-for(var b=0;b<buckets.length;b++){
-var bk=buckets[b];
-cumAvg+=bk.avg;
-for(var mi=0;mi<MODELS.length;mi++){cumModel[mi]+=bk.vals[mi]||0;}
-var avg=isCumul?cumAvg:bk.avg,vals=isCumul?cumModel.slice():bk.vals;
-var net=bk.avg-bk.et,netColor=net>5?”#f87171”:net<-5?”#ffb300”:”#00ffa3”;
-var dt=new Date(bk.t);
-var time=dt.toLocaleString(“en-US”,{month:“short”,day:“numeric”,hour:“2-digit”,minute:“2-digit”,hour12:true});
-var hl=avg>10?“background:rgba(0,255,163,0.04)”:””;
-rows+=”<tr style='"+hl+"'><td>”+time+”</td>”
-+”<td style='color:#00ffa3;font-weight:bold'>”+cv(avg)+”</td>”
-+”<td style='color:#c084fc'>”+cv(bk.et)+”</td>”
-+”<td style='color:"+netColor+"'>”+(net>=0?”+”:””)+cv(net)+”</td>”;
-for(var mi2=0;mi2<MODELS.length;mi2++){
-rows+=”<td style='color:"+MODELS[mi2].color+"'>”+(vals[mi2]!==null?cv(vals[mi2]):”<span style='color:#1e3a5f'>N/A</span>”)+”</td>”;
-}
-rows+=”</tr>”;
-}
-var head=”<thead><tr><th style='text-align:left'>TIME (12-HR)</th><th style='color:#00ffa3'>BLEND</th><th style='color:#c084fc'>CROP ET</th><th style='color:#cde'>NET BAL</th>”;
-for(var m=0;m<MODELS.length;m++){head+=”<th style='color:"+MODELS[m].color+"'>”+MODELS[m].name+”</th>”;}
-head+=”</tr></thead>”;
-tbl.innerHTML=head+”<tbody>”+rows+”</tbody>”;
+  var wrap=document.getElementById("tableWrap"),tbl=document.getElementById("tbl");
+  wrap.style.display="block";
+  var isCumul=(view==="cumul");
+  var stKc=CROPS[selectedCrop].stages[selectedStage].kc;
+  var buckets=[];
+  for(var i=0;i<allRows.length;i+=12){
+    var slice=allRows.slice(i,i+12);
+    var bAvg=slice.reduce(function(s,r){return s+r.avg;},0);
+    var bET=0;for(var e=i;e<i+12&&e<etRows.length;e++){bET+=(etRows[e]||0);}
+    var bVals=MODELS.map(function(_,mi){
+      var an=true;for(var k=0;k<slice.length;k++){if(slice[k].vals[mi]!==null){an=false;break;}}
+      if(an)return null;
+      return slice.reduce(function(s,r){return s+(r.vals[mi]||0);},0);
+    });
+    buckets.push({t:slice[0].t,avg:bAvg,et:bET*stKc,vals:bVals});
+  }
+  var cumAvg=0,cumModel=MODELS.map(function(){return 0;}),rows="";
+  for(var b=0;b<buckets.length;b++){
+    var bk=buckets[b];
+    cumAvg+=bk.avg;
+    for(var mi=0;mi<MODELS.length;mi++){cumModel[mi]+=bk.vals[mi]||0;}
+    var avg=isCumul?cumAvg:bk.avg,vals=isCumul?cumModel.slice():bk.vals;
+    var net=bk.avg-bk.et,netColor=net>5?"#f87171":net<-5?"#ffb300":"#00ffa3";
+    var dt=new Date(bk.t);
+    var time=dt.toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:true});
+    var hl=avg>10?"background:rgba(0,255,163,0.04)":"";
+    rows+="<tr style='"+hl+"'><td>"+time+"</td>"
+      +"<td style='color:#00ffa3;font-weight:bold'>"+cv(avg)+"</td>"
+      +"<td style='color:#c084fc'>"+cv(bk.et)+"</td>"
+      +"<td style='color:"+netColor+"'>"+(net>=0?"+":"")+cv(net)+"</td>";
+    for(var mi2=0;mi2<MODELS.length;mi2++){
+      rows+="<td style='color:"+MODELS[mi2].color+"'>"+(vals[mi2]!==null?cv(vals[mi2]):"<span style='color:#1e3a5f'>N/A</span>")+"</td>";
+    }
+    rows+="</tr>";
+  }
+  var head="<thead><tr><th style='text-align:left'>TIME (12-HR)</th><th style='color:#00ffa3'>BLEND</th><th style='color:#c084fc'>CROP ET</th><th style='color:#cde'>NET BAL</th>";
+  for(var m=0;m<MODELS.length;m++){head+="<th style='color:"+MODELS[m].color+"'>"+MODELS[m].name+"</th>";}
+  head+="</tr></thead>";
+  tbl.innerHTML=head+"<tbody>"+rows+"</tbody>";
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
@@ -955,7 +918,7 @@ buildMaturityOptions();
 renderStagePanel();
 renderTags();
 // Set default planting date to today
-document.getElementById(“plantingDate”).value = new Date().toISOString().split(“T”)[0];
+document.getElementById("plantingDate").value = new Date().toISOString().split("T")[0];
 </script>
 
 </body>
