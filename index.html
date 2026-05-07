@@ -1821,13 +1821,11 @@ function sprayRating(windMax, windGust, tmin, tmax, humidity, rainMm, rainProb) 
   var reasons = [];
   var score = 0; // 0=good, 1=marginal, 2=poor
 
-  if (windMax > 15)  { score = 2; reasons.push("Wind >15 mph"); }
-  else if (windMax > 10) { score = Math.max(score,1); reasons.push("Wind 10-15 mph"); }
+  if (windMax > 25)  { score = 2; reasons.push("Wind >25 mph"); }
+  else if (windMax > 15) { score = Math.max(score,1); reasons.push("Wind 15-25 mph"); }
 
-  if (windGust > 20) { score = 2; reasons.push("Gusts >20 mph"); }
+  if (windGust > 25) { score = 2; reasons.push("Gusts >25 mph"); }
 
-  if (tmin < 32)  { score = Math.max(score,2); reasons.push("Temp <32°F (freezing)"); }
-  else if (tmin < 40) { score = Math.max(score,1); reasons.push("Temp <40°F"); }
   if (tmax > 90)  { score = Math.max(score,1); reasons.push("Temp >90°F"); }
 
   if (humidity < 40) { score = Math.max(score,1); reasons.push("Humidity <40% drift risk"); }
@@ -1936,12 +1934,10 @@ function renderSprayForecast(d) {
     }
 
     // Wind color
-    var windCol = windMax > 15 ? "#f87171" : windMax > 10 ? "#ffb300" : "#00ffa3";
+    var windCol = windMax > 25 ? "#e8a020" : windMax > 15 ? "#ffb300" : "#00ffa3";
     var gustCol = windGust > 20 ? "#f87171" : "#ffb300";
     var tmaxStr = tmax !== null ? Math.round(tmax)+"°" : "–";
-    var tminStr = tmin !== null ? Math.round(tmin)+"°" : "–";
     var precipStr = unit === "in" ? (rainMm/25.4).toFixed(2)+'"' : rainMm.toFixed(1)+"mm";
-    var tempLoCol = tmin < 32 ? "#ff6600" : tmin < 40 ? "#ffb300" : "#7ab8d4";
     var tempHiCol = tmax > 90 ? "#f87171" : tmax > 85 ? "#ffb300" : "#e8f4ff";
     var humCol = avgHumidity < 40 ? "#ffb300" : avgHumidity > 90 ? "#ffb300" : "#7ab8d4";
     var rainCol = rainMm > 2 ? "#f87171" : rainMm > 0 ? "#ffb300" : "#00ffa3";
@@ -2005,7 +2001,7 @@ function renderSprayForecast(d) {
       // Metrics
       + "<div class='spray-metrics'>"
       + "<div class='spray-metric'><div class='spray-metric-label'>HIGH</div><div class='spray-metric-val' style='color:"+tempHiCol+";'>"+tmaxStr+"</div><div class='spray-metric-sub'>temp</div></div>"
-      + "<div class='spray-metric'><div class='spray-metric-label'>LOW</div><div class='spray-metric-val' style='color:"+tempLoCol+";'>"+tminStr+"</div><div class='spray-metric-sub'>temp</div></div>"
+
       + "<div class='spray-metric'><div class='spray-metric-label'>WIND (3FT)</div><div class='spray-metric-val' style='color:"+windCol+";'>"+Math.round(windMax)+"</div><div class='spray-metric-sub'>mph</div></div>"
       + "<div class='spray-metric'><div class='spray-metric-label'>GUSTS (3FT)</div><div class='spray-metric-val' style='color:"+gustCol+";'>"+Math.round(windGust)+"</div><div class='spray-metric-sub'>mph</div></div>"
       + "<div class='spray-metric'><div class='spray-metric-label'>HUMIDITY</div><div class='spray-metric-val' style='color:"+humCol+";'>"+avgHumidity+"%</div><div class='spray-metric-sub'>avg</div></div>"
