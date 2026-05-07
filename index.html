@@ -1440,7 +1440,7 @@ function renderStagePanel() {
     + "<div class='stage-info-item'>Crop Kc: <span>" + st.kc + "</span></div>"
     + "</div>"
     + "<div style='color:#7ab8d4;margin-bottom:6px;font-size:11px;'>" + st.note + "</div>"
-    + "<div class='stage-alert' style='border-color:#f87171;background:rgba(248,113,113,0.07);color:#f87171;'>&#9888; " + st.critical + "</div>";
+    + "<div class='stage-alert' style='border-color:#cc7700;background:rgba(200,120,0,0.07);color:#cc7700;'>&#9888; " + st.critical + "</div>";
 
   // Maturity range bar
   if (maturityEarlyDate && maturityLateDate) {
@@ -2746,7 +2746,7 @@ function renderSoilDepthPanel(surface, shallow, mid, deep, source, stRows) {
     if (t < 32)  return "#38bdf8";
     if (t < 50)  return "#ffb300";
     if (t <= 95) return "#00ffa3";
-    return "#f87171";
+    return "#cc8800";
   }
   function stLabel(t) {
     if (t===null) return "N/A";
