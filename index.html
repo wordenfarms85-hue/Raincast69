@@ -559,7 +559,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <div style="font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:14px;line-height:1.9;">
       SPRAY RATING: WIND &lt;10 = GOOD CONDITIONS · 10-15 = USE CAUTION · &gt;15 = HIGH RISK · TEMP &lt;32°F = HIGH RISK · &lt;40°F = CAUTION · &gt;90°F = CAUTION<br>
       INVERSION: CALM WIND (&lt;5MPH) + CLEAR SKY + TIGHT DEWPOINT SPREAD = DROPLETS DRIFT UNPREDICTABLY<br>
-      SOURCE: OPEN-METEO GFS · WIND AT 10M · INVERSION IS ESTIMATED — VERIFY WITH LOCAL CONDITIONS
+      SOURCE: OPEN-METEO GFS · WIND ADJUSTED TO ~3FT SURFACE (10M × POWER LAW 0.143) · INVERSION ESTIMATED
     </div>
   </div>
 
@@ -600,8 +600,32 @@ var authMode = 'signin'; // or 'signup'
 var guestMode = false;
 
 async function initAuth() {
-  // Handle email confirmation token in URL hash (Supabase appends #access_token=... after confirmation click)
+  // Handle email confirmation — supports both query params (?token_hash) and hash (#access_token)
+  var urlParams = new URLSearchParams(window.location.search);
+  var tokenHash = urlParams.get('token_hash');
+  var tokenType = urlParams.get('type');
+
+  if (tokenHash && tokenType) {
+    // PKCE / query-param flow (newer Supabase default)
+    try {
+      var res = await supa.auth.verifyOtp({ token_hash: tokenHash, type: tokenType });
+      if (res.data && res.data.session) {
+        currentUser = res.data.session.user;
+        history.replaceState(null, '', window.location.pathname);
+        showApp();
+        supa.auth.onAuthStateChange(function(event, session) {
+          if (session) { currentUser = session.user; showApp(); }
+          else { currentUser = null; showLogin(); }
+        });
+        return;
+      } else if (res.error) {
+        console.log('OTP verify error:', res.error.message);
+      }
+    } catch(e) { console.log('OTP verify error:', e); }
+  }
+
   if (window.location.hash && window.location.hash.includes('access_token')) {
+    // Implicit flow (hash-based)
     try {
       var hashParams = {};
       window.location.hash.substring(1).split('&').forEach(function(pair) {
@@ -609,13 +633,12 @@ async function initAuth() {
         hashParams[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
       });
       if (hashParams.access_token) {
-        var res = await supa.auth.setSession({
+        var res2 = await supa.auth.setSession({
           access_token: hashParams.access_token,
           refresh_token: hashParams.refresh_token || ''
         });
-        if (res.data && res.data.session) {
-          currentUser = res.data.session.user;
-          // Clean URL
+        if (res2.data && res2.data.session) {
+          currentUser = res2.data.session.user;
           history.replaceState(null, '', window.location.pathname);
           showApp();
           supa.auth.onAuthStateChange(function(event, session) {
@@ -1888,8 +1911,11 @@ function renderSprayForecast(d) {
     var tmax     = d.daily.temperature_2m_max[di];
     var tmin     = d.daily.temperature_2m_min[di];
     var rainMm   = d.daily.precipitation_sum[di] || 0;
-    var windMax  = d.daily.wind_speed_10m_max[di] || 0;
-    var windGust = d.daily.wind_gusts_10m_max[di] || 0;
+    var wind10m  = d.daily.wind_speed_10m_max[di] || 0;
+    var gust10m  = d.daily.wind_gusts_10m_max[di] || 0;
+    // Power law: V_surface = V_10m * (h/10)^0.143  at 3ft/1m boom height = ~62% of 10m
+    var windMax  = Math.round(wind10m * 0.62 * 10) / 10;
+    var windGust = Math.round(gust10m * 0.62 * 10) / 10;
 
     // Get hourly data for this day (8 3-hour slots: 0,3,6,9,12,15,18,21)
     var hourBase = di * 24;
@@ -1922,12 +1948,13 @@ function renderSprayForecast(d) {
 
     // Hourly wind strip (every 3 hrs: 6am, 9am, noon, 3pm, 6pm)
     var hourSlots = [6,9,12,15,18];
-    var hourHtml = "<div class='spray-hourly'><div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:4px;'>HOURLY WIND (MPH) &amp; DIRECTION</div><div class='spray-hour-row'>";
+    var hourHtml = "<div class='spray-hourly'><div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:4px;'>SURFACE WIND (MPH @ 3FT) &amp; DIRECTION</div><div class='spray-hour-row'>";
     hourSlots.forEach(function(hr) {
       var idx = hourBase + hr;
-      var ws  = d.hourly.wind_speed_10m[idx] !== null ? Math.round(d.hourly.wind_speed_10m[idx]) : null;
+      var ws10 = d.hourly.wind_speed_10m[idx];
+      var ws  = ws10 !== null ? Math.round(ws10 * 0.62) : null;
       var wd  = windDir(d.hourly.wind_direction_10m[idx]);
-      var wg  = d.hourly.wind_gusts_10m[idx] !== null ? Math.round(d.hourly.wind_gusts_10m[idx]) : null;
+      var wg  = d.hourly.wind_gusts_10m[idx] !== null ? Math.round(d.hourly.wind_gusts_10m[idx] * 0.62) : null;
       var wCol = ws > 15 ? "#f87171" : ws > 10 ? "#ffb300" : "#00ffa3";
       var barW = ws ? Math.min(100, Math.round(ws/20*100)) : 0;
       var hrLabel = hr >= 12 ? (hr===12?"12PM":(hr-12)+"PM") : hr+"AM";
@@ -1979,8 +2006,8 @@ function renderSprayForecast(d) {
       + "<div class='spray-metrics'>"
       + "<div class='spray-metric'><div class='spray-metric-label'>HIGH</div><div class='spray-metric-val' style='color:"+tempHiCol+";'>"+tmaxStr+"</div><div class='spray-metric-sub'>temp</div></div>"
       + "<div class='spray-metric'><div class='spray-metric-label'>LOW</div><div class='spray-metric-val' style='color:"+tempLoCol+";'>"+tminStr+"</div><div class='spray-metric-sub'>temp</div></div>"
-      + "<div class='spray-metric'><div class='spray-metric-label'>WIND MAX</div><div class='spray-metric-val' style='color:"+windCol+";'>"+Math.round(windMax)+"</div><div class='spray-metric-sub'>mph</div></div>"
-      + "<div class='spray-metric'><div class='spray-metric-label'>GUSTS</div><div class='spray-metric-val' style='color:"+gustCol+";'>"+Math.round(windGust)+"</div><div class='spray-metric-sub'>mph</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>WIND (3FT)</div><div class='spray-metric-val' style='color:"+windCol+";'>"+Math.round(windMax)+"</div><div class='spray-metric-sub'>mph</div></div>"
+      + "<div class='spray-metric'><div class='spray-metric-label'>GUSTS (3FT)</div><div class='spray-metric-val' style='color:"+gustCol+";'>"+Math.round(windGust)+"</div><div class='spray-metric-sub'>mph</div></div>"
       + "<div class='spray-metric'><div class='spray-metric-label'>HUMIDITY</div><div class='spray-metric-val' style='color:"+humCol+";'>"+avgHumidity+"%</div><div class='spray-metric-sub'>avg</div></div>"
       + "<div class='spray-metric'><div class='spray-metric-label'>PRECIP</div><div class='spray-metric-val' style='color:"+rainCol+";'>"+precipStr+"</div><div class='spray-metric-sub'>"+maxRainProb+"% chance</div></div>"
       + "</div>"
@@ -2643,7 +2670,7 @@ function renderAgSection(){
   var ac=document.getElementById("agCards");
   ac.style.display="grid";
   ac.innerHTML=
-    agCard("WATER BALANCE",cv(netBalance)+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
+    agCard("14-DAY IRRIGATION NEED INDEX",cv(netBalance)+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>"+unit+"</span>",balColor,balLabel,balSub)+
     agCard("SOIL MOISTURE",soilPct+"<span style='font-size:11px;color:#7ab8d4;margin-left:2px;'>%</span>",soilColor,soilLabel,
       soilSource === "ERA5-LAND"
         ? "ERA5-Land satellite model"
