@@ -1036,6 +1036,36 @@ var CROPS = {
         note:"Direct combine at 16% moisture or below. Dry beans very sensitive to harvest damage.",
         critical:"Harvest at >18% moisture = skin cracking and splits. Dry weather critical — rain darkens and stains beans."}
     ]
+  },
+  fallow: {
+    name:"FALLOW", icon:"&#127759;", flood:999, droughtDays:999,
+    rmOptions:[
+      {l:"Summer Fallow (wheat-fallow)",g:0},
+      {l:"Chemical Fallow",g:0},
+      {l:"Tillage Fallow",g:0},
+      {l:"Cover Crop Fallow",g:0},
+      {l:"Prevented Plant",g:0}
+    ],
+    stages:[
+      {name:"POST-HARVEST",  pct:[0,15],  kc:0.1, need:0, color:"#5a8aa8",
+        note:"Residue management period after harvest. Stubble height affects snow catch and soil moisture storage. Target 8-12 inch stubble for max snow trapping.",
+        critical:"Heavy tillage immediately after harvest destroys stubble and loses soil moisture. Leave residue standing as long as possible."},
+      {name:"FALL MOISTURE", pct:[15,30], kc:0.1, need:0, color:"#4ade80",
+        note:"Critical recharge period. Fall precipitation and snow stored in soil profile. Goal is to fill profile to field capacity before freeze-up.",
+        critical:"Deep tillage in fall disrupts capillary moisture storage. Chemical fallow or no-till is superior for moisture retention."},
+      {name:"WINTER STORAGE",pct:[30,50], kc:0.05,need:0, color:"#38bdf8",
+        note:"Frozen soil stores moisture. Snow accumulation on stubble adds 0.5-1 inch per foot of snow. Minimal management needed.",
+        critical:"Wind erosion risk on bare worked ground. Leave residue or establish cover to protect surface."},
+      {name:"SPRING RECHARGE",pct:[50,65],kc:0.15,need:0, color:"#4ade80",
+        note:"Spring snowmelt and rain recharges profile. Weed pressure begins — key window for chemical or tillage weed control.",
+        critical:"Early spring weeds deplete stored moisture fast. Control weeds before they use significant water — each inch of fallow moisture = 8-10 bu/ac yield at next crop."},
+      {name:"SUMMER FALLOW", pct:[65,85], kc:0.2, need:0, color:"#ffb300",
+        note:"Peak weed control season. Soil evaporation highest. Goal is to store 30-50% of summer rain in profile. Chemical fallow retains 2x more moisture than tillage fallow.",
+        critical:"Tillage in dry conditions forms clods that increase evaporation. Soil temps above 120F under bare soil destroy organic matter. Keep some residue cover."},
+      {name:"PRE-PLANT",     pct:[85,100],kc:0.1, need:0, color:"#00c8ff",
+        note:"Final weed control and seedbed prep. Check profile moisture — target 4+ inches stored water for confident planting. Subsoil sampling ideal.",
+        critical:"Planting into poor moisture profile risks crop failure. Delay planting if subsoil is dry rather than waste seed and inputs."}
+    ]
   }
 };
 
