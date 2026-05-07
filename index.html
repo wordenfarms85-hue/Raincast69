@@ -1146,7 +1146,7 @@ async function addTag() {
   setStatus("Field saved to your account", "ok");
 }
 
-function loadField(i) {
+async function loadField(i) {
   activeField = i;
   var f = fields[i];
   renderTags();
@@ -1162,10 +1162,16 @@ function loadField(i) {
   if (f.maturitySelect) {
     document.getElementById("maturitySelect").value = f.maturitySelect;
   }
-  // Restore hybrid selector for this field
+  onPlantingChange();
+
+  if (f.lat && f.lon) {
+    document.getElementById("cityInput").value = f.name;
+    await fetchForecast(f.lat, f.lon, f.name);
+  }
+
+  // Restore hybrid LAST after all rendering is done
   clearHybrid();
   if (f.hybrid && f.hybrid.name) {
-    // Try to find the full hybrid object from the HYBRIDS array by name
     var fullHybrid = null;
     var allH = getAllHybrids();
     for (var hi=0; hi<allH.length; hi++) {
@@ -1174,17 +1180,9 @@ function loadField(i) {
     selectedHybrid = fullHybrid || f.hybrid;
     document.getElementById("hybridSearch").value = selectedHybrid.name;
     showSelectedHybridCard(selectedHybrid);
-    // Update field with full hybrid data
-    if (fullHybrid && activeField !== null && fields[activeField]) {
+    if (fullHybrid && fields[activeField]) {
       fields[activeField].hybrid = {name:fullHybrid.name,brand:fullHybrid.brand,rm:fullHybrid.rm,gduMat:fullHybrid.gduMat,gduSilk:fullHybrid.gduSilk||null,silkCRM:fullHybrid.silkCRM||null,physCRM:fullHybrid.physCRM||null,stalkStr:fullHybrid.stalkStr||null,traits:fullHybrid.traits||"",notes:fullHybrid.notes||""};
     }
-  }
-
-  onPlantingChange();
-
-  if (f.lat && f.lon) {
-    document.getElementById("cityInput").value = f.name;
-    fetchForecast(f.lat, f.lon, f.name);
   }
 }
 
