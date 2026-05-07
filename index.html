@@ -1169,21 +1169,24 @@ async function loadField(i) {
     await fetchForecast(f.lat, f.lon, f.name);
   }
 
-  // Restore hybrid LAST after all rendering is done
-  clearHybrid();
-  if (f.hybrid && f.hybrid.name) {
+  // Restore hybrid after a short delay so all rendering has fully settled
+  var savedFieldIdx = activeField;
+  var hybridToRestore = f.hybrid;
+  setTimeout(function() {
+    if (!hybridToRestore || !hybridToRestore.name) return;
     var fullHybrid = null;
     var allH = getAllHybrids();
     for (var hi=0; hi<allH.length; hi++) {
-      if (allH[hi].name === f.hybrid.name) { fullHybrid = allH[hi]; break; }
+      if (allH[hi].name === hybridToRestore.name) { fullHybrid = allH[hi]; break; }
     }
-    selectedHybrid = fullHybrid || f.hybrid;
-    document.getElementById("hybridSearch").value = selectedHybrid.name;
+    selectedHybrid = fullHybrid || hybridToRestore;
+    var searchEl = document.getElementById("hybridSearch");
+    if (searchEl) searchEl.value = selectedHybrid.name;
     showSelectedHybridCard(selectedHybrid);
-    if (fullHybrid && fields[activeField]) {
-      fields[activeField].hybrid = {name:fullHybrid.name,brand:fullHybrid.brand,rm:fullHybrid.rm,gduMat:fullHybrid.gduMat,gduSilk:fullHybrid.gduSilk||null,silkCRM:fullHybrid.silkCRM||null,physCRM:fullHybrid.physCRM||null,stalkStr:fullHybrid.stalkStr||null,traits:fullHybrid.traits||"",notes:fullHybrid.notes||""};
+    if (fullHybrid && fields[savedFieldIdx]) {
+      fields[savedFieldIdx].hybrid = {name:fullHybrid.name,brand:fullHybrid.brand,rm:fullHybrid.rm,gduMat:fullHybrid.gduMat,gduSilk:fullHybrid.gduSilk||null,silkCRM:fullHybrid.silkCRM||null,physCRM:fullHybrid.physCRM||null,stalkStr:fullHybrid.stalkStr||null,traits:fullHybrid.traits||"",notes:fullHybrid.notes||""};
     }
-  }
+  }, 500);
 }
 
 async function deleteField(evt, i) {
