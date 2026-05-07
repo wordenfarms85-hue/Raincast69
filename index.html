@@ -600,6 +600,34 @@ var authMode = 'signin'; // or 'signup'
 var guestMode = false;
 
 async function initAuth() {
+  // Handle email confirmation token in URL hash (Supabase appends #access_token=... after confirmation click)
+  if (window.location.hash && window.location.hash.includes('access_token')) {
+    try {
+      var hashParams = {};
+      window.location.hash.substring(1).split('&').forEach(function(pair) {
+        var kv = pair.split('=');
+        hashParams[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+      });
+      if (hashParams.access_token) {
+        var res = await supa.auth.setSession({
+          access_token: hashParams.access_token,
+          refresh_token: hashParams.refresh_token || ''
+        });
+        if (res.data && res.data.session) {
+          currentUser = res.data.session.user;
+          // Clean URL
+          history.replaceState(null, '', window.location.pathname);
+          showApp();
+          supa.auth.onAuthStateChange(function(event, session) {
+            if (session) { currentUser = session.user; showApp(); }
+            else { currentUser = null; showLogin(); }
+          });
+          return;
+        }
+      }
+    } catch(e) { console.log('Token parse error:', e); }
+  }
+
   var sess = await supa.auth.getSession();
   if (sess.data.session) {
     currentUser = sess.data.session.user;
@@ -1991,7 +2019,8 @@ async function fetchSeasonalRain(lat, lon) {
     var dates = d.daily.time;
     var precips = d.daily.precipitation_sum;
 
-    var sumAll = 0, sum30 = 0, sum14 = 0, sum7 = 0, sumSincePlanting = 0;
+    var ago24 = new Date(today.getTime() - 1 * 86400000);
+    var sumAll = 0, sum30 = 0, sum14 = 0, sum7 = 0, sum24 = 0, sumSincePlanting = 0;
     for (var i = 0; i < dates.length; i++) {
       var dt = new Date(dates[i] + "T12:00:00");
       var p = precips[i] || 0;
@@ -1999,6 +2028,7 @@ async function fetchSeasonalRain(lat, lon) {
       if (dt >= ago30) sum30 += p;
       if (dt >= ago14) sum14 += p;
       if (dt >= ago7)  sum7  += p;
+      if (dt >= ago24) sum24 += p;
       if (plantingDate && dt >= plantingDate) sumSincePlanting += p;
     }
 
@@ -2007,6 +2037,7 @@ async function fetchSeasonalRain(lat, lon) {
       last30: sum30,
       last14: sum14,
       last7: sum7,
+      last24: sum24,
       sincePlanting: plantingDate ? sumSincePlanting : null
     };
 
@@ -2040,8 +2071,9 @@ function renderSeasonalRain() {
   }
 
   var html = "";
-  html += row("YEAR TO DATE", sr.ytd, "Jan 1 – Today (" + dayOfYear + " days)", "#00ffa3");
-  html += row("LAST 30 DAYS", sr.last30, "Rolling 30-day total", "#00c8ff");
+  html += row("LAST 24 HOURS", sr.last24, "Yesterday + today observed", "#00ffa3");
+  html += row("YEAR TO DATE", sr.ytd, "Jan 1 – Today (" + dayOfYear + " days)", "#00c8ff");
+  html += row("LAST 30 DAYS", sr.last30, "Rolling 30-day total", "#38bdf8");
   html += row("LAST 14 DAYS", sr.last14, "Rolling 14-day total", "#00c8ff");
   html += row("LAST 7 DAYS",  sr.last7,  "Rolling 7-day total",  "#38bdf8");
   if (sr.sincePlanting !== null && plantingDate) {
