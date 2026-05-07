@@ -1149,6 +1149,9 @@ async function addTag() {
 async function loadField(i) {
   activeField = i;
   var f = fields[i];
+  // Clear hybrid immediately so previous field hybrid does not bleed through
+  selectedHybrid = null;
+  clearHybrid();
   renderTags();
   if (f.crop && CROPS[f.crop]) {
     selectedCrop = f.crop;
@@ -1162,14 +1165,12 @@ async function loadField(i) {
   if (f.maturitySelect) {
     document.getElementById("maturitySelect").value = f.maturitySelect;
   }
-  onPlantingChange();
-
   if (f.lat && f.lon) {
     document.getElementById("cityInput").value = f.name;
     await fetchForecast(f.lat, f.lon, f.name);
   }
 
-  // Restore hybrid after a short delay so all rendering has fully settled
+  // Restore hybrid after all rendering settled, THEN re-run onPlantingChange so top card shows correct hybrid
   var savedFieldIdx = activeField;
   var hybridToRestore = f.hybrid;
   setTimeout(function() {
@@ -1186,6 +1187,8 @@ async function loadField(i) {
     if (fullHybrid && fields[savedFieldIdx]) {
       fields[savedFieldIdx].hybrid = {name:fullHybrid.name,brand:fullHybrid.brand,rm:fullHybrid.rm,gduMat:fullHybrid.gduMat,gduSilk:fullHybrid.gduSilk||null,silkCRM:fullHybrid.silkCRM||null,physCRM:fullHybrid.physCRM||null,stalkStr:fullHybrid.stalkStr||null,traits:fullHybrid.traits||"",notes:fullHybrid.notes||""};
     }
+    // Re-run planting change so maturity card shows correct hybrid name
+    onPlantingChange();
   }, 500);
 }
 
@@ -1259,8 +1262,10 @@ function onPlantingChange() {
   // Estimate maturity: GDD base 50F (10C), assume avg 15 GDD/day peak season, 8-10 early/late
   // Simple: days to maturity = GDD / avg_daily_gdd
   // More useful: give a calendar range
-  // Use actual hybrid GDU if selected, otherwise use RM option estimate
+  // Use actual hybrid GDU if selected — ignore dropdown RM entirely
   var gddToUse = (selectedHybrid && selectedHybrid.gduMat) ? selectedHybrid.gduMat : rm.g;
+  // Also override rm.l label with hybrid name if available
+  var rmLabel = (selectedHybrid && selectedHybrid.name) ? selectedHybrid.name : rm.l;
   var avgGDD = 18; // approximate growing season daily GDD
   var daysToMat = Math.round(gddToUse / avgGDD);
   var earlyDays = Math.round(daysToMat * 0.93);
@@ -1286,7 +1291,7 @@ function onPlantingChange() {
     + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:8px;'>CALCULATED MATURITY RANGE</div>"
     + "<div style='display:flex;gap:20px;flex-wrap:wrap;margin-bottom:6px;'>"
     + "<div style='color:#7ab8d4;'>Planted: <span style='color:#e8f4ff;'>" + fmt(pDate) + "</span></div>"
-    + "<div style='color:#7ab8d4;'>" + (selectedHybrid ? "Hybrid: <span style='color:#ffb300;font-weight:bold;'>"+selectedHybrid.name+"</span> &mdash; " : "RM / GDD: <span style='color:#e8f4ff;'>"+rm.l+" &mdash; ") + gddToUse + " GDU</span></div>"
+    + "<div style='color:#7ab8d4;'>Hybrid/RM: <span style='color:#ffb300;font-weight:bold;'>"+rmLabel+"</span> &mdash; "+gddToUse+" GDU</div>"
     + "<div style='color:#7ab8d4;'>Est. Days: <span style='color:#e8f4ff;'>" + earlyDays + "–" + lateDays + " days</span></div>"
     + "</div>"
     + "<div style='font-size:14px;font-weight:900;color:#ffb300;margin-bottom:2px;'>&#128197; " + fmt(earlyMat) + " – " + fmt(lateMat) + "</div>"
