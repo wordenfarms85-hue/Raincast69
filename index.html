@@ -2266,7 +2266,8 @@ function renderMapPins() {
       + "<div style='flex:1;'>"
       + "<div style='font-size:12px;color:#fff;font-weight:bold;'>" + f.name + "</div>"
       + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>"
-      + (crop ? crop.icon + " " + crop.name : "") 
+      + (crop ? crop.icon+" "+crop.name : "")
+      + (f.hybrid && f.hybrid.name ? " <span style='color:#ffb300;font-weight:bold;'>"+f.hybrid.name+"</span>" : "")
       + (f.lat ? " &middot; " + f.lat.toFixed(3) + ", " + f.lon.toFixed(3) : "")
       + (f.plantingDate ? " &middot; Planted " + new Date(f.plantingDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "")
       + "</div></div>"
