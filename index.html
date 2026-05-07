@@ -743,9 +743,14 @@ async function loadFieldsFromDB() {
   if (!currentUser || guestMode) return;
   var res = await supa.from('fields').select('*').order('created_at', {ascending:true});
   if (res.error) { console.error(res.error); return; }
+  var localHybrids = {};
+  try { localHybrids = JSON.parse(localStorage.getItem('farmcast_field_hybrids') || '{}'); } catch(e){}
+
   fields = res.data.map(function(r) {
     var hyb = null;
     try { if (r.hybrid_json) hyb = JSON.parse(r.hybrid_json); } catch(e){}
+    // Fall back to localStorage if DB column missing or empty
+    if (!hyb && localHybrids[r.id]) hyb = localHybrids[r.id];
     return { id:r.id, name:r.name, lat:r.lat, lon:r.lon, crop:r.crop,
       plantingDate:r.planting_date, maturitySelect:r.maturity_select,
       color:r.color||'#00c8ff', hybrid:hyb };
@@ -755,13 +760,21 @@ async function loadFieldsFromDB() {
 }
 
 async function saveFieldToDB(field) {
+  // Always save hybrid to localStorage as backup
+  try {
+    var localFields = JSON.parse(localStorage.getItem('farmcast_field_hybrids') || '{}');
+    if (field.id && field.hybrid) localFields[field.id] = field.hybrid;
+    localStorage.setItem('farmcast_field_hybrids', JSON.stringify(localFields));
+  } catch(e){}
+
   if (!currentUser || guestMode) return null;
   var row = { user_id:currentUser.id, name:field.name, lat:field.lat, lon:field.lon,
     crop:field.crop, planting_date:field.plantingDate||null,
     maturity_select:field.maturitySelect||null, color:field.color,
     hybrid_json: field.hybrid ? JSON.stringify(field.hybrid) : null };
   if (field.id) {
-    await supa.from('fields').update(row).eq('id', field.id);
+    var res = await supa.from('fields').update(row).eq('id', field.id);
+    if (res.error) console.log('save error:', res.error.message);
     return field.id;
   } else {
     var res = await supa.from('fields').insert(row).select().single();
