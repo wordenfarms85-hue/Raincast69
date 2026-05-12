@@ -608,7 +608,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <div style="font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:14px;line-height:1.9;">
       SPRAY RATING: WIND &lt;10 = GOOD CONDITIONS · 10-15 = USE CAUTION · &gt;15 = HIGH RISK · TEMP &lt;32°F = HIGH RISK · &lt;40°F = CAUTION · &gt;90°F = CAUTION<br>
       INVERSION: CALM WIND (&lt;5MPH) + CLEAR SKY + TIGHT DEWPOINT SPREAD = DROPLETS DRIFT UNPREDICTABLY<br>
-      SOURCE: OPEN-METEO GFS · WIND ADJUSTED TO ~3FT SURFACE (10M × POWER LAW 0.143) · INVERSION ESTIMATED
+      SOURCE: OPEN-METEO HRRR (3KM, HOURLY RADAR ASSIMILATION) · WIND ADJUSTED TO ~3FT SURFACE · INVERSION ESTIMATED
     </div>
   </div>
 
@@ -2120,9 +2120,11 @@ var sprayData = null;
 
 async function fetchSprayForecast(lat, lon) {
   try {
-    var url = "https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+    // Use HRRR for spray wind — 3km US model updated hourly, radar-assimilated
+    var url = "https://api.open-meteo.com/v1/gfs?latitude="+lat+"&longitude="+lon
       +"&hourly=temperature_2m,dew_point_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover"
       +"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max"
+      +"&models=hrrr"
       +"&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=5&timezone=auto";
     var r = await fetch(url);
     var d = await r.json();
