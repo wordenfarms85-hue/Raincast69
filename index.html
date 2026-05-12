@@ -570,6 +570,30 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <div id="analogResults"></div>
   </div>
 
+  <!-- CONTACT TAB -->
+
+  <div id="tab-contact" class="tab-pane" style="padding:24px 16px;">
+    <div class="section-title" style="margin-bottom:16px;">CONTACT &amp; SUPPORT</div>
+    <div style="background:#060f1a;border:1px solid #2a5278;padding:20px;max-width:400px;">
+      <div style="font-size:12px;color:#7ab8d4;letter-spacing:1px;margin-bottom:6px;">QUESTIONS &amp; FEEDBACK</div>
+      <div style="font-size:14px;color:#e8f4ff;margin-bottom:16px;line-height:1.8;">
+        Have a question, found a bug, or want to suggest a feature?<br>We'd love to hear from you.
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:#0a0f1a;border:1px solid #2a5278;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:20px;">&#9993;</div>
+        <div>
+          <div style="font-size:9px;color:#7ab8d4;letter-spacing:2px;margin-bottom:3px;">EMAIL US</div>
+          <a href="mailto:Agricastwx@gmail.com" style="font-size:15px;font-weight:bold;color:#00c8ff;text-decoration:none;letter-spacing:1px;">Agricastwx@gmail.com</a>
+        </div>
+      </div>
+      <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;line-height:1.9;">
+        AGRICAST — PRECISION AG WEATHER PLATFORM<br>
+        BUILT FOR PROFESSIONAL FARMERS &amp; AGRONOMISTS<br>
+        DATA: OPEN-METEO &middot; ERA5 &middot; GFS &middot; ECMWF
+      </div>
+    </div>
+  </div>
+
   <!-- SPRAY WEATHER TAB -->
 
   <div id="tab-spray" class="tab-pane" style="padding:16px;">
@@ -2874,7 +2898,7 @@ function switchTab(name) {
     requirePro(name.toUpperCase() + ' tab');
     return;
   }
-  var tabs = ['overview','soil','chart','table','windows','analog','spray'];
+  var tabs = ['overview','soil','chart','table','windows','analog','spray','contact'];
   tabs.forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('tab-visible', t===name);
   });
