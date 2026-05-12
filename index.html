@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FarmCast — Precision Ag Weather</title>
+<title>Agricast — Precision Ag Weather</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #0a0f1a; color: #e8f4ff; font-family: monospace; padding: 16px; font-size: 13px; min-height: 100vh; }
@@ -121,6 +121,21 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .spray-hour-time { font-size:7px; color:#3a6a94; }
 .spray-hour-wind { font-size:10px; font-weight:bold; }
 .spray-hour-bar { height:4px; margin:2px auto; border-radius:2px; }
+
+/* Paywall */
+.pro-badge { background:rgba(255,179,0,0.15); color:#ffb300; border:1px solid #ffb300; font-size:8px; padding:2px 6px; letter-spacing:2px; font-weight:bold; vertical-align:middle; margin-left:6px; }
+.paywall-overlay { display:none; position:absolute; inset:0; background:rgba(10,15,26,0.92); z-index:10; align-items:center; justify-content:center; flex-direction:column; padding:20px; }
+.paywall-overlay.show { display:flex; }
+.paywall-box { background:#0d1520; border:1px solid #ffb300; padding:20px; max-width:320px; width:100%; text-align:center; }
+.paywall-box h3 { font-size:18px; font-weight:900; color:#ffb300; margin-bottom:6px; }
+.paywall-box p { font-size:11px; color:#7ab8d4; margin-bottom:16px; line-height:1.7; }
+.paywall-box ul { text-align:left; font-size:10px; color:#7ab8d4; margin-bottom:16px; list-style:none; padding:0; }
+.paywall-box ul li::before { content:“✓ “; color:#00ffa3; }
+.paywall-box ul li { margin-bottom:5px; }
+#upgradeBar { background:linear-gradient(90deg,#0d1520,#1a2a0a); border:1px solid #ffb300; padding:10px 14px; margin-bottom:16px; display:none; align-items:center; justify-content:space-between; gap:10px; }
+#upgradeBar .ub-text { font-size:10px; color:#ffb300; letter-spacing:1px; }
+#upgradeBar .ub-sub { font-size:9px; color:#7ab8d4; }
+.free-limit-msg { font-size:9px; color:#ffb300; letter-spacing:1px; margin-top:4px; }
 
 /* Hybrid selector */
 #hybridPanel { background:#0d1520; border:1px solid #2a5278; padding:14px 16px; margin-bottom:20px; }
@@ -256,7 +271,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 
 <div id="authOverlay">
   <div id="authBox">
-    <h2>FARM<span style="color:#00c8ff">CAST</span></h2>
+    <h2>AGRI<span style="color:#00c8ff">CAST</span></h2>
     <div class="auth-sub">PRECISION AG WEATHER PLATFORM</div>
     <div id="authTitle" style="font-size:14px;font-weight:900;color:#e8f4ff;margin-bottom:16px;letter-spacing:1px;">SIGN IN</div>
     <input id="authEmail" type="email" placeholder="Email address" />
@@ -281,6 +296,16 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Auth bar -->
+
+<!-- Upgrade bar -->
+
+<div id="upgradeBar">
+  <div>
+    <div class="ub-text">⚡ AGRICAST FREE</div>
+    <div class="ub-sub">1 field · Overview only · Upgrade for full access</div>
+  </div>
+  <button onclick="startUpgrade()" style="background:#ffb300;color:#000;border:none;font-family:monospace;font-weight:900;font-size:11px;padding:8px 14px;cursor:pointer;letter-spacing:1px;white-space:nowrap;">UPGRADE $9.99/MO</button>
+</div>
 
 <div id="authBar" style="display:none;">
   <div class="auth-user" id="authBarLabel">Signed in as <span id="authUserEmail"></span></div>
@@ -419,12 +444,12 @@ td:first-child { text-align: left; color: #7ab8d4; }
 
   <div class="tab-bar">
     <button class="tab-btn tab-active" onclick="switchTab('overview')">&#127807; OVERVIEW</button>
-    <button class="tab-btn" onclick="switchTab('soil')">&#127758; SOIL</button>
-    <button class="tab-btn" onclick="switchTab('chart')">&#128200; CHART</button>
-    <button class="tab-btn" onclick="switchTab('table')">&#128203; TABLE</button>
-    <button class="tab-btn" onclick="switchTab('windows')">&#9728; FIELD OPS</button>
-    <button class="tab-btn" onclick="switchTab('analog')">&#128202; ANALOG YRS</button>
-    <button class="tab-btn" onclick="switchTab('spray')">&#128167; SPRAY</button>
+    <button class="tab-btn" onclick="switchTab('soil')">&#127758; SOIL <span class="pro-badge">PRO</span></button>
+    <button class="tab-btn" onclick="switchTab('chart')">&#128200; CHART <span class="pro-badge">PRO</span></button>
+    <button class="tab-btn" onclick="switchTab('table')">&#128203; TABLE <span class="pro-badge">PRO</span></button>
+    <button class="tab-btn" onclick="switchTab('windows')">&#9728; FIELD OPS <span class="pro-badge">PRO</span></button>
+    <button class="tab-btn" onclick="switchTab('analog')">&#128202; ANALOG YRS <span class="pro-badge">PRO</span></button>
+    <button class="tab-btn" onclick="switchTab('spray')">&#128167; SPRAY <span class="pro-badge">PRO</span></button>
   </div>
 
   <!-- OVERVIEW TAB -->
@@ -588,9 +613,20 @@ td:first-child { text-align: left; color: #7ab8d4; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
+<script src="https://js.stripe.com/v3/"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
 <script>
+// ─── SUPABASE ─────────────────────────────────────────────────────────────────
+// ─── STRIPE ──────────────────────────────────────────────────────────────────
+var STRIPE_PK   = "pk_test_51TWGugEgnpshCU4Zk5DtRGajcgd1wqZOzto9pkOqKhYn31oT3nKCZCOFcH1n3VREWs7SDhjtGwt6qHw9D7bHELcT00XMuPnsgr";
+var STRIPE_PRICE = "price_1TWGyoEgnpshCU4ZmJRBStny";
+var APP_URL      = "https://wordenfarms85-hue.github.io/Raincast69";
+var stripe       = null;
+var isPro        = false;
+var subChecked   = false;
+
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 var SUPA_URL = "https://ziuvfdtemgghmwnkoxxi.supabase.co";
 var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8";
@@ -673,6 +709,86 @@ function showApp() {
   document.getElementById('authSignInBtn').style.display = 'none';
   document.getElementById('authSignOutBtn').style.display = '';
   loadFieldsFromDB();
+  checkSubscription();
+}
+
+async function checkSubscription() {
+  if (!currentUser) return;
+  // Check URL for successful Stripe return
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('upgraded') === '1') {
+    history.replaceState(null, '', window.location.pathname);
+    await createOrUpdateSubscription('active');
+  }
+  var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
+  if (res.data && res.data.status === 'active') {
+    setProMode(true);
+  } else {
+    setProMode(false);
+  }
+  subChecked = true;
+}
+
+function setProMode(pro) {
+  isPro = pro;
+  var upgradeBar = document.getElementById('upgradeBar');
+  var authBar = document.getElementById('authBar');
+  if (pro) {
+    upgradeBar.style.display = 'none';
+    // Update auth bar to show PRO badge
+    var label = document.getElementById('authBarLabel');
+    if (label && !label.innerHTML.includes('PRO')) {
+      label.innerHTML += ' <span class="pro-badge">PRO</span>';
+    }
+    // Remove PRO badges from tabs
+    document.querySelectorAll('.pro-badge').forEach(function(b){
+      if(b.closest('.tab-btn')) b.style.display='none';
+    });
+  } else {
+    upgradeBar.style.display = 'flex';
+  }
+}
+
+async function createOrUpdateSubscription(status) {
+  if (!currentUser) return;
+  var existing = await supa.from('subscriptions').select('id').eq('user_id', currentUser.id).single();
+  if (existing.data) {
+    await supa.from('subscriptions').update({status:status, updated_at:new Date().toISOString()}).eq('user_id', currentUser.id);
+  } else {
+    await supa.from('subscriptions').insert({user_id:currentUser.id, status:status});
+  }
+}
+
+async function startUpgrade() {
+  if (!currentUser) { showLogin(); return; }
+  // Use Stripe Payment Link with client_reference_id for tracking
+  // Redirect to Stripe Checkout, come back to app
+  try {
+    stripe = stripe || Stripe(STRIPE_PK);
+    var result = await stripe.redirectToCheckout({
+      lineItems: [{ price: STRIPE_PRICE, quantity: 1 }],
+      mode: 'subscription',
+      successUrl: APP_URL + '?upgraded=1',
+      cancelUrl: APP_URL,
+      clientReferenceId: currentUser.id,
+      customerEmail: currentUser.email
+    });
+    if (result.error) {
+      // Fallback: open Stripe payment link directly
+      window.open('https://buy.stripe.com/test_' + STRIPE_PRICE, '_blank');
+    }
+  } catch(e) {
+    console.log('Stripe error:', e);
+    setStatus('Opening payment page...', '');
+    window.location.href = APP_URL + '/checkout';
+  }
+}
+
+function requirePro(featureName) {
+  if (isPro || guestMode) return true;
+  setStatus('⚡ ' + featureName + ' is an Agricast Pro feature — tap UPGRADE to unlock', '');
+  document.getElementById('upgradeBar').scrollIntoView({behavior:'smooth'});
+  return false;
 }
 
 function showLogin() {
@@ -744,7 +860,7 @@ async function loadFieldsFromDB() {
   var res = await supa.from('fields').select('*').order('created_at', {ascending:true});
   if (res.error) { console.error(res.error); return; }
   var localHybrids = {};
-  try { localHybrids = JSON.parse(localStorage.getItem('farmcast_field_hybrids') || '{}'); } catch(e){}
+  try { localHybrids = JSON.parse(localStorage.getItem('agricast_field_hybrids') || '{}'); } catch(e){}
 
   fields = res.data.map(function(r) {
     var hyb = null;
@@ -762,9 +878,9 @@ async function loadFieldsFromDB() {
 async function saveFieldToDB(field) {
   // Always save hybrid to localStorage as backup
   try {
-    var localFields = JSON.parse(localStorage.getItem('farmcast_field_hybrids') || '{}');
+    var localFields = JSON.parse(localStorage.getItem('agricast_field_hybrids') || '{}');
     if (field.id && field.hybrid) localFields[field.id] = field.hybrid;
-    localStorage.setItem('farmcast_field_hybrids', JSON.stringify(localFields));
+    localStorage.setItem('agricast_field_hybrids', JSON.stringify(localFields));
   } catch(e){}
 
   if (!currentUser || guestMode) return null;
@@ -1226,7 +1342,7 @@ var HYBRIDS = [
 
 var selectedHybrid = null;
 var customHybrids = [];
-try { customHybrids = JSON.parse(localStorage.getItem("farmcast_custom_hybrids") || "[]"); } catch(e){}
+try { customHybrids = JSON.parse(localStorage.getItem("agricast_custom_hybrids") || "[]"); } catch(e){}
 
 var BRAND_COLORS = {"Pioneer":"#ffb300","DeKalb":"#00c8ff","Channel":"#fb923c","Asgrow":"#4ade80","NK":"#c084fc","Becks":"#38bdf8","Custom":"#7ab8d4"};
 
@@ -1275,6 +1391,11 @@ async function addTag() {
   var name = document.getElementById("tagNameInput").value.trim();
   if (!name) return;
   if (guestMode) { setStatus("Sign in to save fields to your account", "err"); return; }
+  if (!isPro && fields.length >= 1) {
+    setStatus("⚡ Free plan includes 1 field — upgrade to Agricast Pro for unlimited fields", "");
+    document.getElementById('upgradeBar').scrollIntoView({behavior:'smooth'});
+    return;
+  }
   var color = TAG_COLORS[fields.length % TAG_COLORS.length];
   var field = { name:name, color:color, lat:currentLat, lon:currentLon,
     crop:selectedCrop, plantingDate:document.getElementById("plantingDate").value,
@@ -2370,6 +2491,11 @@ async function confirmPin() {
   var name = document.getElementById("pinModalName").value.trim();
   if (!name) { document.getElementById("pinModalName").focus(); return; }
   document.getElementById("pinModal").classList.remove("show");
+  if (!isPro && !guestMode && fields.length >= 1) {
+    setStatus("⚡ Free plan includes 1 field — upgrade to Agricast Pro for unlimited fields", "");
+    document.getElementById('upgradeBar').scrollIntoView({behavior:'smooth'});
+    return;
+  }
   if (guestMode) {
     // Still allow temporary pin in guest mode, just wont persist
     setStatus("Guest mode: pin is temporary and won't be saved", "");
@@ -2702,7 +2828,7 @@ function saveCustomHybrid() {
   if (!name) return;
   var h = {name:name, brand:brand, crop:selectedCrop, rm:rm, gduMat:gdu, traits:"Custom", notes:"Custom entry"};
   customHybrids.push(h);
-  try { localStorage.setItem("farmcast_custom_hybrids", JSON.stringify(customHybrids)); } catch(e){}
+  try { localStorage.setItem("agricast_custom_hybrids", JSON.stringify(customHybrids)); } catch(e){}
   document.getElementById("customHybridForm").style.display = "none";
   selectHybrid(HYBRIDS.length + customHybrids.length - 1);
 }
@@ -2716,7 +2842,13 @@ document.addEventListener("click", function(e){
 
 document.getElementById("hybridSearch") && document.getElementById("hybridSearch").addEventListener("keydown", function(e){ if(e.key==="Enter") { var r=document.getElementById("hybridResults"); var first=r&&r.querySelector(".hybrid-item"); if(first) first.click(); }});
 
+var PRO_TABS = ['soil','chart','table','windows','analog','spray'];
+
 function switchTab(name) {
+  if (PRO_TABS.indexOf(name) >= 0 && !isPro && !guestMode) {
+    requirePro(name.toUpperCase() + ' tab');
+    return;
+  }
   var tabs = ['overview','soil','chart','table','windows','analog','spray'];
   tabs.forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('tab-visible', t===name);
