@@ -395,7 +395,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 <div id="hybridPanel">
   <div class="section-title">SEED HYBRID</div>
   <div class="hybrid-search-row">
-    <input id="hybridSearch" type="text" placeholder="Search Pioneer hybrid (e.g. P1366, P0622)..." autocomplete="off" oninput="searchHybrids()" onfocus="searchHybrids()" />
+    <input id="hybridSearch" type="text" placeholder="Search hybrid (e.g. P1366, P0622)..." autocomplete="off" oninput="searchHybrids()" onfocus="searchHybrids()" />
     <button onclick="clearHybrid()" style="font-size:10px;padding:8px 10px;color:#f87171;border-color:#f87171;">CLEAR</button>
   </div>
   <div id="hybridResults"></div>
@@ -617,7 +617,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 <div class="empty" id="empty">&#127807; SELECT A CROP, SET PLANTING DATE, AND ENTER YOUR FIELD LOCATION</div>
 
 <div class="footer">
-  SOURCE: OPEN-METEO.COM &middot; MODELS: GFS / ECMWF-IFS / ICON-EU / GEM &middot; 14-DAY FORECAST<br>
+  SOURCE: OPEN-METEO.COM &middot; MODELS: GFS / ECMWF-IFS / HRRR / GEM &middot; 14-DAY FORECAST<br>
   SATELLITE MAP: &copy; ESRI / NASA / USGS &middot; ET: FAO PENMAN-MONTEITH &middot; GROWTH STAGES: UNIVERSITY EXTENSION DATA
 </div>
 
@@ -957,7 +957,7 @@ async function deleteFieldFromDB(id) {
 var MODELS = [
   { key:"gfs",   name:"GFS",     api:"gfs_seamless",  color:"#38bdf8" },
   { key:"ecmwf", name:"ECMWF",   api:"ecmwf_ifs025",  color:"#4ade80" },
-  { key:"icon",  name:"ICON-EU", api:"icon_eu",        color:"#fb923c" },
+  { key:"hrrr",  name:"HRRR",    api:"best_match",     color:"#fb923c" },
   { key:"gem",   name:"GEM",     api:"gem_seamless",   color:"#c084fc" }
 ];
 
