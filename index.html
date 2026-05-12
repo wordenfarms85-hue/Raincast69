@@ -721,7 +721,12 @@ async function checkSubscription() {
     await createOrUpdateSubscription('active');
   }
   var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
-  if (res.data && res.data.status === 'active') {
+  if (res.error) console.error('Sub check error:', res.error.message);
+  var dbActive = res.data && res.data.status === 'active';
+  // Fallback: check localStorage in case Supabase write failed
+  var localStatus = '';
+  try { localStatus = localStorage.getItem('agricast_pro_' + currentUser.id) || ''; } catch(e){}
+  if (dbActive || localStatus === 'active') {
     setProMode(true);
   } else {
     setProMode(false);
@@ -751,11 +756,20 @@ function setProMode(pro) {
 
 async function createOrUpdateSubscription(status) {
   if (!currentUser) return;
-  var existing = await supa.from('subscriptions').select('id').eq('user_id', currentUser.id).single();
-  if (existing.data) {
-    await supa.from('subscriptions').update({status:status, updated_at:new Date().toISOString()}).eq('user_id', currentUser.id);
-  } else {
-    await supa.from('subscriptions').insert({user_id:currentUser.id, status:status});
+  try {
+    var existing = await supa.from('subscriptions').select('id').eq('user_id', currentUser.id).single();
+    if (existing.data) {
+      var upd = await supa.from('subscriptions').update({status:status, updated_at:new Date().toISOString()}).eq('user_id', currentUser.id);
+      if (upd.error) console.error('Sub update error:', upd.error.message);
+    } else {
+      var ins = await supa.from('subscriptions').insert({user_id:currentUser.id, status:status});
+      if (ins.error) console.error('Sub insert error:', ins.error.message);
+    }
+    // Also cache in localStorage as backup
+    try { localStorage.setItem('agricast_pro_' + currentUser.id, status); } catch(e){}
+    console.log('Subscription saved:', status);
+  } catch(e) {
+    console.error('createOrUpdateSubscription error:', e);
   }
 }
 
