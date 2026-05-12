@@ -759,28 +759,39 @@ async function createOrUpdateSubscription(status) {
   }
 }
 
+var STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_bJe7sL3qb1N82cM0vZ3wQ00"; // Set this once you create a Payment Link in Stripe
+
 async function startUpgrade() {
   if (!currentUser) { showLogin(); return; }
-  // Use Stripe Payment Link with client_reference_id for tracking
-  // Redirect to Stripe Checkout, come back to app
+
+  // If a payment link is set, use it directly (most reliable)
+  if (STRIPE_PAYMENT_LINK) {
+    var url = STRIPE_PAYMENT_LINK
+      + "?client_reference_id=" + currentUser.id
+      + "&prefilled_email=" + encodeURIComponent(currentUser.email)
+      + "&success_url=" + encodeURIComponent(APP_URL + "?upgraded=1");
+    window.location.href = url;
+    return;
+  }
+
+  // Stripe.js checkout flow
   try {
-    stripe = stripe || Stripe(STRIPE_PK);
-    var result = await stripe.redirectToCheckout({
+    if (typeof Stripe === "undefined") throw new Error("Stripe not loaded");
+    var stripeObj = Stripe(STRIPE_PK);
+    var result = await stripeObj.redirectToCheckout({
       lineItems: [{ price: STRIPE_PRICE, quantity: 1 }],
-      mode: 'subscription',
-      successUrl: APP_URL + '?upgraded=1',
+      mode: "subscription",
+      successUrl: APP_URL + "?upgraded=1",
       cancelUrl: APP_URL,
       clientReferenceId: currentUser.id,
       customerEmail: currentUser.email
     });
-    if (result.error) {
-      // Fallback: open Stripe payment link directly
-      window.open('https://buy.stripe.com/test_' + STRIPE_PRICE, '_blank');
+    if (result && result.error) {
+      setStatus("Checkout error: " + result.error.message, "");
     }
   } catch(e) {
-    console.log('Stripe error:', e);
-    setStatus('Opening payment page...', '');
-    window.location.href = APP_URL + '/checkout';
+    console.log("Stripe error:", e);
+    setStatus("Could not open checkout — check console", "");
   }
 }
 
