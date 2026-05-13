@@ -870,21 +870,10 @@ async function checkSubscription() {
   }
 
   // Then verify with Supabase (retry once if fails)
-  var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
-  if (res.error) {
-    console.error('Sub check error:', res.error.message);
-    // Retry once after short delay
-    await new Promise(function(r){ setTimeout(r, 1000); });
-    res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
-  }
-  var dbActive = res.data && res.data.status === 'active';
-  console.log('Subscription check:', res.data, 'active:', dbActive, 'error:', res.error);
-  // Temporary: also check by querying without RLS filter
-  if (!dbActive && !res.data) {
-    var res2 = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id);
-    if (res2.data && res2.data.length > 0) dbActive = res2.data[0].status === 'active';
-    console.log('Fallback check:', res2.data, res2.error);
-  }
+  var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).limit(1);
+  if (res.error) console.error('Sub check error:', res.error.message);
+  console.log('Subscription check:', res.data, res.error);
+  var dbActive = res.data && res.data.length > 0 && res.data[0].status === 'active';
   if (dbActive) {
     try { localStorage.setItem('agricast_pro_' + currentUser.id, 'active'); } catch(e){}
     setProMode(true);
