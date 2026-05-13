@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Agricast</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #050c14; --bg2: #091525; --blue: #00c8ff;
+  --text: #e8f4ff; --muted: #4a7a9b; --border: #1a3a55;
+}
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.7; }
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 32px; background: rgba(5,12,20,0.95);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 3px; color: var(--text); text-decoration: none; }
+.nav-logo span { color: var(--blue); }
+.nav-link { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--muted); text-decoration: none; }
+.nav-link:hover { color: var(--text); }
+.container { max-width: 760px; margin: 0 auto; padding: 60px 32px 80px; }
+.page-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 4px; color: var(--blue); margin-bottom: 12px; }
+h1 { font-family: 'Bebas Neue', sans-serif; font-size: 52px; line-height: 1; margin-bottom: 8px; }
+.updated { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 40px; }
+h2 { font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 3px; color: var(--blue); margin: 36px 0 12px; }
+p { font-size: 14px; color: #b0c8d8; margin-bottom: 14px; }
+ul { padding-left: 20px; margin-bottom: 14px; }
+li { font-size: 14px; color: #b0c8d8; margin-bottom: 6px; }
+a { color: var(--blue); }
+</style>
+</head>
+<body>
+<nav>
+  <a href="https://agricast.farm" class="nav-logo">AGRI<span>CAST</span></a>
+  <a href="https://agricast.farm/app.html" class="nav-link">LAUNCH APP</a>
+</nav>
+
+<div class="container">
+  <div class="page-label">LEGAL</div>
+  <h1>PRIVACY POLICY</h1>
+  <div class="updated">LAST UPDATED: MAY 13, 2026</div>
+
+  <p>This Privacy Policy describes how Agricast ("we," "us," or "our"), operated by AJ Worden, collects, uses, and protects your information when you use our service at agricast.farm.</p>
+
+  <h2>1. INFORMATION WE COLLECT</h2>
+  <p>We collect the following information when you use Agricast:</p>
+  <ul>
+    <li><strong>Account information:</strong> Email address and password (stored securely via Supabase)</li>
+    <li><strong>Field data:</strong> Field names, GPS coordinates, crop types, planting dates, and hybrid selections you enter</li>
+    <li><strong>Location data:</strong> GPS coordinates when you use the GPS location feature (only when you explicitly request it)</li>
+    <li><strong>Payment information:</strong> Billing is handled by Stripe — we do not store your credit card number or payment details</li>
+    <li><strong>Usage data:</strong> Basic app usage information stored in your browser's local storage</li>
+    <li><strong>Weather station credentials:</strong> If you connect a personal weather station (WeatherLink or Tempest), your API keys are stored locally in your browser only — we do not store them on our servers</li>
+  </ul>
+
+  <h2>2. HOW WE USE YOUR INFORMATION</h2>
+  <p>We use your information to:</p>
+  <ul>
+    <li>Provide and operate the Agricast service</li>
+    <li>Save and restore your field data across devices</li>
+    <li>Process subscription payments via Stripe</li>
+    <li>Provide weather forecasts and agronomic data relevant to your field locations</li>
+    <li>Communicate with you about your account or service updates</li>
+  </ul>
+
+  <h2>3. INFORMATION WE DO NOT COLLECT</h2>
+  <ul>
+    <li>We do not sell your personal information to third parties</li>
+    <li>We do not use your data for advertising</li>
+    <li>We do not track your location continuously — location is only accessed when you tap GPS</li>
+    <li>We do not store your weather station API keys on our servers</li>
+  </ul>
+
+  <h2>4. DATA STORAGE AND SECURITY</h2>
+  <p>Your account data and field information are stored securely using Supabase, which uses industry-standard encryption. Payment processing is handled by Stripe, which is PCI-compliant. We take reasonable measures to protect your data, but no internet transmission is 100% secure.</p>
+
+  <h2>5. THIRD-PARTY SERVICES</h2>
+  <p>Agricast uses the following third-party services:</p>
+  <ul>
+    <li><strong>Supabase</strong> — database and authentication (supabase.com/privacy)</li>
+    <li><strong>Stripe</strong> — payment processing (stripe.com/privacy)</li>
+    <li><strong>Open-Meteo</strong> — weather data (open-meteo.com)</li>
+    <li><strong>Windy</strong> — radar visualization (windy.com/privacy)</li>
+    <li><strong>ESRI/NASA/USGS</strong> — satellite map tiles</li>
+  </ul>
+  <p>Each of these services has their own privacy policy governing their use of data.</p>
+
+  <h2>6. LOCATION DATA</h2>
+  <p>When you use the GPS feature, your browser requests your current location to fetch relevant weather data. This location is used only for the immediate weather request and is not stored on our servers beyond what is needed to serve the forecast. Field coordinates you manually save are stored in your account.</p>
+
+  <h2>7. COOKIES AND LOCAL STORAGE</h2>
+  <p>Agricast uses browser local storage (not cookies) to save your preferences, subscription status, and weather station settings. This data stays on your device and is not transmitted to our servers except where necessary for account synchronization.</p>
+
+  <h2>8. DATA RETENTION</h2>
+  <p>We retain your account and field data for as long as your account is active. If you delete your account, your data will be removed from our systems within 30 days. You may request deletion of your data at any time by contacting us.</p>
+
+  <h2>9. YOUR RIGHTS</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li>Access the personal data we hold about you</li>
+    <li>Request correction of inaccurate data</li>
+    <li>Request deletion of your account and data</li>
+    <li>Export your field data</li>
+  </ul>
+  <p>To exercise these rights, contact us at <a href="mailto:Agricastwx@gmail.com">Agricastwx@gmail.com</a>.</p>
+
+  <h2>10. CHILDREN'S PRIVACY</h2>
+  <p>Agricast is not intended for use by anyone under 18 years of age. We do not knowingly collect personal information from children.</p>
+
+  <h2>11. CHANGES TO THIS POLICY</h2>
+  <p>We may update this Privacy Policy from time to time. We will notify users of material changes by updating the date at the top of this page. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
+
+  <h2>12. CONTACT</h2>
+  <p>For privacy-related questions or requests, contact us at:<br>
+  <a href="mailto:Agricastwx@gmail.com">Agricastwx@gmail.com</a><br>
+  Agricast | agricast.farm</p>
+
+</div>
+</body>
+</html>
