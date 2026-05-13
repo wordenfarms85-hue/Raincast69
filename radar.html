@@ -156,7 +156,7 @@ function buildUrl(lat, lon, zoom, overlay, product) {
     + '&detailLat=' + lat + '&detailLon=' + lon
     + '&overlay=' + (overlay||'radar')
     + '&product=' + (product||'radar')
-    + '&marker=false&pressure=true&message=true';
+    + '&marker=true&pressure=true&message=true';
 }
 
 // Try to get GPS on load
