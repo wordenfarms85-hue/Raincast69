@@ -123,14 +123,14 @@ transition: opacity 0.5s;
 <div class="controls">
   <button id="gpsBtn" class="layer-btn" onclick="initLocation()" style="border-color:#00c8ff;color:#00c8ff;">📍 GPS</button>
   <span class="controls-label">LAYER:</span>
-  <button class="layer-btn active" onclick="setLayer('radar')">&#127783; RADAR</button>
-  <button class="layer-btn" onclick="setLayer('wind')">&#127788; WIND</button>
-  <button class="layer-btn" onclick="setLayer('rain')">&#127783; PRECIP</button>
-  <button class="layer-btn" onclick="setLayer('temp')">&#127777; TEMP</button>
-  <button class="layer-btn" onclick="setLayer('snowcover')">&#10052; SNOW</button>
-  <button class="layer-btn" onclick="setLayer('lightning')">&#9889; LIGHTNING</button>
-  <button class="layer-btn" onclick="setLayer('clouds')">&#9729; CLOUDS</button>
-  <button class="layer-btn" onclick="setLayer('satellite')">&#127759; SATELLITE</button>
+  <button class="layer-btn active" onclick="setLayer('radar', this)">&#127783; RADAR</button>
+  <button class="layer-btn" onclick="setLayer('wind', this)">&#127788; WIND</button>
+  <button class="layer-btn" onclick="setLayer('rain', this)">&#127783; PRECIP</button>
+  <button class="layer-btn" onclick="setLayer('temp', this)">&#127777; TEMP</button>
+  <button class="layer-btn" onclick="setLayer('snowcover', this)">&#10052; SNOW</button>
+  <button class="layer-btn" onclick="setLayer('lightning', this)">&#9889; LIGHTNING</button>
+  <button class="layer-btn" onclick="setLayer('clouds', this)">&#9729; CLOUDS</button>
+  <button class="layer-btn" onclick="setLayer('satellite', this)">&#127759; SATELLITE</button>
 </div>
 
 <!-- RADAR -->
@@ -199,10 +199,10 @@ function loadRadar(lat, lon) {
   frame.onload = function(){ loading.classList.add('hidden'); };
 }
 
-function setLayer(layer) {
+function setLayer(layer, btn) {
   currentLayer = layer;
   document.querySelectorAll('.layer-btn').forEach(function(b){ b.classList.remove('active'); });
-  event.target.classList.add('active');
+  if (btn) btn.classList.add('active');
 
   var overlay = layer;
   var product = layer;
