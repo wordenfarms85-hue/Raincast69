@@ -1183,12 +1183,9 @@ async function connectWeatherLink() {
   try {
     // If no station ID, fetch stations first
     if (!stationId) {
-      var r = await fetch('https://api.weatherlink.com/v2/stations?api-key=' + apiKey, {
-        headers: { 'X-Api-Secret': apiSecret }
-      });
-      var d = await r.json();
-      if (d.stations && d.stations.length > 0) {
-        stationId = d.stations[0].station_id;
+        var stations = await fetchWeatherLinkStations(apiKey, apiSecret);
+      if (stations && stations.length > 0) {
+        stationId = stations[0].station_id;
         document.getElementById('wlStationId').value = stationId;
       } else {
         setStatus('No stations found', '');
@@ -1215,13 +1212,15 @@ async function connectWeatherLink() {
 }
 
 async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
-  var r = await fetch('https://api.weatherlink.com/v2/current/' + stationId + '?api-key=' + apiKey, {
-    headers: { 'X-Api-Secret': apiSecret }
+  // Route through Supabase Edge Function proxy to avoid CORS
+  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/weatherlink-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: apiKey, apiSecret: apiSecret, stationId: stationId, action: 'current' })
   });
   var d = await r.json();
   if (!d.sensors || !d.sensors.length) return null;
 
-  // Find ISS sensor data (type 45 = Vantage Vue/Pro2 ISS)
   var iss = null;
   for (var i=0; i<d.sensors.length; i++) {
     var s = d.sensors[i];
@@ -1231,17 +1230,28 @@ async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
 
   return {
     stationName:   d.station_name || 'WeatherLink Station',
-    temp:          iss.temp_out !== undefined ? (iss.temp_out - 32) * 5/9 : iss.temp,  // already F, convert to C for consistency
+    temp:          iss.temp_out !== undefined ? (iss.temp_out - 32) * 5/9 : iss.temp,
     tempF:         iss.temp_out || iss.temp,
     humidity:      iss.hum_out || iss.hum,
     windAvg:       iss.wind_speed_avg !== undefined ? iss.wind_speed_avg * 0.44704 : null,
     windGust:      iss.wind_speed_hi  !== undefined ? iss.wind_speed_hi  * 0.44704 : null,
     windDir:       iss.wind_dir,
     pressure:      iss.bar_sea_level || iss.bar,
-    rainToday:     iss.rain_day_in !== undefined ? iss.rain_day_in * 25.4 : null,  // inches to mm
+    rainToday:     iss.rain_day_in !== undefined ? iss.rain_day_in * 25.4 : null,
     timestamp:     iss.ts,
     source:        'WEATHERLINK v2 (DAVIS INSTRUMENTS)'
   };
+}
+
+// Also proxy stations list call
+async function fetchWeatherLinkStations(apiKey, apiSecret) {
+  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/weatherlink-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: apiKey, apiSecret: apiSecret, action: 'stations' })
+  });
+  var d = await r.json();
+  return d.stations || [];
 }
 
 // ── SHARED RENDER ─────────────────────────────────────────────────────────────
