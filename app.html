@@ -908,14 +908,15 @@ async function createOrUpdateSubscription(status) {
   }
 }
 
-var STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_bJe7sL3qb1N82cM0vZ3wQ00"; // Set this once you create a Payment Link in Stripe
+var STRIPE_PAYMENT_LINK         = "https://buy.stripe.com/test_bJe14n2m70J4dVua6z3wQ01"; // monthly
+var STRIPE_PAYMENT_LINK_YEARLY  = "https://buy.stripe.com/test_6oU4gz0dZ63o18IdiL3wQ02"; // yearly // Set this once you create a Payment Link in Stripe
 
-async function startUpgrade() {
+async function startUpgrade(plan) {
   if (!currentUser) { showLogin(); return; }
 
-  // If a payment link is set, use it directly (most reliable)
-  if (STRIPE_PAYMENT_LINK) {
-    var url = STRIPE_PAYMENT_LINK
+  var link = (plan === 'yearly') ? STRIPE_PAYMENT_LINK_YEARLY : STRIPE_PAYMENT_LINK;
+  if (link) {
+    var url = link
       + "?client_reference_id=" + currentUser.id
       + "&prefilled_email=" + encodeURIComponent(currentUser.email)
       + "&success_url=" + encodeURIComponent(APP_URL + "?upgraded=1");
