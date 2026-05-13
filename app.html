@@ -137,6 +137,32 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 #upgradeBar .ub-sub { font-size:9px; color:#7ab8d4; }
 .free-limit-msg { font-size:9px; color:#ffb300; letter-spacing:1px; margin-top:4px; }
 
+/* Personal Weather Station */
+#stationPanel { background:#0d1520; border:1px solid #2a5278; padding:14px 16px; margin-bottom:20px; }
+.station-card { background:#060f1a; border:1px solid #2a5278; padding:12px 14px; margin-top:10px; }
+.station-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:6px; margin-top:10px; }
+.station-metric { background:#0a0f1a; border:1px solid #1e3a5f; padding:8px 10px; }
+.station-metric-label { font-size:8px; color:#7ab8d4; letter-spacing:1px; margin-bottom:2px; }
+.station-metric-val { font-size:18px; font-weight:900; color:#00ffa3; line-height:1; }
+.station-metric-sub { font-size:8px; color:#3a6a94; margin-top:1px; }
+
+/* Station diff overlay */
+.station-diff-banner { background:#060f1a; border:1px solid #2a5278; border-left:3px solid #00ffa3; padding:8px 12px; margin-bottom:10px; font-size:10px; }
+.station-diff-banner .diff-title { color:#00ffa3; font-weight:bold; letter-spacing:1px; margin-bottom:6px; }
+.diff-row { display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #0d1a28; font-size:10px; }
+.diff-row:last-child { border-bottom:none; }
+.diff-label { color:#7ab8d4; }
+.diff-station { color:#00ffa3; font-weight:bold; }
+.diff-model   { color:#7ab8d4; }
+.diff-delta   { font-size:9px; font-weight:bold; padding:1px 5px; border-radius:2px; }
+.diff-delta.higher { background:rgba(248,160,32,0.15); color:#e8a020; }
+.diff-delta.lower  { background:rgba(56,189,248,0.15); color:#38bdf8; }
+.diff-delta.same   { background:rgba(0,255,163,0.1);   color:#00ffa3; }
+
+.station-source { font-size:8px; color:#3a6a94; letter-spacing:1px; margin-top:8px; }
+.station-type-btn { background:#111827; border:1px solid #2a5278; color:#7ab8d4; font-family:monospace; font-size:11px; padding:7px 14px; cursor:pointer; letter-spacing:1px; transition:all 0.15s; }
+.station-type-btn.active { background:#00c8ff; color:#000; border-color:#00c8ff; font-weight:bold; }
+
 /* Hybrid selector */
 #hybridPanel { background:#0d1520; border:1px solid #2a5278; padding:14px 16px; margin-bottom:20px; }
 .hybrid-search-row { display:flex; gap:8px; margin-bottom:8px; }
@@ -359,6 +385,89 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
   <div id="map"></div>
   <div class="map-hint">&#x1F4CD; Tap anywhere on map to place a field pin &bull; Tap existing pin to load that field</div>
+</div>
+
+<!-- Personal Weather Station Panel -->
+
+<div id="stationPanel" style="display:none;">
+  <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+    <span>📡 PERSONAL WEATHER STATION</span>
+    <span id="stationStatusDot" style="width:8px;height:8px;border-radius:50%;background:#1e3a5f;display:inline-block;"></span>
+  </div>
+
+  <!-- Station type selector -->
+
+  <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:10px;">
+    <button class="station-type-btn active" onclick="setStationType('tempest')" id="btnTempest">TEMPEST</button>
+    <button class="station-type-btn" onclick="setStationType('weatherlink')" id="btnWeatherlink">WEATHERLINK</button>
+    <button class="station-type-btn" onclick="setStationType('none')" id="btnNoStation">NONE</button>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+      <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">RADIUS</div>
+      <select id="stationRadius" style="background:#111827;border:1px solid #2a5278;color:#e8f4ff;padding:5px 8px;font-family:monospace;font-size:11px;cursor:pointer;">
+        <option value="5">5 mi</option>
+        <option value="10" selected>10 mi</option>
+        <option value="15">15 mi</option>
+        <option value="25">25 mi</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tempest fields -->
+
+  <div id="tempestFields">
+    <div style="font-size:9px;color:#7ab8d4;letter-spacing:1px;margin-bottom:6px;">
+      Get your token at <span style="color:#00c8ff;">tempestwx.com → Settings → Data Authorizations</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px;">
+        <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">ACCESS TOKEN</div>
+        <input id="tempestToken" type="text" placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="font-size:11px;padding:7px 9px;"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;width:100px;">
+        <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">STATION ID</div>
+        <input id="tempestStationId" type="text" placeholder="e.g. 12345" style="font-size:11px;padding:7px 9px;"/>
+      </div>
+      <button onclick="connectTempest()" class="primary" style="padding:8px 14px;font-size:11px;">CONNECT</button>
+    </div>
+  </div>
+
+  <!-- WeatherLink fields -->
+
+  <div id="weatherlinkFields" style="display:none;">
+    <div style="font-size:9px;color:#7ab8d4;letter-spacing:1px;margin-bottom:6px;">
+      Get keys at <span style="color:#00c8ff;">weatherlink.com → Account → Generate v2 Key</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px;">
+        <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">API KEY</div>
+        <input id="wlApiKey" type="text" placeholder="API Key" style="font-size:11px;padding:7px 9px;"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px;">
+        <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">API SECRET</div>
+        <input id="wlApiSecret" type="password" placeholder="API Secret" style="font-size:11px;padding:7px 9px;"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;width:120px;">
+        <div style="font-size:8px;color:#7ab8d4;letter-spacing:1px;">STATION ID</div>
+        <input id="wlStationId" type="text" placeholder="Station ID" style="font-size:11px;padding:7px 9px;"/>
+      </div>
+      <button onclick="connectWeatherLink()" class="primary" style="padding:8px 14px;font-size:11px;">CONNECT</button>
+    </div>
+  </div>
+
+  <!-- Live station data card -->
+
+  <div id="stationDataCard" style="display:none;" class="station-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div id="stationName" style="font-size:13px;font-weight:bold;color:#00ffa3;"></div>
+        <div id="stationLastUpdated" style="font-size:9px;color:#3a6a94;letter-spacing:1px;"></div>
+      </div>
+      <button onclick="refreshStationData()" style="font-size:9px;padding:5px 10px;border-color:#2a5278;color:#7ab8d4;">↻ REFRESH</button>
+    </div>
+    <div class="station-grid" id="stationMetrics"></div>
+    <div class="station-source" id="stationSource"></div>
+    <div id="stationDiffPanel" class="station-diff-banner" style="display:none;margin-top:10px;"></div>
+  </div>
 </div>
 
 <!-- Crop selector -->
@@ -734,6 +843,7 @@ function showApp() {
   document.getElementById('authSignOutBtn').style.display = '';
   loadFieldsFromDB();
   checkSubscription();
+  document.getElementById('stationPanel').style.display = 'block';
 }
 
 async function checkSubscription() {
@@ -952,6 +1062,364 @@ async function deleteFieldFromDB(id) {
   await supa.from('fields').delete().eq('id', id);
 }
 
+
+
+// ─── PERSONAL WEATHER STATION ─────────────────────────────────────────────────
+var stationType = 'none'; // 'tempest', 'weatherlink', 'none'
+var stationData = null;
+var stationConfig = {}; // stored per field
+
+function setStationType(type) {
+  stationType = type;
+  document.getElementById('tempestFields').style.display      = type === 'tempest'     ? 'block' : 'none';
+  document.getElementById('weatherlinkFields').style.display  = type === 'weatherlink' ? 'block' : 'none';
+  ['btnTempest','btnWeatherlink','btnNoStation'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  var map = {tempest:'btnTempest', weatherlink:'btnWeatherlink', none:'btnNoStation'};
+  if (map[type]) document.getElementById(map[type]).classList.add('active');
+  if (type === 'none') {
+    document.getElementById('stationDataCard').style.display = 'none';
+    setStationDot('off');
+  }
+}
+
+function setStationDot(state) {
+  var dot = document.getElementById('stationStatusDot');
+  if (!dot) return;
+  dot.style.background = state === 'on' ? '#00ffa3' : state === 'error' ? '#e8a020' : '#1e3a5f';
+  dot.title = state === 'on' ? 'Station connected' : state === 'error' ? 'Station error' : 'No station';
+}
+
+// ── TEMPEST ─────────────────────────────────────────────────────────────────
+async function connectTempest() {
+  var token     = document.getElementById('tempestToken').value.trim();
+  var stationId = document.getElementById('tempestStationId').value.trim();
+  if (!token) { setStatus('Enter your Tempest access token', ''); return; }
+
+  setStatus('Connecting to Tempest...', '');
+
+  try {
+    // If no station ID, fetch stations list first
+    if (!stationId) {
+      var r = await fetch('https://swd.weatherflow.com/swd/rest/stations?token=' + token);
+      var d = await r.json();
+      if (d.stations && d.stations.length > 0) {
+        stationId = d.stations[0].station_id;
+        document.getElementById('tempestStationId').value = stationId;
+      } else {
+        setStatus('No stations found for that token', '');
+        setStationDot('error');
+        return;
+      }
+    }
+
+    var obs = await fetchTempestObservations(token, stationId);
+    if (!obs) { setStationDot('error'); return; }
+
+    stationConfig = { type:'tempest', token:token, stationId:stationId,
+      lat: fields[activeField] ? fields[activeField].lat : currentLat,
+      lon: fields[activeField] ? fields[activeField].lon : currentLon };
+    saveStationConfig();
+    renderStationCard(obs, 'TEMPEST');
+    setStationDot('on');
+    setStatus('Tempest station connected ✓', 'ok');
+  } catch(e) {
+    setStatus('Tempest connection failed: ' + e.message, '');
+    setStationDot('error');
+    console.error(e);
+  }
+}
+
+async function fetchTempestObservations(token, stationId) {
+  var r = await fetch('https://swd.weatherflow.com/swd/rest/observations/station/' + stationId + '?token=' + token);
+  var d = await r.json();
+  if (!d.obs || !d.obs[0]) return null;
+  var obs = d.obs[0];
+  return {
+    stationName:    d.station_name || 'Tempest Station',
+    temp:           obs.air_temperature,           // C -> convert to F
+    humidity:       obs.relative_humidity,
+    windAvg:        obs.wind_avg,                  // m/s -> convert to mph
+    windGust:       obs.wind_gust,
+    windDir:        obs.wind_direction,
+    pressure:       obs.sea_level_pressure,
+    rainToday:      obs.precip_accum_local_day,    // mm
+    rainYesterday:  obs.precip_accum_last_1hr,
+    lightning:      obs.strike_count,
+    lightningDist:  obs.strike_last_dist,
+    uv:             obs.uv,
+    solarRad:       obs.solar_radiation,
+    timestamp:      obs.timestamp,
+    source:         'TEMPEST WEATHERFLOW'
+  };
+}
+
+// ── WEATHERLINK ──────────────────────────────────────────────────────────────
+async function connectWeatherLink() {
+  var apiKey    = document.getElementById('wlApiKey').value.trim();
+  var apiSecret = document.getElementById('wlApiSecret').value.trim();
+  var stationId = document.getElementById('wlStationId').value.trim();
+  if (!apiKey || !apiSecret) { setStatus('Enter your WeatherLink API key and secret', ''); return; }
+
+  setStatus('Connecting to WeatherLink...', '');
+
+  try {
+    // If no station ID, fetch stations first
+    if (!stationId) {
+      var r = await fetch('https://api.weatherlink.com/v2/stations?api-key=' + apiKey, {
+        headers: { 'X-Api-Secret': apiSecret }
+      });
+      var d = await r.json();
+      if (d.stations && d.stations.length > 0) {
+        stationId = d.stations[0].station_id;
+        document.getElementById('wlStationId').value = stationId;
+      } else {
+        setStatus('No stations found', '');
+        setStationDot('error');
+        return;
+      }
+    }
+
+    var obs = await fetchWeatherLinkObservations(apiKey, apiSecret, stationId);
+    if (!obs) { setStationDot('error'); return; }
+
+    stationConfig = { type:'weatherlink', apiKey:apiKey, apiSecret:apiSecret, stationId:stationId,
+      lat: fields[activeField] ? fields[activeField].lat : currentLat,
+      lon: fields[activeField] ? fields[activeField].lon : currentLon };
+    saveStationConfig();
+    renderStationCard(obs, 'WEATHERLINK DAVIS');
+    setStationDot('on');
+    setStatus('WeatherLink station connected ✓', 'ok');
+  } catch(e) {
+    setStatus('WeatherLink connection failed: ' + e.message, '');
+    setStationDot('error');
+    console.error(e);
+  }
+}
+
+async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
+  var r = await fetch('https://api.weatherlink.com/v2/current/' + stationId + '?api-key=' + apiKey, {
+    headers: { 'X-Api-Secret': apiSecret }
+  });
+  var d = await r.json();
+  if (!d.sensors || !d.sensors.length) return null;
+
+  // Find ISS sensor data (type 45 = Vantage Vue/Pro2 ISS)
+  var iss = null;
+  for (var i=0; i<d.sensors.length; i++) {
+    var s = d.sensors[i];
+    if (s.data && s.data.length > 0) { iss = s.data[0]; break; }
+  }
+  if (!iss) return null;
+
+  return {
+    stationName:   d.station_name || 'WeatherLink Station',
+    temp:          iss.temp_out !== undefined ? (iss.temp_out - 32) * 5/9 : iss.temp,  // already F, convert to C for consistency
+    tempF:         iss.temp_out || iss.temp,
+    humidity:      iss.hum_out || iss.hum,
+    windAvg:       iss.wind_speed_avg !== undefined ? iss.wind_speed_avg * 0.44704 : null,
+    windGust:      iss.wind_speed_hi  !== undefined ? iss.wind_speed_hi  * 0.44704 : null,
+    windDir:       iss.wind_dir,
+    pressure:      iss.bar_sea_level || iss.bar,
+    rainToday:     iss.rain_day_in !== undefined ? iss.rain_day_in * 25.4 : null,  // inches to mm
+    timestamp:     iss.ts,
+    source:        'WEATHERLINK v2 (DAVIS INSTRUMENTS)'
+  };
+}
+
+// ── SHARED RENDER ─────────────────────────────────────────────────────────────
+function renderStationCard(obs, sourceLabel) {
+  stationData = obs;
+  var card = document.getElementById('stationDataCard');
+  card.style.display = 'block';
+
+  document.getElementById('stationName').textContent = obs.stationName || sourceLabel;
+
+  var ts = obs.timestamp ? new Date(obs.timestamp * 1000) : new Date();
+  document.getElementById('stationLastUpdated').textContent =
+    'LAST UPDATED: ' + ts.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) +
+    ' · ' + ts.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+  // Convert units
+  var tempF   = obs.tempF || (obs.temp !== null && obs.temp !== undefined ? Math.round(obs.temp * 9/5 + 32) : null);
+  var windMph = obs.windAvg !== null && obs.windAvg !== undefined ? Math.round(obs.windAvg * 2.237) : null;
+  var gustMph = obs.windGust !== null && obs.windGust !== undefined ? Math.round(obs.windGust * 2.237) : null;
+  var rainIn  = obs.rainToday !== null && obs.rainToday !== undefined ? (obs.rainToday / 25.4).toFixed(2) : null;
+  var wd      = obs.windDir !== null && obs.windDir !== undefined ? windDirLabel(obs.windDir) : null;
+
+  var metrics = [
+    { label:'TEMP',       val: tempF   !== null ? tempF+'°F'  : '–', sub:'observed' },
+    { label:'HUMIDITY',   val: obs.humidity !== null && obs.humidity !== undefined ? obs.humidity+'%' : '–', sub:'relative' },
+    { label:'WIND',       val: windMph !== null ? windMph+' mph' : '–', sub: wd || 'avg' },
+    { label:'GUSTS',      val: gustMph !== null ? gustMph+' mph' : '–', sub:'max gust' },
+    { label:'RAIN TODAY', val: rainIn  !== null ? rainIn+'"'   : '–', sub:'local day' },
+    { label:'PRESSURE',   val: obs.pressure !== null && obs.pressure !== undefined ? Math.round(obs.pressure)+' mb' : '–', sub:'sea level' }
+  ];
+
+  if (obs.uv !== undefined && obs.uv !== null)
+    metrics.push({ label:'UV INDEX', val: obs.uv, sub:'index' });
+  if (obs.lightning !== undefined && obs.lightning !== null)
+    metrics.push({ label:'LIGHTNING', val: obs.lightning+' strikes', sub: obs.lightningDist ? obs.lightningDist+' km away' : 'today' });
+
+  document.getElementById('stationMetrics').innerHTML = metrics.map(function(m) {
+    var col = '#00ffa3';
+    if (m.label === 'TEMP' && tempF !== null) col = tempF > 90 ? '#e8a020' : tempF < 32 ? '#38bdf8' : '#00ffa3';
+    if (m.label === 'WIND' && windMph !== null) col = windMph > 25 ? '#e8a020' : windMph > 15 ? '#ffb300' : '#00ffa3';
+    return "<div class='station-metric'>"
+      + "<div class='station-metric-label'>" + m.label + "</div>"
+      + "<div class='station-metric-val' style='color:"+col+";'>" + m.val + "</div>"
+      + "<div class='station-metric-sub'>" + m.sub + "</div>"
+      + "</div>";
+  }).join('');
+
+  document.getElementById('stationSource').textContent =
+    'SOURCE: ' + (obs.source || sourceLabel) + ' · OBSERVED AT FIELD · DATA REFLECTS ACTUAL CONDITIONS';
+
+  // Check which fields are within radius and render diff
+  checkFieldsInRadius();
+
+  // Show station vs model diff
+  var diffEl = document.getElementById('stationDiffPanel');
+  if (diffEl) renderStationDiff(obs);
+}
+
+// ── RADIUS / DISTANCE ────────────────────────────────────────────────────────
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  // Returns distance in miles
+  var R = 3958.8;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLon = (lon2 - lon1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2)
+        + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180)
+        * Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getStationCoords() {
+  // Try to get station lat/lon from stationData or stationConfig
+  if (stationData && stationData.lat && stationData.lon) return {lat:stationData.lat, lon:stationData.lon};
+  if (stationConfig && stationConfig.lat && stationConfig.lon) return {lat:stationConfig.lat, lon:stationConfig.lon};
+  // Fall back to current field location
+  if (activeField !== null && fields[activeField] && fields[activeField].lat) {
+    return {lat:fields[activeField].lat, lon:fields[activeField].lon};
+  }
+  return null;
+}
+
+function checkFieldsInRadius() {
+  var stCoords = getStationCoords();
+  if (!stCoords || !stationData) return;
+  var radius = parseFloat(document.getElementById('stationRadius') ? document.getElementById('stationRadius').value : 10) || 10;
+
+  fields.forEach(function(f, i) {
+    if (!f.lat || !f.lon) return;
+    var dist = haversineDistance(stCoords.lat, stCoords.lon, f.lat, f.lon);
+    f._stationDist = dist;
+    f._stationInRange = dist <= radius;
+  });
+
+  // Update field list to show station proximity
+  renderTags();
+  renderMapPins();
+}
+
+function renderStationDiff(obs) {
+  // Compare station observations vs current model data
+  var diffEl = document.getElementById('stationDiffPanel');
+  if (!diffEl) return;
+  if (!obs || !allRows || !allRows.length) { diffEl.style.display='none'; return; }
+
+  var stTempF  = obs.tempF || (obs.temp !== null && obs.temp !== undefined ? Math.round(obs.temp * 9/5 + 32) : null);
+  var stWindMph = obs.windAvg !== null && obs.windAvg !== undefined ? Math.round(obs.windAvg * 2.237) : null;
+  var stRainIn  = obs.rainToday !== null && obs.rainToday !== undefined ? (obs.rainToday / 25.4).toFixed(2) : null;
+
+  // Get model current values
+  var modelTemp = null, modelWind = null;
+  if (allRows[0]) {
+    // temp from agFetch if available
+  }
+
+  var rows = [];
+  if (stTempF !== null) {
+    var tempDiff = null;
+    var diffLabel = '';
+    rows.push({label:'TEMPERATURE', station: stTempF+'°F', model:'See forecast', delta:null});
+  }
+  if (stWindMph !== null) {
+    rows.push({label:'WIND SPEED', station: stWindMph+' mph', model:'Model est.', delta:null});
+  }
+  if (stRainIn !== null) {
+    rows.push({label:'RAIN TODAY', station: stRainIn+'"', model:'ERA5 archive', delta:null});
+  }
+  if (obs.humidity !== null && obs.humidity !== undefined) {
+    rows.push({label:'HUMIDITY', station: obs.humidity+'%', model:'Model est.', delta:null});
+  }
+
+  if (!rows.length) { diffEl.style.display='none'; return; }
+
+  diffEl.style.display = 'block';
+  diffEl.innerHTML = "<div class='diff-title'>📡 STATION vs MODEL COMPARISON</div>"
+    + rows.map(function(r) {
+      return "<div class='diff-row'>"
+        + "<span class='diff-label'>"+r.label+"</span>"
+        + "<span class='diff-station'>"+r.station+"</span>"
+        + "<span class='diff-model' style='font-size:9px;'>model: "+r.model+"</span>"
+        + "</div>";
+    }).join('');
+}
+
+function windDirLabel(deg) {
+  var dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5) % 16];
+}
+
+async function refreshStationData() {
+  if (!stationConfig || !stationConfig.type) return;
+  setStatus('Refreshing station data...', '');
+  try {
+    var obs;
+    if (stationConfig.type === 'tempest') {
+      obs = await fetchTempestObservations(stationConfig.token, stationConfig.stationId);
+      if (obs) renderStationCard(obs, 'TEMPEST');
+    } else if (stationConfig.type === 'weatherlink') {
+      obs = await fetchWeatherLinkObservations(stationConfig.apiKey, stationConfig.apiSecret, stationConfig.stationId);
+      if (obs) renderStationCard(obs, 'WEATHERLINK DAVIS');
+    }
+    if (obs) { setStatus('Station data refreshed', 'ok'); setStationDot('on'); }
+    else { setStatus('No data returned from station', ''); setStationDot('error'); }
+  } catch(e) { setStatus('Refresh failed: ' + e.message, ''); setStationDot('error'); }
+}
+
+// ── SAVE / LOAD station config per field ─────────────────────────────────────
+function saveStationConfig() {
+  if (!stationConfig || !stationConfig.type || stationConfig.type === 'none') return;
+  // Save to localStorage keyed by field ID
+  var key = 'agricast_station_' + (activeField !== null && fields[activeField] ? fields[activeField].id || activeField : 'default');
+  try { localStorage.setItem(key, JSON.stringify(stationConfig)); } catch(e){}
+}
+
+function loadStationConfig() {
+  var key = 'agricast_station_' + (activeField !== null && fields[activeField] ? fields[activeField].id || activeField : 'default');
+  try {
+    var saved = JSON.parse(localStorage.getItem(key) || 'null');
+    if (!saved) return;
+    stationConfig = saved;
+    setStationType(saved.type);
+    if (saved.type === 'tempest') {
+      document.getElementById('tempestToken').value     = saved.token || '';
+      document.getElementById('tempestStationId').value = saved.stationId || '';
+      connectTempest();
+    } else if (saved.type === 'weatherlink') {
+      document.getElementById('wlApiKey').value     = saved.apiKey || '';
+      document.getElementById('wlApiSecret').value  = saved.apiSecret || '';
+      document.getElementById('wlStationId').value  = saved.stationId || '';
+      connectWeatherLink();
+    }
+  } catch(e){}
+}
+
+// Show station panel after field is loaded
 
 // ─── MODELS ──────────────────────────────────────────────────────────────────
 var MODELS = [
@@ -1482,6 +1950,9 @@ async function loadField(i) {
     document.getElementById("cityInput").value = f.name;
     await fetchForecast(f.lat, f.lon, f.name);
   }
+
+  // Load station config for this field
+  loadStationConfig();
 
   // Restore hybrid after all rendering settled, THEN re-run onPlantingChange so top card shows correct hybrid
   var savedFieldIdx = activeField;
@@ -2594,6 +3065,7 @@ function renderMapPins() {
       + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>"
       + (crop ? crop.icon+" "+crop.name : "")
       + (f.hybrid && f.hybrid.name ? " <span style='color:#ffb300;font-weight:bold;'>"+f.hybrid.name+"</span>" : "")
+      + (f._stationInRange && stationData ? " <span style='color:#00ffa3;font-size:8px;'>📡 "+Math.round(f._stationDist*10)/10+"mi</span>" : "")
       + (f.lat ? " &middot; " + f.lat.toFixed(3) + ", " + f.lon.toFixed(3) : "")
       + (f.plantingDate ? " &middot; Planted " + new Date(f.plantingDate+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "")
       + "</div></div>"
