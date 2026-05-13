@@ -878,7 +878,13 @@ async function checkSubscription() {
     res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
   }
   var dbActive = res.data && res.data.status === 'active';
-  console.log('Subscription check:', res.data, 'active:', dbActive);
+  console.log('Subscription check:', res.data, 'active:', dbActive, 'error:', res.error);
+  // Temporary: also check by querying without RLS filter
+  if (!dbActive && !res.data) {
+    var res2 = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id);
+    if (res2.data && res2.data.length > 0) dbActive = res2.data[0].status === 'active';
+    console.log('Fallback check:', res2.data, res2.error);
+  }
   if (dbActive) {
     try { localStorage.setItem('agricast_pro_' + currentUser.id, 'active'); } catch(e){}
     setProMode(true);
