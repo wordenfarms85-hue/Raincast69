@@ -121,6 +121,7 @@ transition: opacity 0.5s;
 <!-- LAYER CONTROLS -->
 
 <div class="controls">
+  <button id="gpsBtn" class="layer-btn" onclick="initLocation()" style="border-color:#00c8ff;color:#00c8ff;">📍 GPS</button>
   <span class="controls-label">LAYER:</span>
   <button class="layer-btn active" onclick="setLayer('radar')">&#127783; RADAR</button>
   <button class="layer-btn" onclick="setLayer('wind')">&#127788; WIND</button>
@@ -140,27 +141,46 @@ transition: opacity 0.5s;
     <div class="loading-sub">LOADING RADAR</div>
     <div class="loading-bar"><div class="loading-fill"></div></div>
   </div>
-  <iframe id="windyFrame"
-    src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=°F&metricWind=mph&zoom=5&overlay=radar&product=radar&level=surface&lat=39.5&lon=-98.5&detailLat=39.5&detailLon=-98.5&marker=false&pressure=true&message=true"
-    frameborder="0"
-    allowfullscreen
-    onload="document.getElementById('loadingOverlay').classList.add('hidden')">
-  </iframe>
+  <iframe id="windyFrame" src="" frameborder="0" allowfullscreen></iframe>
 </div>
 
 <script>
 var currentLayer = 'radar';
-var baseUrl = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=°F&metricWind=mph&zoom=5&level=surface&lat=39.5&lon=-98.5&detailLat=39.5&detailLon=-98.5&marker=false&pressure=true&message=true';
+var userLat = 39.5, userLon = -98.5, userZoom = 5;
 
-function setLayer(layer) {
-  currentLayer = layer;
-  document.querySelectorAll('.layer-btn').forEach(function(b){ b.classList.remove('active'); });
-  event.target.classList.add('active');
+function buildUrl(lat, lon, zoom, overlay, product) {
+  return 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=°F&metricWind=mph'
+    + '&zoom=' + (zoom||5)
+    + '&level=surface'
+    + '&lat=' + lat + '&lon=' + lon
+    + '&detailLat=' + lat + '&detailLon=' + lon
+    + '&overlay=' + (overlay||'radar')
+    + '&product=' + (product||'radar')
+    + '&marker=false&pressure=true&message=true';
+}
 
-  var overlay = layer;
-  var product = layer;
+// Try to get GPS on load
+function initLocation() {
+  if (!navigator.geolocation) { loadRadar(userLat, userLon); return; }
+  var gpsBtn = document.getElementById('gpsBtn');
+  if (gpsBtn) gpsBtn.textContent = '⟳ LOCATING...';
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+      userZoom = 8; // closer zoom for local radar
+      loadRadar(userLat, userLon);
+      if (gpsBtn) gpsBtn.textContent = '📍 MY LOCATION';
+    },
+    function() {
+      loadRadar(userLat, userLon); // fallback to US center
+      if (gpsBtn) gpsBtn.textContent = '📍 GPS';
+    },
+    { timeout: 8000 }
+  );
+}
 
-  // Map layer names to Windy params
+function loadRadar(lat, lon) {
   var layerMap = {
     radar:     { overlay:'radar',     product:'radar' },
     wind:      { overlay:'wind',      product:'ecmwf' },
@@ -171,14 +191,26 @@ function setLayer(layer) {
     clouds:    { overlay:'clouds',    product:'ecmwf' },
     satellite: { overlay:'satellite', product:'satellite' }
   };
-
-  var params = layerMap[layer] || { overlay:layer, product:'ecmwf' };
+  var params = layerMap[currentLayer] || { overlay:'radar', product:'radar' };
   var frame = document.getElementById('windyFrame');
   var loading = document.getElementById('loadingOverlay');
   loading.classList.remove('hidden');
-  frame.src = baseUrl + '&overlay=' + params.overlay + '&product=' + params.product;
+  frame.src = buildUrl(lat, lon, userZoom, params.overlay, params.product);
   frame.onload = function(){ loading.classList.add('hidden'); };
 }
+
+function setLayer(layer) {
+  currentLayer = layer;
+  document.querySelectorAll('.layer-btn').forEach(function(b){ b.classList.remove('active'); });
+  event.target.classList.add('active');
+
+  var overlay = layer;
+  var product = layer;
+
+  var params = layerMap[layer] || { overlay:layer, product:'ecmwf' };
+  loadRadar(userLat, userLon);
+}
+window.onload = initLocation;
 </script>
 
 </body>
