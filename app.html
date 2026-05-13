@@ -854,16 +854,35 @@ async function checkSubscription() {
   if (params.get('upgraded') === '1') {
     history.replaceState(null, '', window.location.pathname);
     await createOrUpdateSubscription('active');
+    // Cache immediately
+    try { localStorage.setItem('agricast_pro_' + currentUser.id, 'active'); } catch(e){}
+    setProMode(true);
+    subChecked = true;
+    return;
   }
-  var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
-  if (res.error) console.error('Sub check error:', res.error.message);
-  var dbActive = res.data && res.data.status === 'active';
-  // Fallback: check localStorage in case Supabase write failed
+
+  // Check localStorage first for instant load
   var localStatus = '';
   try { localStatus = localStorage.getItem('agricast_pro_' + currentUser.id) || ''; } catch(e){}
-  if (dbActive || localStatus === 'active') {
+  if (localStatus === 'active') {
     setProMode(true);
-  } else {
+    subChecked = true;
+  }
+
+  // Then verify with Supabase (retry once if fails)
+  var res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
+  if (res.error) {
+    console.error('Sub check error:', res.error.message);
+    // Retry once after short delay
+    await new Promise(function(r){ setTimeout(r, 1000); });
+    res = await supa.from('subscriptions').select('status').eq('user_id', currentUser.id).single();
+  }
+  var dbActive = res.data && res.data.status === 'active';
+  console.log('Subscription check:', res.data, 'active:', dbActive);
+  if (dbActive) {
+    try { localStorage.setItem('agricast_pro_' + currentUser.id, 'active'); } catch(e){}
+    setProMode(true);
+  } else if (localStatus !== 'active') {
     setProMode(false);
   }
   subChecked = true;
