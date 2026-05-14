@@ -2849,12 +2849,24 @@ async function fetchSeasonalRain(lat, lon) {
 
     var fmt = function(d) { return d.toISOString().split("T")[0]; };
 
-    // Fetch YTD precip from Jan 1 (archive API for historical)
-    var archiveUrl = "https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
-      +"&daily=precipitation_sum&start_date="+fmt(jan1)+"&end_date="+fmt(today)+"&timezone=auto";
+    // Use forecast API with past_days for recent precip (no 5-day ERA5 lag)
+    // best_match uses HRRR for US — actual observed/analyzed, updated same day
+    var dayOfYear = Math.floor((today - jan1) / 86400000) + 1;
+    var pastDays = Math.min(dayOfYear + 1, 365);
+    var forecastUrl = "https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+      +"&daily=precipitation_sum&past_days="+pastDays+"&forecast_days=1&timezone=auto&models=best_match";
 
-    var r = await fetch(archiveUrl);
+    var r = await fetch(forecastUrl);
     var d = await r.json();
+
+    // Fallback to archive API if forecast API missing early-year data
+    if (!d.daily || !d.daily.precipitation_sum || d.daily.time[0] > fmt(jan1)) {
+      var archiveUrl = "https://archive-api.open-meteo.com/v1/archive?latitude="+lat+"&longitude="+lon
+        +"&daily=precipitation_sum&start_date="+fmt(jan1)+"&end_date="+fmt(today)+"&timezone=auto";
+      var r2 = await fetch(archiveUrl);
+      var d2 = await r2.json();
+      if (d2.daily && d2.daily.precipitation_sum) { d = d2; }
+    }
 
     if (!d.daily || !d.daily.precipitation_sum) return;
 
