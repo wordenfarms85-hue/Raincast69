@@ -1048,6 +1048,7 @@ async function loadFieldsFromDB() {
   });
   renderTags();
   renderMapPins();
+  setTimeout(fetchAllFieldPrecip, 500); // fetch precip after fields render
 }
 
 async function saveFieldToDB(field) {
