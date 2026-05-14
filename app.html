@@ -615,8 +615,19 @@ td:first-child { text-align: left; color: #7ab8d4; }
 
   <div id="tab-chart" class="tab-pane" style="padding:16px;">
     <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
-    <div id="bars" style="display:flex;align-items:flex-end;gap:1px;height:80px;overflow-x:auto;padding-bottom:2px;margin-top:10px;"></div>
-    <div style="display:flex;gap:14px;margin-top:10px;font-size:10px;color:#7ab8d4;flex-wrap:wrap;">
+    <!-- Chart container with Y-axis -->
+    <div style="display:flex;margin-top:12px;gap:4px;">
+      <!-- Y-axis labels -->
+      <div id="chartYAxis" style="display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-bottom:22px;flex-shrink:0;width:36px;">
+      </div>
+      <!-- Bars + X-axis -->
+      <div style="flex:1;overflow-x:auto;position:relative;">
+        <div id="bars" style="display:flex;align-items:flex-end;gap:1px;height:140px;position:relative;"></div>
+        <!-- Gridlines overlay -->
+        <div id="chartGridlines" style="position:absolute;top:0;left:0;right:0;height:140px;pointer-events:none;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:8px;font-size:10px;color:#7ab8d4;flex-wrap:wrap;">
       <span><span style="color:#4a82a8">&#9632;</span> Trace</span>
       <span><span style="color:#00c8ff">&#9632;</span> Light</span>
       <span><span style="color:#00ffa3">&#9632;</span> Heavy (&gt;2mm/hr)</span>
@@ -3905,19 +3916,67 @@ function renderFieldWindows(daily){
 
 function renderBars(){
   var barsEl=document.getElementById("bars"),titleEl=document.getElementById("chartTitle");
+  var yAxisEl=document.getElementById("chartYAxis");
+  var gridEl=document.getElementById("chartGridlines");
   var box=document.getElementById("chartBox"); if(box) box.style.display="block";
   var isCumul=(view==="cumul");
-  titleEl.textContent=isCumul?"CUMULATIVE BLEND":"HOURLY BLEND AVERAGE";
-  var cumSum=0,displayVals=allRows.map(function(r){if(isCumul){cumSum+=r.avg;return cumSum;}return r.avg;});
-  var maxVal=0.001;for(var i=0;i<displayVals.length;i++){if(displayVals[i]>maxVal)maxVal=displayVals[i];}
+  var CHART_H = 140;
+  titleEl.textContent=isCumul?"14-DAY CUMULATIVE BLEND":"14-DAY HOURLY BLEND";
+
+  var cumSum=0, displayVals=allRows.map(function(r){
+    if(isCumul){cumSum+=r.avg;return cumSum;}
+    return r.avg;
+  });
+
+  var maxVal=0.001;
+  for(var i=0;i<displayVals.length;i++){if(displayVals[i]>maxVal)maxVal=displayVals[i];}
+
+  // Round maxVal up to a nice scale
+  var scaleMax = maxVal;
+  var niceSteps = [0.5,1,2,3,5,10,15,20,25,50,75,100,150,200];
+  for(var ns=0;ns<niceSteps.length;ns++){
+    if(niceSteps[ns] >= maxVal * 1.1){ scaleMax = niceSteps[ns]; break; }
+  }
+  if(scaleMax < maxVal) scaleMax = Math.ceil(maxVal * 1.2);
+
+  // Y-axis labels (4 divisions)
+  if(yAxisEl){
+    var yHtml = "";
+    for(var yi=4;yi>=0;yi--){
+      var yVal = (scaleMax * yi / 4);
+      var yLabel = isCumul ? cv(yVal) : (yVal < 1 ? yVal.toFixed(1) : Math.round(yVal).toString());
+      yHtml += "<div style='font-size:8px;color:#3a6a94;letter-spacing:0;'>"+yLabel+(yi>0?"":" "+unit)+"</div>";
+    }
+    yAxisEl.innerHTML = yHtml;
+  }
+
+  // Gridlines
+  if(gridEl){
+    var gHtml = "";
+    for(var gi=1;gi<=4;gi++){
+      var gTop = CHART_H - (gi/4)*CHART_H;
+      gHtml += "<div style='position:absolute;left:0;right:0;top:"+gTop+"px;border-top:1px solid rgba(255,255,255,0.04);'></div>";
+    }
+    gridEl.innerHTML = gHtml;
+  }
+
+  // Bars
   var html="";
+  var prevDay = -1;
   for(var j=0;j<allRows.length;j++){
-    var val=displayVals[j],h=Math.max((val/maxVal)*76,val>0?2:0);
-    var col=isCumul?"#00c8ff":(allRows[j].avg>2?"#00ffa3":allRows[j].avg>0?"#00c8ff":"#223d56");
-    var dt=new Date(allRows[j].t),dayLabel=(dt.getHours()===0)?dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    var val=displayVals[j];
+    var h=Math.max((val/scaleMax)*CHART_H, val>0?2:0);
+    var col=isCumul?"#00c8ff":(allRows[j].avg>2?"#00ffa3":allRows[j].avg>0?"#00c8ff":"#1a3a55");
+    var dt=new Date(allRows[j].t);
+    var dayOfYear = dt.getDate();
+    var showLabel = (dt.getHours()===12 && dayOfYear !== prevDay); // noon label once per day
+    if(showLabel) prevDay = dayOfYear;
+    var dayLabel = showLabel
+      ? "<div class='bar-day' style='font-size:8px;white-space:nowrap;'>"+dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+"</div>"
+      : "<div class='bar-day'></div>";
     html+="<div class='bar-wrap' title='"+dt.toLocaleString()+": "+cv(val)+" "+unit+"'>"
       +"<div class='bar' style='height:"+h+"px;background:"+col+"'></div>"
-      +"<div class='bar-day'>"+dayLabel+"</div></div>";
+      +dayLabel+"</div>";
   }
   barsEl.innerHTML=html;
 }
