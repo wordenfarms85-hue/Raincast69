@@ -3070,6 +3070,102 @@ document.getElementById("pinModalName").addEventListener("keydown", function(e){
 
 // ─── MAP PINS ────────────────────────────────────────────────────────────────
 var mapPinMarkers = [];
+var fieldPrecipCache = {}; // {fieldId: {total, normal, pctNormal, color, label}}
+
+function precipPinColorByNormal(pct) {
+  if (pct === null) return "#3a6a94";
+  if (pct < 50)  return "#e8a020";
+  if (pct < 80)  return "#ffb300";
+  if (pct < 120) return "#00ffa3";
+  if (pct < 200) return "#00c8ff";
+  return "#a78bfa";
+}
+
+function precipPinLabel(pct) {
+  if (pct === null) return "";
+  if (pct < 50)  return "DRY";
+  if (pct < 80)  return "BELOW";
+  if (pct < 120) return "NORMAL";
+  if (pct < 200) return "ABOVE";
+  return "WET";
+}
+
+async function fetchFieldPrecip(field) {
+  if (!field.lat || !field.lon) return null;
+  var cacheKey = field.id || (field.lat + "_" + field.lon);
+  if (fieldPrecipCache[cacheKey]) return fieldPrecipCache[cacheKey];
+  try {
+    // 1. 14-day blended forecast
+    var forecastResults = await Promise.all(MODELS.map(function(m) {
+      return fetch("https://api.open-meteo.com/v1/forecast?latitude="+field.lat+"&longitude="+field.lon
+        +"&daily=precipitation_sum&forecast_days=14&models="+m.api+"&timezone=auto")
+        .then(function(r){ return r.json(); }).catch(function(){ return null; });
+    }));
+    var forecastTotals = forecastResults.map(function(r) {
+      if (!r || !r.daily || !r.daily.precipitation_sum) return null;
+      return r.daily.precipitation_sum.reduce(function(a,b){ return a+(b||0); },0) * 0.0394;
+    }).filter(function(v){ return v !== null; });
+    if (!forecastTotals.length) return null;
+    var forecastInches = forecastTotals.reduce(function(a,b){ return a+b; },0) / forecastTotals.length;
+
+    // 2. Historical normal from ERA5 climate API — same 14-day window over 30 years
+    var now = new Date();
+    var mm1 = (now.getMonth()+1).toString().padStart(2,"0");
+    var dd1 = now.getDate().toString().padStart(2,"0");
+    var endD = new Date(now.getTime() + 13*86400000);
+    var mm2 = (endD.getMonth()+1).toString().padStart(2,"0");
+    var dd2 = endD.getDate().toString().padStart(2,"0");
+    var startYear = now.getFullYear() - 30;
+
+    var climateUrl = "https://climate-api.open-meteo.com/v1/climate?latitude="+field.lat
+      +"&longitude="+field.lon
+      +"&start_date="+startYear+"-01-01"
+      +"&end_date="+(now.getFullYear()-1)+"-12-31"
+      +"&models=ERA5&daily=precipitation_sum&timezone=auto";
+
+    var cr = await fetch(climateUrl).then(function(r){ return r.json(); }).catch(function(){ return null; });
+
+    var normalInches = null;
+    if (cr && cr.daily && cr.daily.time) {
+      var times = cr.daily.time;
+      var precips = cr.daily.precipitation_sum;
+      var windowTotals = [];
+      for (var yr = startYear; yr < now.getFullYear(); yr++) {
+        var winStart = yr + "-" + mm1 + "-" + dd1;
+        var si = times.indexOf(winStart);
+        if (si < 0) continue;
+        var wsum = 0, wdays = 0;
+        for (var di = si; di < times.length && wdays < 14; di++, wdays++) {
+          wsum += (precips[di] || 0);
+        }
+        if (wdays >= 10) windowTotals.push(wsum * 0.0394);
+      }
+      if (windowTotals.length > 0)
+        normalInches = windowTotals.reduce(function(a,b){ return a+b; },0) / windowTotals.length;
+    }
+
+    var pctNormal = (normalInches && normalInches > 0.05)
+      ? Math.round((forecastInches / normalInches) * 100)
+      : null;
+
+    var result = {
+      total:     Math.round(forecastInches * 100) / 100,
+      normal:    normalInches ? Math.round(normalInches * 100) / 100 : null,
+      pctNormal: pctNormal,
+      color:     precipPinColorByNormal(pctNormal),
+      label:     precipPinLabel(pctNormal)
+    };
+    fieldPrecipCache[cacheKey] = result;
+    return result;
+  } catch(e) { console.error("fetchFieldPrecip:", e); return null; }
+}
+
+async function fetchAllFieldPrecip() {
+  if (!fields.length) return;
+  // Fetch in background for all fields
+  await Promise.all(fields.map(function(f) { return fetchFieldPrecip(f); }));
+  renderMapPins();
+}
 var leafletMap = null;
 var forecastMarker = null;
 var pendingPin = null; // {lat, lon} waiting for name
@@ -3084,10 +3180,21 @@ function renderMapPins() {
   fields.forEach(function(f, i) {
     if (!f.lat || !f.lon) return;
     var crop = f.crop && CROPS[f.crop] ? CROPS[f.crop] : null;
+    var cacheKey = f.id || (f.lat + "_" + f.lon);
+    var precip = fieldPrecipCache[cacheKey];
+    var precipBadge = precip
+      ? "<span style='background:rgba(0,0,0,0.3);border:1px solid "+precip.color+";color:"+precip.color+";font-size:9px;font-weight:bold;padding:1px 6px;letter-spacing:1px;margin-left:4px;' title='14-day forecast: "+precip.total+"in | Normal: "+(precip.normal||"?")+"in'>"
+        + precip.total + '" '
+        + (precip.pctNormal !== null ? "<span style='font-size:8px;opacity:0.8;'>("+precip.pctNormal+"% of normal)</span>" : "")
+        + "</span>"
+      : "<span style='color:#3a6a94;font-size:9px;'>…</span>";
     html += "<div style='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #0a1520;cursor:pointer;' onclick='loadField(" + i + ")'>"
       + "<div style='width:10px;height:10px;border-radius:50%;background:" + f.color + ";flex-shrink:0;box-shadow:0 0 6px " + f.color + ";'></div>"
       + "<div style='flex:1;'>"
-      + "<div style='font-size:12px;color:#fff;font-weight:bold;'>" + f.name + "</div>"
+      + "<div style='display:flex;align-items:center;gap:4px;'>"
+      + "<span style='font-size:12px;color:#fff;font-weight:bold;'>" + f.name + "</span>"
+      + precipBadge
+      + "</div>"
       + "<div style='font-size:9px;color:#7ab8d4;letter-spacing:1px;'>"
       + (crop ? crop.icon+" "+crop.name : "")
       + (f.hybrid && f.hybrid.name ? " <span style='color:#ffb300;font-weight:bold;'>"+f.hybrid.name+"</span>" : "")
