@@ -19,7 +19,7 @@
   --border: #1a3a55;
 }
 html, body { height: 100%; overflow: hidden; }
-body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; }
+body { background: #050c14; color: #e8f4ff; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; }
 
 /* NAV */
 nav {
@@ -28,17 +28,17 @@ align-items: center;
 justify-content: space-between;
 padding: 12px 20px;
 background: rgba(5,12,20,0.95);
-border-bottom: 1px solid var(–border);
+border-bottom: 1px solid #1a3a55;
 flex-shrink: 0;
 z-index: 100;
 }
-.nav-logo { font-family: ‘Bebas Neue’, sans-serif; font-size: 24px; letter-spacing: 3px; color: var(–text); text-decoration: none; }
-.nav-logo span { color: var(–blue); }
+.nav-logo { font-family: ‘Bebas Neue’, sans-serif; font-size: 24px; letter-spacing: 3px; color: #e8f4ff; text-decoration: none; }
+.nav-logo span { color: #00c8ff; }
 .nav-links { display: flex; gap: 16px; align-items: center; }
-.nav-link { font-family: ‘DM Mono’, monospace; font-size: 11px; letter-spacing: 2px; color: var(–muted); text-decoration: none; transition: color 0.2s; }
-.nav-link:hover { color: var(–text); }
-.nav-link.active { color: var(–blue); }
-.nav-cta { background: var(–green); color: #000; font-family: ‘DM Mono’, monospace; font-weight: 500; font-size: 11px; letter-spacing: 2px; padding: 8px 18px; text-decoration: none; }
+.nav-link { font-family: ‘DM Mono’, monospace; font-size: 11px; letter-spacing: 2px; color: #4a7a9b; text-decoration: none; transition: color 0.2s; }
+.nav-link:hover { color: #e8f4ff; }
+.nav-link.active { color: #00c8ff; }
+.nav-cta { background: #90ee90; color: #000; font-family: ‘DM Mono’, monospace; font-weight: 500; font-size: 11px; letter-spacing: 2px; padding: 8px 18px; text-decoration: none; }
 
 /* LAYER CONTROLS */
 .controls {
@@ -46,8 +46,8 @@ display: flex;
 align-items: center;
 gap: 8px;
 padding: 8px 20px;
-background: var(–bg2);
-border-bottom: 1px solid var(–border);
+background: #091525;
+border-bottom: 1px solid #1a3a55;
 flex-shrink: 0;
 overflow-x: auto;
 -webkit-overflow-scrolling: touch;
@@ -56,17 +56,17 @@ overflow-x: auto;
 font-family: ‘DM Mono’, monospace;
 font-size: 10px;
 letter-spacing: 1px;
-color: var(–muted);
-background: var(–bg);
-border: 1px solid var(–border);
+color: #4a7a9b;
+background: #050c14;
+border: 1px solid #1a3a55;
 padding: 6px 14px;
 cursor: pointer;
 white-space: nowrap;
 transition: all 0.15s;
 flex-shrink: 0;
 }
-.layer-btn:hover { color: var(–text); border-color: var(–muted); }
-.layer-btn.active { color: var(–blue); border-color: var(–blue); background: rgba(0,200,255,0.08); }
+.layer-btn:hover { color: #e8f4ff; border-color: #4a7a9b; }
+.layer-btn.active { color: #00c8ff; border-color: #00c8ff; background: rgba(0,200,255,0.08); }
 .controls-label { font-family: ‘DM Mono’, monospace; font-size: 9px; letter-spacing: 2px; color: var(–border); flex-shrink: 0; }
 
 /* RADAR FRAME */
@@ -91,14 +91,14 @@ align-items: center;
 justify-content: center;
 flex-direction: column;
 gap: 12px;
-background: var(–bg);
+background: #050c14;
 pointer-events: none;
 transition: opacity 0.5s;
 }
 .radar-loading.hidden { opacity: 0; }
-.loading-logo { font-family: ‘Bebas Neue’, sans-serif; font-size: 32px; letter-spacing: 4px; color: var(–text); }
-.loading-logo span { color: var(–blue); }
-.loading-sub { font-family: ‘DM Mono’, monospace; font-size: 10px; letter-spacing: 3px; color: var(–muted); }
+.loading-logo { font-family: ‘Bebas Neue’, sans-serif; font-size: 32px; letter-spacing: 4px; color: #e8f4ff; }
+.loading-logo span { color: #00c8ff; }
+.loading-sub { font-family: ‘DM Mono’, monospace; font-size: 10px; letter-spacing: 3px; color: #4a7a9b; }
 .loading-bar { width: 200px; height: 2px; background: var(–border); border-radius: 1px; overflow: hidden; }
 .loading-fill { height: 100%; background: var(–blue); border-radius: 1px; animation: load 2s ease forwards; }
 @keyframes load { from { width: 0; } to { width: 100%; } }
