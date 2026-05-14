@@ -145,71 +145,26 @@ transition: opacity 0.5s;
 
 <script>
 var currentLayer = 'radar';
-var userLat = 39.5, userLon = -98.5, userZoom = 5;
-
-function buildUrl(lat, lon, zoom, overlay, product) {
-  return 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=°F&metricWind=mph'
-    + '&zoom=' + (zoom||5)
-    + '&level=surface'
-    + '&lat=' + lat + '&lon=' + lon
-    + '&detailLat=' + lat + '&detailLon=' + lon
-    + '&overlay=' + (overlay||'radar')
-    + '&product=' + (product||'radar')
-    + '&marker=true&pressure=true&message=true';
-}
-
-// Try to get GPS on load
-function initLocation() {
-  if (!navigator.geolocation) { loadRadar(userLat, userLon); return; }
-  var gpsBtn = document.getElementById('gpsBtn');
-  if (gpsBtn) gpsBtn.textContent = '⟳ LOCATING...';
-  navigator.geolocation.getCurrentPosition(
-    function(pos) {
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
-      userZoom = 8; // closer zoom for local radar
-      loadRadar(userLat, userLon);
-      if (gpsBtn) gpsBtn.textContent = '📍 MY LOCATION';
-    },
-    function() {
-      loadRadar(userLat, userLon); // fallback to US center
-      if (gpsBtn) gpsBtn.textContent = '📍 GPS';
-    },
-    { timeout: 8000 }
-  );
-}
-
-function loadRadar(lat, lon) {
-  var layerMap = {
-    radar:     { overlay:'radar',     product:'radar' },
-    wind:      { overlay:'wind',      product:'ecmwf' },
-    rain:      { overlay:'rain',      product:'ecmwf' },
-    temp:      { overlay:'temp',      product:'ecmwf' },
-    snowcover: { overlay:'snowcover', product:'ecmwf' },
-    lightning: { overlay:'lightning', product:'radar' },
-    clouds:    { overlay:'clouds',    product:'ecmwf' },
-    satellite: { overlay:'satellite', product:'satellite' }
-  };
-  var params = layerMap[currentLayer] || { overlay:'radar', product:'radar' };
-  var frame = document.getElementById('windyFrame');
-  var loading = document.getElementById('loadingOverlay');
-  loading.classList.remove('hidden');
-  frame.src = buildUrl(lat, lon, userZoom, params.overlay, params.product);
-  frame.onload = function(){ loading.classList.add('hidden'); };
-}
-
+var layerMap = {
+  radar:     { overlay:'radar',     product:'radar' },
+  wind:      { overlay:'wind',      product:'ecmwf' },
+  rain:      { overlay:'rain',      product:'ecmwf' },
+  temp:      { overlay:'temp',      product:'ecmwf' },
+  snowcover: { overlay:'snowcover', product:'ecmwf' },
+  lightning: { overlay:'lightning', product:'radar' },
+  clouds:    { overlay:'clouds',    product:'ecmwf' },
+  satellite: { overlay:'satellite', product:'satellite' }
+};
 function setLayer(layer, btn) {
   currentLayer = layer;
   document.querySelectorAll('.layer-btn').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-
-  var overlay = layer;
-  var product = layer;
-
-  var params = layerMap[layer] || { overlay:layer, product:'ecmwf' };
-  loadRadar(userLat, userLon);
+  var p = layerMap[layer] || { overlay:'radar', product:'radar' };
+  var frame = document.getElementById('windyFrame');
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  frame.src = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=%C2%B0F&metricWind=mph&zoom=5&overlay=' + p.overlay + '&product=' + p.product + '&level=surface&lat=39.5&lon=-98.5&detailLat=39.5&detailLon=-98.5&marker=false&pressure=true&message=true';
+  frame.onload = function(){ document.getElementById('loadingOverlay').classList.add('hidden'); };
 }
-window.onload = initLocation;
 </script>
 
 </body>
