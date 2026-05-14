@@ -51,30 +51,56 @@ z-index: 100;
 display: flex;
 align-items: center;
 justify-content: space-between;
-padding: 18px 40px;
-background: rgba(5,12,20,0.85);
-backdrop-filter: blur(12px);
+padding: 12px 20px;
+background: rgba(5,12,20,0.95);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
 border-bottom: 1px solid var(–border);
 }
 .nav-logo {
 font-family: ‘Bebas Neue’, sans-serif;
-font-size: 28px;
+font-size: 26px;
 letter-spacing: 3px;
 color: var(–text);
+text-decoration: none;
+flex-shrink: 0;
 }
 .nav-logo span { color: var(–blue); }
+.nav-links-group {
+display: flex;
+align-items: center;
+gap: 10px;
+flex-wrap: nowrap;
+overflow: hidden;
+}
+.nav-text-link {
+font-family: ‘DM Mono’, monospace;
+font-size: 10px;
+letter-spacing: 1.5px;
+color: var(–muted);
+text-decoration: none;
+white-space: nowrap;
+flex-shrink: 0;
+}
+.nav-text-link:hover { color: var(–text); }
 .nav-cta {
 background: var(–green);
 color: #000;
 font-family: ‘DM Mono’, monospace;
 font-weight: 500;
-font-size: 12px;
-letter-spacing: 2px;
-padding: 10px 24px;
+font-size: 11px;
+letter-spacing: 1.5px;
+padding: 8px 16px;
 text-decoration: none;
 transition: opacity 0.2s;
+white-space: nowrap;
+flex-shrink: 0;
 }
 .nav-cta:hover { opacity: 0.85; }
+@media (max-width: 480px) {
+.nav-text-link { display: none; }
+.nav-hide-mobile { display: none; }
+}
 
 /* ── HERO ── */
 .hero {
@@ -462,8 +488,12 @@ transform: translateY(0);
 <!-- NAV -->
 
 <nav>
-  <div class="nav-logo">AGRI<span>CAST</span></div>
-  <div style="display:flex;align-items:center;gap:12px;"><a href="https://agricast.farm/radar.html" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:#7ab8d4;text-decoration:none;">RADAR</a><a href="https://agricast.farm/app.html" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:#7ab8d4;text-decoration:none;">EXISTING USER?</a><a href="https://agricast.farm/app.html" class="nav-cta">LAUNCH APP</a></div>
+  <a href="https://agricast.farm" class="nav-logo">AGRI<span>CAST</span></a>
+  <div class="nav-links-group">
+    <a href="https://agricast.farm/radar.html" class="nav-text-link nav-hide-mobile">RADAR</a>
+    <a href="https://agricast.farm/app.html" class="nav-text-link">SIGN IN</a>
+    <a href="https://agricast.farm/app.html" class="nav-cta">LAUNCH APP</a>
+  </div>
 </nav>
 
 <!-- HERO -->
