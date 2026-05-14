@@ -121,7 +121,6 @@ transition: opacity 0.5s;
 <!-- LAYER CONTROLS -->
 
 <div class="controls">
-  <button id="gpsBtn" class="layer-btn" onclick="initLocation()" style="border-color:#00c8ff;color:#00c8ff;">📍 GPS</button>
   <span class="controls-label">LAYER:</span>
   <button class="layer-btn active" onclick="setLayer('radar', this)">&#127783; RADAR</button>
   <button class="layer-btn" onclick="setLayer('wind', this)">&#127788; WIND</button>
@@ -141,7 +140,7 @@ transition: opacity 0.5s;
     <div class="loading-sub">LOADING RADAR</div>
     <div class="loading-bar"><div class="loading-fill"></div></div>
   </div>
-  <iframe id="windyFrame" src="" frameborder="0" allowfullscreen></iframe>
+  <iframe id="windyFrame" src="https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=inch&metricTemp=°F&metricWind=mph&zoom=5&overlay=radar&product=radar&level=surface&lat=39.5&lon=-98.5&detailLat=39.5&detailLon=-98.5&marker=false&pressure=true&message=true" frameborder="0" allowfullscreen onload="document.getElementById('loadingOverlay').classList.add('hidden')"></iframe>
 </div>
 
 <script>
