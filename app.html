@@ -1568,6 +1568,7 @@ var CROPS = {
   },
   tallgrass: {
     name:"TALLGRASS", icon:"&#127808;", flood:55, droughtDays:21,
+    calendarBased: true,
     rmOptions:[
       {l:"Big Bluestem",g:1400},
       {l:"Indiangrass",g:1300},
@@ -1576,16 +1577,17 @@ var CROPS = {
       {l:"Mixed Tallgrass",g:1350}
     ],
     stages:[
-      {name:"DORMANT",       pct:[0,15],  kc:0.2, need:0,  color:"#5a8aa8", note:"Deep root system overwinters well. Minimal moisture use. Fire beneficial for removing thatch.", critical:"Late dormant burning window closes with green-up. Ice sheeting rarely an issue — deep crowns survive."},
-      {name:"GREEN-UP",      pct:[15,28], kc:0.4, need:2,  color:"#4ade80", note:"Warm-season grasses green up late (May–June). Soil temp above 60F required. Very slow early growth.", critical:"Do not graze until 8–10 inches tall — crown damage reduces summer yield drastically."},
-      {name:"VEGETATIVE",    pct:[28,52], kc:0.8, need:4,  color:"#00c8ff", note:"Rapid growth June–July. Peak production period. Ideal grazing window is 8–18 inches.", critical:"Overgrazing below 6 inches during peak growth permanently weakens stand vigor."},
-      {name:"BOOT/HEADING",  pct:[52,68], kc:0.9, need:5,  color:"#00c8ff", note:"Seed head emergence July–August. Quality declines but yield still high. Deferred grazing or haying window.", critical:"Drought during boot stage cuts seed set and weakens root carb reserves for next year."},
-      {name:"MID-SUMMER",    pct:[68,82], kc:0.7, need:4,  color:"#ffb300", note:"Growth slows in August heat. Excellent drought tolerance due to deep roots (6–8 ft). Still productive if moisture adequate.", critical:"Severe drought causes premature dormancy. Allow 60-day rest before fall frost."},
-      {name:"FALL HARDENING",pct:[82,100],kc:0.4, need:1,  color:"#fb923c", note:"Plants storing carbohydrates in roots for winter. Critical rest period — no grazing after Sept 1 in northern range.", critical:"Fall grazing depletes root reserves and risks winterkill. Leave 8–12 inch stubble for snow catch and insulation."}
+      {name:"DORMANT",       calStart:[11,1],  calEnd:[4,15],  kc:0.2, need:0, color:"#5a8aa8", note:"Deep root system overwinters well. Minimal moisture use. Prescribed fire beneficial Nov–Mar for thatch removal.", critical:"Late dormant burning window closes with green-up. Ice sheeting rarely an issue — deep crowns survive."},
+      {name:"GREEN-UP",      calStart:[4,15],  calEnd:[5,25],  kc:0.4, need:2, color:"#4ade80", note:"Warm-season grasses green up late April–May. Soil temp above 60F required. Very slow early growth.", critical:"Do not graze until 8–10 inches tall — crown damage in early spring reduces summer yield drastically."},
+      {name:"VEGETATIVE",    calStart:[5,25],  calEnd:[7,1],   kc:0.8, need:4, color:"#00c8ff", note:"Rapid growth June–early July. Peak production period. Ideal grazing window is 8–18 inches.", critical:"Overgrazing below 6 inches during peak growth permanently weakens stand vigor."},
+      {name:"BOOT/HEADING",  calStart:[7,1],   calEnd:[8,10],  kc:0.9, need:5, color:"#00c8ff", note:"Seed head emergence July–August. Quality declines but yield still high. Deferred grazing or haying window.", critical:"Drought during boot stage cuts seed set and weakens root carb reserves for next year."},
+      {name:"MID-SUMMER",    calStart:[8,10],  calEnd:[9,10],  kc:0.7, need:4, color:"#ffb300", note:"Growth slows in August heat. Excellent drought tolerance due to deep roots (6–8 ft). Still productive if moisture adequate.", critical:"Severe drought causes premature dormancy. Allow 60-day rest before fall frost."},
+      {name:"FALL HARDENING",calStart:[9,10],  calEnd:[11,1],  kc:0.4, need:1, color:"#fb923c", note:"Plants storing carbohydrates in roots for winter. Critical rest period — no grazing after Sept 1 in northern range.", critical:"Fall grazing depletes root reserves and risks winterkill. Leave 8–12 inch stubble for snow catch and insulation."}
     ]
   },
   shortgrass: {
     name:"SHORTGRASS", icon:"&#127807;", flood:30, droughtDays:28,
+    calendarBased: true,
     rmOptions:[
       {l:"Blue Grama",g:900},
       {l:"Buffalograss",g:950},
@@ -1594,12 +1596,12 @@ var CROPS = {
       {l:"Black Grama",g:850}
     ],
     stages:[
-      {name:"DORMANT",       pct:[0,18],  kc:0.15,need:0,  color:"#5a8aa8", note:"Extremely drought-hardy dormant state. Brown color normal. Minimal water use — survives months without rain.", critical:"Flash flooding on dormant crusted soil causes erosion. Watch for bare soil expansion."},
-      {name:"GREEN-UP",      pct:[18,30], kc:0.3, need:1,  color:"#4ade80", note:"Waits for reliable soil moisture and 55F+ soil temp. Can green up from single good rain event.", critical:"False green-up from spring rain followed by dry period stresses plants. Watch for late frost."},
-      {name:"ACTIVE GROWTH", pct:[30,55], kc:0.6, need:3,  color:"#00c8ff", note:"Low-growing mat (4–12 in). Thrives in heat and drought conditions. Very efficient water use (C4 pathway).", critical:"Overgrazing below 1–2 inch height during active growth destroys photosynthetic area rapidly."},
-      {name:"REPRODUCTIVE",  pct:[55,70], kc:0.7, need:3,  color:"#00c8ff", note:"Seed production June–August. Buffalograss produces burrs; blue grama has distinctive comb-like seed heads.", critical:"Continuous heavy grazing prevents seed set — reduces natural reseeding of bare patches."},
-      {name:"LATE SUMMER",   pct:[70,85], kc:0.5, need:2,  color:"#ffb300", note:"Excellent heat/drought tolerance. Can appear semi-dormant in extreme heat but recovers with any rain.", critical:"Overgrazing in drought conditions leads to bare ground invasion by weeds and undesirable species."},
-      {name:"FALL DORMANCY", pct:[85,100],kc:0.2, need:0,  color:"#5a8aa8", note:"Enters dormancy with first hard frost. Very forgiving of fall grazing compared to tallgrass — but rest still improves vigor.", critical:"Repeated heavy fall grazing over years thins stand and allows juniper/mesquite encroachment."}
+      {name:"DORMANT",       calStart:[11,1],  calEnd:[4,20],  kc:0.15,need:0, color:"#5a8aa8", note:"Extremely drought-hardy dormant state. Brown color normal. Minimal water use — survives months without rain.", critical:"Flash flooding on dormant crusted soil causes erosion. Watch for bare soil expansion."},
+      {name:"GREEN-UP",      calStart:[4,20],  calEnd:[5,20],  kc:0.3, need:1, color:"#4ade80", note:"Waits for reliable soil moisture and 55F+ soil temp. Can green up from single good rain event.", critical:"False green-up from spring rain followed by dry period stresses plants. Watch for late frost."},
+      {name:"ACTIVE GROWTH", calStart:[5,20],  calEnd:[7,10],  kc:0.6, need:3, color:"#00c8ff", note:"Low-growing mat (4–12 in). Thrives in heat and drought conditions. Very efficient water use (C4 pathway).", critical:"Overgrazing below 1–2 inch height during active growth destroys photosynthetic area rapidly."},
+      {name:"REPRODUCTIVE",  calStart:[7,10],  calEnd:[8,20],  kc:0.7, need:3, color:"#00c8ff", note:"Seed production July–August. Buffalograss produces burrs; blue grama has distinctive comb-like seed heads.", critical:"Continuous heavy grazing prevents seed set — reduces natural reseeding of bare patches."},
+      {name:"LATE SUMMER",   calStart:[8,20],  calEnd:[10,1],  kc:0.5, need:2, color:"#ffb300", note:"Excellent heat/drought tolerance. Can appear semi-dormant in extreme heat but recovers with any rain.", critical:"Overgrazing in drought conditions leads to bare ground invasion by weeds and undesirable species."},
+      {name:"FALL DORMANCY", calStart:[10,1],  calEnd:[11,1],  kc:0.2, need:0, color:"#5a8aa8", note:"Enters dormancy with first hard frost. Very forgiving of fall grazing compared to tallgrass — but rest still improves vigor.", critical:"Repeated heavy fall grazing over years thins stand and allows juniper/mesquite encroachment."}
     ]
   },
   hay: {
@@ -2237,10 +2239,27 @@ function renderStagePanel() {
     return d;
   }
 
+  var isCalendarBased = crop.calendarBased;
+
+  // Calendar date helper for native sod (absolute month/day, no planting anchor)
+  function calStageDate(month, day) {
+    var yr = today.getFullYear();
+    var d = new Date(yr, month - 1, day);
+    return d;
+  }
+
+  // Handle DORMANT wrapping across year boundary for calendar-based crops
+  function calStageDateWrapped(month, day, stageIdx, totalStages) {
+    var yr = today.getFullYear();
+    var d = new Date(yr, month - 1, day);
+    // If DORMANT stage spans Nov–Apr, adjust year as needed
+    return d;
+  }
+
   var currentPct = null;
   var totalDays = maturityDate ? Math.round((maturityDate - plantingDate) / 86400000) : null;
   var daysSincePlanting = (plantingDate && maturityDate) ? Math.round((today - plantingDate) / 86400000) : null;
-  if (!isWinterWheat) {
+  if (!isWinterWheat && !isCalendarBased) {
     currentPct = (totalDays && daysSincePlanting !== null) ? Math.min(100, Math.max(0, (daysSincePlanting / totalDays) * 100)) : null;
   }
 
@@ -2251,6 +2270,20 @@ function renderStagePanel() {
       var sStart = winterWheatStageDate(plantingDate, s.calStart[0], s.calStart[1]);
       var sEnd   = winterWheatStageDate(plantingDate, s.calEnd[0],   s.calEnd[1]);
       if (today >= sStart && today < sEnd) { selectedStage = si; break; }
+    }
+  } else if (isCalendarBased) {
+    var todayMD = today.getMonth() * 100 + today.getDate(); // MMDD as number for comparison
+    for (var si = 0; si < crop.stages.length; si++) {
+      var s = crop.stages[si];
+      var startMD = (s.calStart[0]-1) * 100 + s.calStart[1];
+      var endMD   = (s.calEnd[0]-1)   * 100 + s.calEnd[1];
+      if (startMD <= endMD) {
+        // Normal range
+        if (todayMD >= startMD && todayMD < endMD) { selectedStage = si; break; }
+      } else {
+        // Wraps year boundary (e.g. Nov–Apr)
+        if (todayMD >= startMD || todayMD < endMD) { selectedStage = si; break; }
+      }
     }
   } else if (currentPct !== null) {
     for (var si = 0; si < crop.stages.length; si++) {
@@ -2272,8 +2305,25 @@ function renderStagePanel() {
       isCurrent  = (today >= sStart && today < sEnd);
       dateRange  = sStart.toLocaleDateString("en-US",{month:"short",day:"numeric"})
         + " – " + sEnd.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-      // Width proportional to stage duration in days
       width = Math.round((sEnd - sStart) / 86400000);
+    } else if (isCalendarBased) {
+      var sStart2 = calStageDate(s.calStart[0], s.calStart[1]);
+      var sEnd2   = calStageDate(s.calEnd[0],   s.calEnd[1]);
+      // Handle year wrap for dormant stage
+      var startMD2 = (s.calStart[0]-1)*100+s.calStart[1];
+      var endMD2   = (s.calEnd[0]-1)*100+s.calEnd[1];
+      var todayMD2 = today.getMonth()*100+today.getDate();
+      if (startMD2 <= endMD2) {
+        isCurrent = (todayMD2 >= startMD2 && todayMD2 < endMD2);
+      } else {
+        isCurrent = (todayMD2 >= startMD2 || todayMD2 < endMD2);
+      }
+      dateRange = sStart2.toLocaleDateString("en-US",{month:"short",day:"numeric"})
+        + " – " + sEnd2.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+      var dur = startMD2 <= endMD2
+        ? Math.round((sEnd2 - sStart2) / 86400000)
+        : Math.round((new Date(today.getFullYear()+1, s.calEnd[0]-1, s.calEnd[1]) - sStart2) / 86400000);
+      width = Math.max(dur, 1);
     } else {
       isCurrent  = (currentPct !== null && currentPct >= s.pct[0] && currentPct < s.pct[1]);
       width      = (s.pct[1] - s.pct[0]);
