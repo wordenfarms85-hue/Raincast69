@@ -2937,8 +2937,10 @@ async function fetchSeasonalRain(lat, lon) {
     var dates = d.daily.time;
     var precips = d.daily.precipitation_sum;
 
-    var ago24 = new Date(today.getTime() - 1 * 86400000);
-    var sumAll = 0, sum30 = 0, sum14 = 0, sum7 = 0, sum24 = 0, sumSincePlanting = 0;
+    var sumAll = 0, sum30 = 0, sum14 = 0, sum7 = 0, sumSincePlanting = 0;
+    var todayStr = fmt(today);
+    var yesterdayStr = fmt(new Date(today.getTime() - 86400000));
+
     for (var i = 0; i < dates.length; i++) {
       var dt = new Date(dates[i] + "T12:00:00");
       var p = precips[i] || 0;
@@ -2946,8 +2948,15 @@ async function fetchSeasonalRain(lat, lon) {
       if (dt >= ago30) sum30 += p;
       if (dt >= ago14) sum14 += p;
       if (dt >= ago7)  sum7  += p;
-      if (dt >= ago24) sum24 += p;
       if (plantingDate && dt >= plantingDate) sumSincePlanting += p;
+    }
+
+    // Last 24hr = yesterday + today daily totals (clean, no time ambiguity)
+    var sum24 = 0;
+    for (var i = 0; i < dates.length; i++) {
+      if (dates[i] === todayStr || dates[i] === yesterdayStr) {
+        sum24 += precips[i] || 0;
+      }
     }
 
     seasonalRain = {
@@ -2989,7 +2998,7 @@ function renderSeasonalRain() {
   }
 
   var html = "";
-  html += row("LAST 24 HOURS", sr.last24, "Yesterday + today observed", "#00ffa3");
+  html += row("LAST 24 HOURS", sr.last24, "Yesterday + today (daily totals)", "#00ffa3");
   html += row("YEAR TO DATE", sr.ytd, "Jan 1 – Today (" + dayOfYear + " days)", "#00c8ff");
   html += row("LAST 30 DAYS", sr.last30, "Rolling 30-day total", "#38bdf8");
   html += row("LAST 14 DAYS", sr.last14, "Rolling 14-day total", "#00c8ff");
