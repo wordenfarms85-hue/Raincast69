@@ -3202,16 +3202,17 @@ async function fetchFieldPrecip(field) {
     var endD = new Date(now.getTime() + 13*86400000);
     var mm2 = (endD.getMonth()+1).toString().padStart(2,"0");
     var dd2 = endD.getDate().toString().padStart(2,"0");
-    var startYear = now.getFullYear() - 30;
+    var startYear = now.getFullYear() - 10;
 
-    // Climate API does not support timezone param — use UTC
-    var climateUrl = "https://climate-api.open-meteo.com/v1/climate?latitude="+field.lat
+    // Use historical weather API (archive) — more reliable than climate API
+    // Fetch last 10 years for same 14-day window to calculate normal
+    var archiveNormalUrl = "https://archive-api.open-meteo.com/v1/archive?latitude="+field.lat
       +"&longitude="+field.lon
-      +"&start_date="+startYear+"-01-01"
+      +"&start_date="+(now.getFullYear()-10)+"-01-01"
       +"&end_date="+(now.getFullYear()-1)+"-12-31"
-      +"&models=ERA5&daily=precipitation_sum";
+      +"&daily=precipitation_sum&timezone=auto";
 
-    var cr = await fetch(climateUrl).then(function(r){ return r.json(); }).catch(function(){ return null; });
+    var cr = await fetch(archiveNormalUrl).then(function(r){ return r.json(); }).catch(function(){ return null; });
 
     var normalInches = null;
     if (cr && cr.daily && cr.daily.time) {
