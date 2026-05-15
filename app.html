@@ -1236,24 +1236,39 @@ async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
   var d = await r.json();
   if (!d.sensors || !d.sensors.length) return null;
 
-  var iss = null;
+  // Merge all sensor data into one object — Davis stations split data across multiple sensors
+  var merged = {};
   for (var i=0; i<d.sensors.length; i++) {
     var s = d.sensors[i];
-    if (s.data && s.data.length > 0) { iss = s.data[0]; break; }
+    if (s.data && s.data.length > 0) {
+      Object.assign(merged, s.data[0]);
+    }
   }
-  if (!iss) return null;
+  if (Object.keys(merged).length === 0) return null;
+  console.log('WeatherLink merged data:', JSON.stringify(merged).substring(0,300));
+
+  // Try multiple field name variants (Davis changes these between firmware versions)
+  function pick() { for (var i=0;i<arguments.length;i++) { if (merged[arguments[i]] !== undefined && merged[arguments[i]] !== null) return merged[arguments[i]]; } return null; }
+
+  var tempF = pick('temp_out','temp','air_temp');
+  var humidity = pick('hum_out','hum','humidity');
+  var windAvgMph = pick('wind_speed_avg','wind_speed_last','wind_speed','wind_speed_2min_avg');
+  var windGustMph = pick('wind_speed_hi','wind_speed_hi_10min','wind_gust_speed','wind_speed_hi_last_10_min');
+  var windDir = pick('wind_dir','wind_dir_last','wind_dir_scalar_avg_last_10_min');
+  var bar = pick('bar_sea_level','bar_absolute','bar','pressure_last');
+  var rainIn = pick('rain_day_in','rainfall_day_in','rain_storm_in','rain_rate_last_in');
 
   return {
     stationName:   d.station_name || 'WeatherLink Station',
-    temp:          iss.temp_out !== undefined ? (iss.temp_out - 32) * 5/9 : iss.temp,
-    tempF:         iss.temp_out || iss.temp,
-    humidity:      iss.hum_out || iss.hum,
-    windAvg:       iss.wind_speed_avg !== undefined ? iss.wind_speed_avg * 0.44704 : null,
-    windGust:      iss.wind_speed_hi  !== undefined ? iss.wind_speed_hi  * 0.44704 : null,
-    windDir:       iss.wind_dir,
-    pressure:      iss.bar_sea_level || iss.bar,
-    rainToday:     iss.rain_day_in !== undefined ? iss.rain_day_in * 25.4 : null,
-    timestamp:     iss.ts,
+    temp:          tempF !== null ? (tempF - 32) * 5/9 : null,
+    tempF:         tempF,
+    humidity:      humidity,
+    windAvg:       windAvgMph !== null ? windAvgMph * 0.44704 : null,
+    windGust:      windGustMph !== null ? windGustMph * 0.44704 : null,
+    windDir:       windDir,
+    pressure:      bar,
+    rainToday:     rainIn !== null ? rainIn * 25.4 : null,
+    timestamp:     pick('ts','unix_time','timestamp'),
     source:        'WEATHERLINK v2 (DAVIS INSTRUMENTS)'
   };
 }
