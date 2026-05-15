@@ -1228,7 +1228,7 @@ async function connectWeatherLink() {
 
 async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
   // Route through Supabase Edge Function proxy to avoid CORS
-  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/weatherlink-proxy', {
+  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/rapid-service', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8', 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8' },
     body: JSON.stringify({ apiKey: apiKey, apiSecret: apiSecret, stationId: stationId, action: 'current' })
@@ -1260,7 +1260,7 @@ async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
 
 // Also proxy stations list call
 async function fetchWeatherLinkStations(apiKey, apiSecret) {
-  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/weatherlink-proxy', {
+  var r = await fetch('https://ziuvfdtemgghmwnkoxxi.supabase.co/functions/v1/rapid-service', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8', 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8' },
     body: JSON.stringify({ apiKey: apiKey, apiSecret: apiSecret, action: 'stations' })
