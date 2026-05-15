@@ -3004,9 +3004,10 @@ function renderSeasonalRain() {
   html += row("LAST 14 DAYS", sr.last14, "Rolling 14-day total", "#00c8ff");
   html += row("LAST 7 DAYS",  sr.last7,  "Rolling 7-day total",  "#38bdf8");
   if (sr.sincePlanting !== null && plantingDate) {
-    var daysSincePlanting = Math.round((new Date() - plantingDate) / 86400000);
+    var plantDateObj = (plantingDate instanceof Date) ? plantingDate : new Date(plantingDate + "T12:00:00");
+    var daysSincePlanting = Math.round((new Date() - plantDateObj) / 86400000);
     html += row("SINCE PLANTING", sr.sincePlanting,
-      plantingDate.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " – Today (" + daysSincePlanting + " days)",
+      plantDateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " – Today (" + daysSincePlanting + " days)",
       "#ffb300");
   }
 
