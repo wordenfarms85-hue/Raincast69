@@ -859,6 +859,7 @@ function showApp() {
   loadFieldsFromDB();
   checkSubscription();
   document.getElementById('stationPanel').style.display = 'block';
+  setTimeout(loadStationConfig, 1000); // auto-reconnect saved station
 }
 
 async function checkSubscription() {
@@ -1450,29 +1451,34 @@ async function refreshStationData() {
 // ── SAVE / LOAD station config per field ─────────────────────────────────────
 function saveStationConfig() {
   if (!stationConfig || !stationConfig.type || stationConfig.type === 'none') return;
-  // Save to localStorage keyed by field ID
+  // Save globally so it persists across all fields
+  try { localStorage.setItem('agricast_station_global', JSON.stringify(stationConfig)); } catch(e){}
+  // Also save per field
   var key = 'agricast_station_' + (activeField !== null && fields[activeField] ? fields[activeField].id || activeField : 'default');
   try { localStorage.setItem(key, JSON.stringify(stationConfig)); } catch(e){}
 }
 
 function loadStationConfig() {
+  // Try field-specific first, fall back to global
   var key = 'agricast_station_' + (activeField !== null && fields[activeField] ? fields[activeField].id || activeField : 'default');
-  try {
-    var saved = JSON.parse(localStorage.getItem(key) || 'null');
-    if (!saved) return;
-    stationConfig = saved;
-    setStationType(saved.type);
-    if (saved.type === 'tempest') {
-      document.getElementById('tempestToken').value     = saved.token || '';
-      document.getElementById('tempestStationId').value = saved.stationId || '';
-      connectTempest();
-    } else if (saved.type === 'weatherlink') {
-      document.getElementById('wlApiKey').value     = saved.apiKey || '';
-      document.getElementById('wlApiSecret').value  = saved.apiSecret || '';
-      document.getElementById('wlStationId').value  = saved.stationId || '';
-      connectWeatherLink();
-    }
-  } catch(e){}
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(key) || 'null'); } catch(e){}
+  if (!saved) {
+    try { saved = JSON.parse(localStorage.getItem('agricast_station_global') || 'null'); } catch(e){}
+  }
+  if (!saved) return;
+  stationConfig = saved;
+  setStationType(saved.type);
+  if (saved.type === 'tempest') {
+    document.getElementById('tempestToken').value     = saved.token || '';
+    document.getElementById('tempestStationId').value = saved.stationId || '';
+    connectTempest();
+  } else if (saved.type === 'weatherlink') {
+    document.getElementById('wlApiKey').value     = saved.apiKey || '';
+    document.getElementById('wlApiSecret').value  = saved.apiSecret || '';
+    document.getElementById('wlStationId').value  = saved.stationId || '';
+    connectWeatherLink();
+  }
 }
 
 // Show station panel after field is loaded
