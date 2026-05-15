@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agricast — Spray Forecast</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#050c14;color:#e8f4ff;font-family:'DM Sans',sans-serif;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(5,12,20,0.97);border-bottom:1px solid #1a3a55;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:‘Bebas Neue’,sans-serif;font-size:24px;letter-spacing:3px;color:#e8f4ff;text-decoration:none;}
+.nav-logo span{color:#00c8ff;}
+.nav-link{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;text-decoration:none;}
+.nav-link:hover{color:#e8f4ff;}
+.nav-cta{background:#90ee90;color:#000;font-family:‘DM Mono’,monospace;font-weight:500;font-size:11px;letter-spacing:1.5px;padding:8px 16px;text-decoration:none;}
+
+/* LOCATION BAR */
+.loc-bar{background:#091525;border-bottom:1px solid #1a3a55;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.loc-input{flex:1;min-width:200px;background:#050c14;border:1px solid #2a5278;color:#e8f4ff;font-family:‘DM Mono’,monospace;font-size:12px;padding:9px 12px;outline:none;}
+.loc-input::placeholder{color:#2a5278;}
+.loc-btn{background:#0d1a28;border:1px solid #2a5278;color:#00c8ff;font-family:‘DM Mono’,monospace;font-size:11px;letter-spacing:1px;padding:9px 16px;cursor:pointer;white-space:nowrap;}
+.loc-btn:hover{background:#1a2d3f;}
+.loc-btn.primary{background:#00c8ff;color:#000;border-color:#00c8ff;}
+.loc-btn.primary:hover{opacity:0.85;}
+
+/* FIELD PICKER */
+.field-picker{display:flex;gap:8px;overflow-x:auto;padding:10px 20px;background:#050c14;border-bottom:1px solid #1a3a55;-webkit-overflow-scrolling:touch;}
+.field-chip{background:#091525;border:1px solid #1a3a55;color:#7ab8d4;font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:1px;padding:6px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.field-chip:hover,.field-chip.active{border-color:#00c8ff;color:#00c8ff;}
+.field-chip.active{background:rgba(0,200,255,0.08);}
+
+/* STATUS */
+.status-bar{padding:10px 20px;font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;background:#050c14;}
+
+/* SPRAY CARDS */
+.spray-container{padding:16px 20px;max-width:900px;margin:0 auto;}
+.spray-day{background:#091525;border:1px solid #1a3a55;margin-bottom:12px;}
+.spray-day-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1a3a55;}
+.spray-day-name{font-family:‘Bebas Neue’,sans-serif;font-size:22px;letter-spacing:2px;}
+.spray-day-date{font-family:‘DM Mono’,monospace;font-size:10px;color:#4a7a9b;letter-spacing:2px;}
+.spray-rating{font-family:‘DM Mono’,monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px 12px;}
+.spray-rating.good{background:rgba(0,255,163,0.12);color:#00ffa3;border:1px solid #00ffa3;}
+.spray-rating.marginal{background:rgba(255,179,0,0.12);color:#ffb300;border:1px solid #ffb300;}
+.spray-rating.warn-high{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid #f87171;}
+.spray-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:#1a3a55;border-bottom:1px solid #1a3a55;}
+.spray-metric{background:#091525;padding:10px 12px;text-align:center;}
+.spray-metric-val{font-family:‘Bebas Neue’,sans-serif;font-size:24px;letter-spacing:1px;}
+.spray-metric-lbl{font-family:‘DM Mono’,monospace;font-size:8px;letter-spacing:2px;color:#4a7a9b;margin-top:2px;}
+.spray-hourly{padding:10px 14px;}
+.spray-hour-row{display:flex;gap:0;min-width:300px;overflow-x:auto;}
+.spray-hour{flex:1;min-width:56px;padding:6px 4px;text-align:center;border-right:1px solid #1a3a55;}
+.spray-hour:last-child{border-right:none;}
+.spray-hour-time{font-family:‘DM Mono’,monospace;font-size:8px;color:#4a7a9b;letter-spacing:1px;}
+.spray-hour-wind{font-family:‘Bebas Neue’,sans-serif;font-size:20px;}
+.spray-hour-bar{height:3px;background:#1a3a55;margin:3px auto;border-radius:2px;max-width:40px;}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:60px 20px;color:#4a7a9b;}
+.loading-logo{font-family:‘Bebas Neue’,sans-serif;font-size:28px;letter-spacing:4px;color:#e8f4ff;}
+.loading-logo span{color:#00c8ff;}
+.spinner{width:32px;height:32px;border:2px solid #1a3a55;border-top-color:#00c8ff;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+
+</head>
+<body>
+
+<nav>
+  <a href="https://agricast.farm/app.html" class="nav-logo">AGRI<span>CAST</span></a>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <a href="https://agricast.farm/radar.html" class="nav-link">RADAR</a>
+    <a href="https://agricast.farm/app.html" class="nav-cta">LAUNCH APP</a>
+  </div>
+</nav>
+
+<!-- LOCATION BAR -->
+
+<div class="loc-bar">
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;flex-shrink:0;">&#128167; SPRAY FORECAST</div>
+  <input id="locInput" class="loc-input" type="text" placeholder="Enter city, ZIP, or coordinates...">
+  <button class="loc-btn" onclick="locateGPS()">&#128205; GPS</button>
+  <button class="loc-btn primary" onclick="fetchFromInput()">FETCH</button>
+</div>
+
+<!-- FIELD PICKER (populated from localStorage) -->
+
+<div class="field-picker" id="fieldPicker" style="display:none;"></div>
+
+<!-- STATUS -->
+
+<div class="status-bar" id="statusBar">ENTER A LOCATION OR USE GPS TO SEE SPRAY CONDITIONS</div>
+
+<!-- CONTENT -->
+
+<div class="spray-container" id="sprayContainer">
+  <div class="loading" id="loadingEl" style="display:none;">
+    <div class="loading-logo">AGRI<span>CAST</span></div>
+    <div class="spinner"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;">LOADING SPRAY DATA</div>
+  </div>
+  <div id="sprayCards"></div>
+</div>
+
+<script>
+var currentLat = null, currentLon = null;
+var unit = 'in';
+
+// Load saved fields from app localStorage
+function loadSavedFields() {
+  try {
+    var fields = JSON.parse(localStorage.getItem('agricast_fields') || '[]');
+    if (!fields.length) return;
+    var picker = document.getElementById('fieldPicker');
+    picker.style.display = 'flex';
+    var html = '<div style="font-family:monospace;font-size:9px;letter-spacing:2px;color:#2a5278;flex-shrink:0;align-self:center;">SAVED FIELDS:</div>';
+    fields.forEach(function(f, i) {
+      if (!f.lat || !f.lon) return;
+      html += '<button class="field-chip" onclick="loadField('+i+')" id="chip'+i+'">'+f.name+'</button>';
+    });
+    picker.innerHTML = html;
+    window._fields = fields;
+  } catch(e) {}
+}
+
+function loadField(i) {
+  var f = window._fields[i];
+  if (!f) return;
+  document.querySelectorAll('.field-chip').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('chip'+i).classList.add('active');
+  document.getElementById('locInput').value = f.name;
+  fetchSpray(f.lat, f.lon, f.name);
+}
+
+function locateGPS() {
+  if (!navigator.geolocation) { alert('GPS not available'); return; }
+  setStatus('LOCATING...');
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    fetchSpray(pos.coords.latitude, pos.coords.longitude, 'GPS Location');
+  }, function() {
+    setStatus('GPS FAILED — ENTER LOCATION MANUALLY');
+  }, { timeout: 10000 });
+}
+
+function fetchFromInput() {
+  var q = document.getElementById('locInput').value.trim();
+  if (!q) return;
+  // Check if lat,lon
+  var coords = q.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+  if (coords) {
+    fetchSpray(parseFloat(coords[1]), parseFloat(coords[2]), q);
+    return;
+  }
+  // Geocode using Open-Meteo
+  setStatus('SEARCHING...');
+  fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=1&language=en&format=json')
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.results || !d.results.length) { setStatus('LOCATION NOT FOUND'); return; }
+      var r = d.results[0];
+      document.getElementById('locInput').value = r.name + (r.admin1 ? ', '+r.admin1 : '');
+      fetchSpray(r.latitude, r.longitude, r.name);
+    }).catch(function(){ setStatus('GEOCODING ERROR'); });
+}
+
+function setStatus(msg) {
+  document.getElementById('statusBar').textContent = msg;
+}
+
+async function fetchSpray(lat, lon, name) {
+  currentLat = lat; currentLon = lon;
+  setStatus('FETCHING SPRAY FORECAST FOR ' + (name || lat.toFixed(2)+', '+lon.toFixed(2)) + '...');
+  document.getElementById('loadingEl').style.display = 'flex';
+  document.getElementById('sprayCards').innerHTML = '';
+  try {
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon
+      +'&hourly=temperature_2m,dew_point_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover'
+      +'&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max'
+      +'&models=best_match&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=5&timezone=auto';
+    var r = await fetch(url);
+    var d = await r.json();
+    if (!d.daily) { setStatus('ERROR LOADING DATA'); document.getElementById('loadingEl').style.display='none'; return; }
+    document.getElementById('loadingEl').style.display = 'none';
+    renderSpray(d, name);
+    setStatus('SPRAY FORECAST · ' + (name||'') + ' · 5-DAY HRRR/GFS BLEND · SURFACE WINDS AT 3FT BOOM HEIGHT');
+  } catch(e) {
+    setStatus('ERROR: ' + e.message);
+    document.getElementById('loadingEl').style.display = 'none';
+  }
+}
+
+function sprayRating(windMax, windGust, tmin, tmax, humidity, rainMm, rainProb) {
+  var reasons = [], score = 0;
+  if (windMax > 25)  { score = 2; reasons.push('Wind >25 mph'); }
+  else if (windMax > 15) { score = Math.max(score,1); reasons.push('Wind 15-25 mph'); }
+  if (windGust > 25) { score = 2; reasons.push('Gusts >25 mph'); }
+  if (tmax > 90)  { score = Math.max(score,1); reasons.push('Temp >90°F'); }
+  if (humidity < 40) { score = Math.max(score,1); reasons.push('Humidity <40%'); }
+  if (humidity > 90) { score = Math.max(score,1); reasons.push('Humidity >90%'); }
+  if (rainMm > 2)   { score = 2; reasons.push('Rain forecast'); }
+  else if (rainProb > 40) { score = Math.max(score,1); reasons.push('Rain chance >40%'); }
+  var label = score===0 ? '✓ GOOD CONDITIONS' : score===1 ? '⚠ USE CAUTION' : '⛔ HIGH RISK';
+  var cls   = score===0 ? 'good' : score===1 ? 'marginal' : 'warn-high';
+  return {score:score, label:label, cls:cls, reasons:reasons};
+}
+
+function detectInversion(d, hourBase) {
+  var riskyHours=[], maxRisk='none';
+  [18,19,20,21,22,23,0,1,2,3,4,5,6,7,8].forEach(function(hr) {
+    var idx = hourBase + hr;
+    if (idx >= d.hourly.temperature_2m.length) return;
+    var temp=d.hourly.temperature_2m[idx], dew=d.hourly.dew_point_2m?d.hourly.dew_point_2m[idx]:null;
+    var wind=d.hourly.wind_speed_10m[idx], cloud=d.hourly.cloud_cover?d.hourly.cloud_cover[idx]:50;
+    if (temp===null||wind===null) return;
+    var spread=dew!==null?(temp-dew):999, isNight=(hr>=19||hr<=8), isCalm=wind<5, isClear=cloud<30;
+    var sc=0; if(isCalm)sc+=2; if(isClear)sc+=2; if(isNight)sc+=1; if(spread<10&&spread>=0)sc+=2; if(spread<5&&spread>=0)sc+=1;
+    var hrLabel=hr===0?'12AM':hr<12?hr+'AM':hr===12?'12PM':(hr-12)+'PM';
+    if(sc>=6){riskyHours.push(hrLabel);maxRisk='high';}
+    else if(sc>=4){riskyHours.push(hrLabel);if(maxRisk!=='high')maxRisk='moderate';}
+  });
+  return {risk:maxRisk, hours:riskyHours};
+}
+
+function windDir(deg) {
+  if(deg===null||deg===undefined) return '–';
+  return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(deg/22.5)%16];
+}
+
+function renderSpray(d, name) {
+  var html = '';
+  d.daily.time.forEach(function(date, di) {
+    var dt=new Date(date+'T12:00:00');
+    var dayName=di===0?'TODAY':di===1?'TOMORROW':dt.toLocaleDateString('en-US',{weekday:'long'}).toUpperCase();
+    var dateStr=dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var tmax=d.daily.temperature_2m_max[di], tmin=d.daily.temperature_2m_min[di];
+    var rainMm=d.daily.precipitation_sum[di]||0;
+    var wind10m=d.daily.wind_speed_10m_max[di]||0, gust10m=d.daily.wind_gusts_10m_max[di]||0;
+    var windMax=Math.round(wind10m*0.62*10)/10, windGust=Math.round(gust10m*0.62*10)/10;
+    var hourBase=di*24, avgHum=0, humCnt=0, maxRainProb=0;
+    for(var h=hourBase;h<hourBase+24&&h<d.hourly.relative_humidity_2m.length;h++){
+      if(d.hourly.relative_humidity_2m[h]!==null){avgHum+=d.hourly.relative_humidity_2m[h];humCnt++;}
+      if(d.hourly.precipitation_probability[h]>maxRainProb)maxRainProb=d.hourly.precipitation_probability[h];
+    }
+    avgHum=humCnt?Math.round(avgHum/humCnt):50;
+    var rating=sprayRating(windMax,windGust,tmin,tmax,avgHum,rainMm,maxRainProb);
+    var inversion=detectInversion(d,hourBase);
+    if(inversion.risk==='high'&&rating.score<2){
+      rating.score=Math.max(rating.score,1);
+      rating.reasons.push('Inversion risk: '+inversion.hours.slice(0,3).join(', '));
+      if(rating.score<2){rating.label='⚠ USE CAUTION';rating.cls='marginal';}
+    }
+    var windCol=windMax>25?'#e8a020':windMax>15?'#ffb300':'#00ffa3';
+    var gustCol=windGust>20?'#f87171':'#ffb300';
+    var tempHiCol=tmax>90?'#f87171':tmax>85?'#ffb300':'#e8f4ff';
+    var humCol=avgHum<40?'#ffb300':avgHum>90?'#ffb300':'#7ab8d4';
+    var rainCol=rainMm>2?'#f87171':rainMm>0?'#ffb300':'#00ffa3';
+    var precipStr=(rainMm/25.4).toFixed(2)+'"';
+
+    // Hourly strip
+    var hourHtml="<div class='spray-hourly'><div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:6px;'>SURFACE WIND (MPH @ 3FT BOOM) &amp; DIRECTION</div><div class='spray-hour-row'>";
+    [6,9,12,15,18].forEach(function(hr){
+      var idx=hourBase+hr;
+      var ws10=d.hourly.wind_speed_10m[idx], ws=ws10!==null?Math.round(ws10*0.62):null;
+      var wd=windDir(d.hourly.wind_direction_10m[idx]);
+      var wg=d.hourly.wind_gusts_10m[idx]!==null?Math.round(d.hourly.wind_gusts_10m[idx]*0.62):null;
+      var wCol=ws>15?'#f87171':ws>10?'#ffb300':'#00ffa3';
+      var barW=ws?Math.min(100,Math.round(ws/20*100)):0;
+      var hrLabel=hr>=12?(hr===12?'12PM':(hr-12)+'PM'):hr+'AM';
+      hourHtml+="<div class='spray-hour'>"
+        +"<div class='spray-hour-time'>"+hrLabel+"</div>"
+        +"<div class='spray-hour-wind' style='color:"+wCol+"'>"+(ws!==null?ws:'–')+"</div>"
+        +"<div class='spray-hour-bar' style='width:"+barW+"%;background:"+wCol+";'></div>"
+        +"<div style='font-size:7px;color:#3a6a94;'>"+wd+"</div>"
+        +(wg?"<div style='font-size:7px;color:#ffb300;'>G"+wg+"</div>":"")
+        +"</div>";
+    });
+    hourHtml+="</div></div>";
+
+    // Inversion banner
+    var invHtml="";
+    if(inversion.risk==='high'||inversion.risk==='moderate'){
+      var invCol=inversion.risk==='high'?'#f87171':'#ffb300';
+      var invBg=inversion.risk==='high'?'rgba(248,113,113,0.08)':'rgba(255,179,0,0.08)';
+      invHtml="<div style='margin:0 14px 8px;padding:8px 10px;background:"+invBg+";border-left:3px solid "+invCol+";font-size:10px;'>"
+        +"<div style='font-weight:bold;color:"+invCol+";letter-spacing:1px;margin-bottom:3px;'>⚠ "+(inversion.risk==='high'?'HIGH':'MODERATE')+" INVERSION RISK"+(inversion.hours.length?' · '+inversion.hours.slice(0,4).join(', '):'')+"</div>"
+        +"<div style='color:#7ab8d4;font-size:9px;line-height:1.6;'>Calm wind + clear sky: spray droplets may hang and drift long distances. Avoid spraying 2hrs before sunset through 2hrs after sunrise.</div>"
+        +"</div>";
+    }
+
+    var reasonsHtml=rating.reasons.length
+      ?"<div style='font-size:9px;color:#7ab8d4;padding:6px 14px 10px;'>"+rating.reasons.map(function(r){return'&#9679; '+r;}).join(' &nbsp; ')+"</div>"
+      :"<div style='font-size:9px;color:#00ffa3;padding:6px 14px 10px;'>&#10003; No spray restrictions</div>";
+
+    html+="<div class='spray-day'>"
+      +"<div class='spray-day-header'>"
+      +"<div><div class='spray-day-name'>"+dayName+"</div><div class='spray-day-date'>"+dateStr+"</div></div>"
+      +"<span class='spray-rating "+rating.cls+"'>"+rating.label+"</span>"
+      +"</div>"
+      +"<div class='spray-metrics'>"
+      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+windCol+"'>"+windMax+"</div><div class='spray-metric-lbl'>WIND MPH</div></div>"
+      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+gustCol+"'>"+windGust+"</div><div class='spray-metric-lbl'>GUST MPH</div></div>"
+      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+tempHiCol+"'>"+Math.round(tmax)+"°</div><div class='spray-metric-lbl'>HIGH °F</div></div>"
+      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+humCol+"'>"+avgHum+"%</div><div class='spray-metric-lbl'>HUMIDITY</div></div>"
+      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+rainCol+"'>"+precipStr+"</div><div class='spray-metric-lbl'>PRECIP</div></div>"
+      +"</div>"
+      +hourHtml+invHtml+reasonsHtml
+      +"</div>";
+  });
+
+  document.getElementById('sprayCards').innerHTML = html;
+}
+
+// Init
+loadSavedFields();
+// Auto GPS on load
+locateGPS();
+
+// Enter key on input
+document.getElementById('locInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter') fetchFromInput();
+});
+</script>
+
+</body>
+</html>
