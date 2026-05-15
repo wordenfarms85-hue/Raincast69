@@ -1256,7 +1256,9 @@ async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
   var windAvgMph = pick('wind_speed_avg','wind_speed_last','wind_speed','wind_speed_2min_avg','wind_speed_avg_last_2_min','wind_speed_last_2_min');
   var windGustMph = pick('wind_speed_hi','wind_speed_hi_10min','wind_gust_speed','wind_speed_hi_last_10_min','wind_speed_hi_last_2_min','wind_speed_hi_at_10_min_last_wind_storm');
   var windDir = pick('wind_dir','wind_dir_last','wind_dir_scalar_avg_last_10_min','wind_din_at_hi_speed_last_10_min','wind_dir_at_hi_speed_last_10_min');
-  var bar = pick('bar_sea_level','bar_absolute','bar','pressure_last','pressure','bar_trend');
+  var barRaw = pick('bar_sea_level','bar_absolute','bar','pressure_last','pressure','bar_trend');
+  // Davis bar is in inches Hg — convert to mb if value < 35 (inches range 28-31)
+  var bar = barRaw !== null && barRaw < 35 ? Math.round(barRaw * 33.8639) : barRaw;
   var rainIn = pick('rain_day_in','rainfall_day_in','rain_storm_in','rain_rate_last_in');
 
   return {
@@ -1382,46 +1384,50 @@ function checkFieldsInRadius() {
 }
 
 function renderStationDiff(obs) {
-  // Compare station observations vs current model data
   var diffEl = document.getElementById('stationDiffPanel');
   if (!diffEl) return;
-  if (!obs || !allRows || !allRows.length) { diffEl.style.display='none'; return; }
+  if (!obs) { diffEl.style.display='none'; return; }
 
-  var stTempF  = obs.tempF || (obs.temp !== null && obs.temp !== undefined ? Math.round(obs.temp * 9/5 + 32) : null);
+  var stTempF   = obs.tempF !== null && obs.tempF !== undefined ? Math.round(obs.tempF) : null;
   var stWindMph = obs.windAvg !== null && obs.windAvg !== undefined ? Math.round(obs.windAvg * 2.237) : null;
   var stRainIn  = obs.rainToday !== null && obs.rainToday !== undefined ? (obs.rainToday / 25.4).toFixed(2) : null;
+  var stHum     = obs.humidity !== null && obs.humidity !== undefined ? Math.round(obs.humidity) : null;
 
-  // Get model current values
-  var modelTemp = null, modelWind = null;
-  if (allRows[0]) {
-    // temp from agFetch if available
+  // Get current model temp from forecast data
+  var modelTempF = null, modelWindMph = null, modelHum = null;
+  if (allRows && allRows.length) {
+    var now = new Date();
+    for (var i=0; i<allRows.length; i++) {
+      if (Math.abs(new Date(allRows[i].t) - now) < 3600000*2) {
+        if (allRows[i].tMax !== undefined && allRows[i].tMin !== undefined)
+          modelTempF = Math.round((allRows[i].tMax + allRows[i].tMin) / 2);
+        break;
+      }
+    }
+  }
+
+  function diffStr(s, m) {
+    if (s === null || m === null) return '';
+    var d = s - m;
+    var col = Math.abs(d) < 3 ? '#00ffa3' : Math.abs(d) < 8 ? '#ffb300' : '#e8a020';
+    return '<span style="color:'+col+';margin-left:4px;font-size:9px;">'+(d>0?'+':'')+Math.round(d)+'</span>';
   }
 
   var rows = [];
-  if (stTempF !== null) {
-    var tempDiff = null;
-    var diffLabel = '';
-    rows.push({label:'TEMPERATURE', station: stTempF+'°F', model:'See forecast', delta:null});
-  }
-  if (stWindMph !== null) {
-    rows.push({label:'WIND SPEED', station: stWindMph+' mph', model:'Model est.', delta:null});
-  }
-  if (stRainIn !== null) {
-    rows.push({label:'RAIN TODAY', station: stRainIn+'"', model:'ERA5 archive', delta:null});
-  }
-  if (obs.humidity !== null && obs.humidity !== undefined) {
-    rows.push({label:'HUMIDITY', station: obs.humidity+'%', model:'Model est.', delta:null});
-  }
+  if (stTempF !== null)   rows.push({l:'TEMP',       s:stTempF+'°F',    m:modelTempF  !== null ? modelTempF+'°F'   : '—', sd:stTempF,   md:modelTempF});
+  if (stWindMph !== null) rows.push({l:'WIND',        s:stWindMph+' mph',m:modelWindMph!== null ? modelWindMph+' mph': '—', sd:stWindMph, md:modelWindMph});
+  if (stRainIn !== null)  rows.push({l:'RAIN TODAY',  s:stRainIn+'"',    m:'—', sd:null, md:null});
+  if (stHum !== null)     rows.push({l:'HUMIDITY',    s:stHum+'%',       m:'—', sd:null, md:null});
 
   if (!rows.length) { diffEl.style.display='none'; return; }
 
   diffEl.style.display = 'block';
-  diffEl.innerHTML = "<div class='diff-title'>📡 STATION vs MODEL COMPARISON</div>"
+  diffEl.innerHTML = "<div class='diff-title'>📡 STATION vs MODEL</div>"
     + rows.map(function(r) {
       return "<div class='diff-row'>"
-        + "<span class='diff-label'>"+r.label+"</span>"
-        + "<span class='diff-station'>"+r.station+"</span>"
-        + "<span class='diff-model' style='font-size:9px;'>model: "+r.model+"</span>"
+        + "<span class='diff-label'>"+r.l+"</span>"
+        + "<span class='diff-station'>"+r.s+"</span>"
+        + "<span class='diff-model'>"+r.m+diffStr(r.sd,r.md)+"</span>"
         + "</div>";
     }).join('');
 }
