@@ -3249,8 +3249,11 @@ async function fetchFieldPrecip(field) {
 
 async function fetchAllFieldPrecip() {
   if (!fields.length) return;
-  // Fetch in background for all fields
-  await Promise.all(fields.map(function(f) { return fetchFieldPrecip(f); }));
+  for (var i = 0; i < fields.length; i++) {
+    await fetchFieldPrecip(fields[i]);
+    renderTags();
+    if (i < fields.length - 1) await new Promise(function(r){ setTimeout(r, 1000); });
+  }
   renderMapPins();
 }
 var leafletMap = null;
