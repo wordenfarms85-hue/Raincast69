@@ -1393,18 +1393,10 @@ function renderStationDiff(obs) {
   var stRainIn  = obs.rainToday !== null && obs.rainToday !== undefined ? (obs.rainToday / 25.4).toFixed(2) : null;
   var stHum     = obs.humidity !== null && obs.humidity !== undefined ? Math.round(obs.humidity) : null;
 
-  // Get current model temp from forecast data
-  var modelTempF = null, modelWindMph = null, modelHum = null;
-  if (allRows && allRows.length) {
-    var now = new Date();
-    for (var i=0; i<allRows.length; i++) {
-      if (Math.abs(new Date(allRows[i].t) - now) < 3600000*2) {
-        if (allRows[i].tMax !== undefined && allRows[i].tMin !== undefined)
-          modelTempF = Math.round((allRows[i].tMax + allRows[i].tMin) / 2);
-        break;
-      }
-    }
-  }
+  // Use stored current hour model values from spray fetch
+  var modelTempF  = currentModelTemp;
+  var modelWindMph = currentModelWind;
+  var modelHum    = currentModelHum;
 
   function diffStr(s, m) {
     if (s === null || m === null) return '';
@@ -2706,6 +2698,9 @@ function diffCard(label, val, diff, sub, color) {
 
 // ─── SPRAY WEATHER ───────────────────────────────────────────────────────────
 var sprayData = null;
+var currentModelTemp = null;   // current hour model temp F
+var currentModelWind = null;   // current hour model wind mph
+var currentModelHum  = null;   // current hour model humidity %
 
 async function fetchSprayForecast(lat, lon) {
   try {
