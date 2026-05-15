@@ -1253,10 +1253,10 @@ async function fetchWeatherLinkObservations(apiKey, apiSecret, stationId) {
 
   var tempF = pick('temp_out','temp','air_temp');
   var humidity = pick('hum_out','hum','humidity');
-  var windAvgMph = pick('wind_speed_avg','wind_speed_last','wind_speed','wind_speed_2min_avg');
-  var windGustMph = pick('wind_speed_hi','wind_speed_hi_10min','wind_gust_speed','wind_speed_hi_last_10_min');
-  var windDir = pick('wind_dir','wind_dir_last','wind_dir_scalar_avg_last_10_min');
-  var bar = pick('bar_sea_level','bar_absolute','bar','pressure_last');
+  var windAvgMph = pick('wind_speed_avg','wind_speed_last','wind_speed','wind_speed_2min_avg','wind_speed_avg_last_2_min','wind_speed_last_2_min');
+  var windGustMph = pick('wind_speed_hi','wind_speed_hi_10min','wind_gust_speed','wind_speed_hi_last_10_min','wind_speed_hi_last_2_min','wind_speed_hi_at_10_min_last_wind_storm');
+  var windDir = pick('wind_dir','wind_dir_last','wind_dir_scalar_avg_last_10_min','wind_din_at_hi_speed_last_10_min','wind_dir_at_hi_speed_last_10_min');
+  var bar = pick('bar_sea_level','bar_absolute','bar','pressure_last','pressure','bar_trend');
   var rainIn = pick('rain_day_in','rainfall_day_in','rain_storm_in','rain_rate_last_in');
 
   return {
