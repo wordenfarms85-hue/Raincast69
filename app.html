@@ -1338,9 +1338,25 @@ function renderStationCard(obs, sourceLabel) {
   // Check which fields are within radius and render diff
   checkFieldsInRadius();
 
-  // Show station vs model diff
-  var diffEl = document.getElementById('stationDiffPanel');
-  if (diffEl) renderStationDiff(obs);
+  // Fetch current model conditions if not yet available, then render diff
+  if (currentModelTemp === null && currentLat && currentLon) {
+    fetch("https://api.open-meteo.com/v1/forecast?latitude="+currentLat+"&longitude="+currentLon
+      +"&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m&forecast_days=1&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto")
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        if (d.hourly && d.hourly.temperature_2m) {
+          var hr = new Date().getHours();
+          currentModelTemp = d.hourly.temperature_2m[hr] !== undefined ? Math.round(d.hourly.temperature_2m[hr]) : null;
+          currentModelWind = d.hourly.wind_speed_10m[hr] !== undefined ? Math.round(d.hourly.wind_speed_10m[hr] * 0.62) : null;
+          currentModelHum  = d.hourly.relative_humidity_2m[hr] !== undefined ? Math.round(d.hourly.relative_humidity_2m[hr]) : null;
+        }
+        var diffEl = document.getElementById('stationDiffPanel');
+        if (diffEl) renderStationDiff(obs);
+      }).catch(function(){});
+  } else {
+    var diffEl = document.getElementById('stationDiffPanel');
+    if (diffEl) renderStationDiff(obs);
+  }
 }
 
 // ── RADIUS / DISTANCE ────────────────────────────────────────────────────────
