@@ -3204,11 +3204,12 @@ async function fetchFieldPrecip(field) {
     var dd2 = endD.getDate().toString().padStart(2,"0");
     var startYear = now.getFullYear() - 30;
 
+    // Climate API does not support timezone param — use UTC
     var climateUrl = "https://climate-api.open-meteo.com/v1/climate?latitude="+field.lat
       +"&longitude="+field.lon
       +"&start_date="+startYear+"-01-01"
       +"&end_date="+(now.getFullYear()-1)+"-12-31"
-      +"&models=ERA5&daily=precipitation_sum&timezone=auto";
+      +"&models=ERA5&daily=precipitation_sum";
 
     var cr = await fetch(climateUrl).then(function(r){ return r.json(); }).catch(function(){ return null; });
 
