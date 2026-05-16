@@ -5,65 +5,143 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agricast — Spray Forecast</title>
+<meta name="description" content="5-day spray weather forecast with surface wind, inversion detection, and spray rating for farmers.">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#050c14;color:#e8f4ff;font-family:'DM Sans',sans-serif;}
+:root{
+  --bg:#050c14;
+  --bg2:#091525;
+  --bg3:#0d1e30;
+  --blue:#00c8ff;
+  --green:#00ffa3;
+  --amber:#ffb300;
+  --red:#f87171;
+  --text:#e8f4ff;
+  --muted:#4a7a9b;
+  --border:#1a3a55;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
 
-/* NAV */
-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(5,12,20,0.97);border-bottom:1px solid #1a3a55;position:sticky;top:0;z-index:100;}
-.nav-logo{font-family:‘Bebas Neue’,sans-serif;font-size:24px;letter-spacing:3px;color:#e8f4ff;text-decoration:none;}
-.nav-logo span{color:#00c8ff;}
-.nav-link{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;text-decoration:none;}
-.nav-link:hover{color:#e8f4ff;}
-.nav-cta{background:#90ee90;color:#000;font-family:‘DM Mono’,monospace;font-weight:500;font-size:11px;letter-spacing:1.5px;padding:8px 16px;text-decoration:none;}
+/* ── NOISE TEXTURE ── */
+body::before{content:’’;position:fixed;inset:0;background-image:url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 256 256’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘noise’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23noise)’ opacity=‘0.03’/%3E%3C/svg%3E”);pointer-events:none;z-index:0;opacity:.4;}
 
-/* LOCATION BAR */
-.loc-bar{background:#091525;border-bottom:1px solid #1a3a55;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.loc-input{flex:1;min-width:200px;background:#050c14;border:1px solid #2a5278;color:#e8f4ff;font-family:‘DM Mono’,monospace;font-size:12px;padding:9px 12px;outline:none;}
-.loc-input::placeholder{color:#2a5278;}
-.loc-btn{background:#0d1a28;border:1px solid #2a5278;color:#00c8ff;font-family:‘DM Mono’,monospace;font-size:11px;letter-spacing:1px;padding:9px 16px;cursor:pointer;white-space:nowrap;}
-.loc-btn:hover{background:#1a2d3f;}
-.loc-btn.primary{background:#00c8ff;color:#000;border-color:#00c8ff;}
-.loc-btn.primary:hover{opacity:0.85;}
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(5,12,20,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(–border);}
+.nav-logo{font-family:‘Bebas Neue’,sans-serif;font-size:26px;letter-spacing:3px;color:var(–text);text-decoration:none;}
+.nav-logo span{color:var(–blue);}
+.nav-links{display:flex;gap:14px;align-items:center;}
+.nav-link{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:var(–muted);text-decoration:none;transition:color .2s;}
+.nav-link:hover{color:var(–text);}
+.nav-cta{background:var(–green);color:#000;font-family:‘DM Mono’,monospace;font-weight:700;font-size:11px;letter-spacing:2px;padding:8px 18px;text-decoration:none;}
 
-/* FIELD PICKER */
-.field-picker{display:flex;gap:8px;overflow-x:auto;padding:10px 20px;background:#050c14;border-bottom:1px solid #1a3a55;-webkit-overflow-scrolling:touch;}
-.field-chip{background:#091525;border:1px solid #1a3a55;color:#7ab8d4;font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:1px;padding:6px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
-.field-chip:hover,.field-chip.active{border-color:#00c8ff;color:#00c8ff;}
-.field-chip.active{background:rgba(0,200,255,0.08);}
+/* ── HERO ── */
+.hero{position:relative;padding:48px 24px 36px;border-bottom:1px solid var(–border);overflow:hidden;}
+.hero::after{content:’’;position:absolute;right:-80px;top:-40px;width:300px;height:300px;background:radial-gradient(circle,rgba(0,200,255,.06) 0%,transparent 70%);pointer-events:none;}
+.hero-label{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:4px;color:var(–blue);margin-bottom:10px;}
+.hero-title{font-family:‘Bebas Neue’,sans-serif;font-size:52px;line-height:.95;letter-spacing:2px;margin-bottom:6px;}
+.hero-title span{color:var(–green);}
+.hero-sub{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:var(–muted);margin-bottom:28px;}
 
-/* STATUS */
-.status-bar{padding:10px 20px;font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;background:#050c14;}
+/* ── SEARCH BAR ── */
+.search-wrap{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;}
+.search-input{flex:1;min-width:200px;background:var(–bg3);border:1px solid var(–border);color:var(–text);font-family:‘DM Mono’,monospace;font-size:13px;padding:12px 16px;outline:none;transition:border-color .2s;}
+.search-input:focus{border-color:var(–blue);}
+.search-input::placeholder{color:#2a4a6a;}
+.btn{font-family:‘DM Mono’,monospace;font-weight:700;font-size:11px;letter-spacing:2px;padding:12px 20px;cursor:pointer;border:none;transition:opacity .2s;}
+.btn:hover{opacity:.85;}
+.btn-gps{background:var(–bg3);color:var(–green);border:1px solid var(–green);}
+.btn-fetch{background:var(–blue);color:#000;}
 
-/* SPRAY CARDS */
-.spray-container{padding:16px 20px;max-width:900px;margin:0 auto;}
-.spray-day{background:#091525;border:1px solid #1a3a55;margin-bottom:12px;}
-.spray-day-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1a3a55;}
-.spray-day-name{font-family:‘Bebas Neue’,sans-serif;font-size:22px;letter-spacing:2px;}
-.spray-day-date{font-family:‘DM Mono’,monospace;font-size:10px;color:#4a7a9b;letter-spacing:2px;}
-.spray-rating{font-family:‘DM Mono’,monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px 12px;}
-.spray-rating.good{background:rgba(0,255,163,0.12);color:#00ffa3;border:1px solid #00ffa3;}
-.spray-rating.marginal{background:rgba(255,179,0,0.12);color:#ffb300;border:1px solid #ffb300;}
-.spray-rating.warn-high{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid #f87171;}
-.spray-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1px;background:#1a3a55;border-bottom:1px solid #1a3a55;}
-.spray-metric{background:#091525;padding:10px 12px;text-align:center;}
-.spray-metric-val{font-family:‘Bebas Neue’,sans-serif;font-size:24px;letter-spacing:1px;}
-.spray-metric-lbl{font-family:‘DM Mono’,monospace;font-size:8px;letter-spacing:2px;color:#4a7a9b;margin-top:2px;}
-.spray-hourly{padding:10px 14px;}
-.spray-hour-row{display:flex;gap:0;min-width:300px;overflow-x:auto;}
-.spray-hour{flex:1;min-width:56px;padding:6px 4px;text-align:center;border-right:1px solid #1a3a55;}
-.spray-hour:last-child{border-right:none;}
-.spray-hour-time{font-family:‘DM Mono’,monospace;font-size:8px;color:#4a7a9b;letter-spacing:1px;}
-.spray-hour-wind{font-family:‘Bebas Neue’,sans-serif;font-size:20px;}
-.spray-hour-bar{height:3px;background:#1a3a55;margin:3px auto;border-radius:2px;max-width:40px;}
+/* ── FIELD CHIPS ── */
+.field-row{display:flex;gap:6px;overflow-x:auto;padding:12px 24px;border-bottom:1px solid var(–border);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.field-row::-webkit-scrollbar{display:none;}
+.field-row-label{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:2px;color:var(–border);flex-shrink:0;align-self:center;}
+.chip{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:1px;padding:6px 14px;border:1px solid var(–border);color:var(–muted);background:var(–bg2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s;}
+.chip:hover,.chip.active{border-color:var(–blue);color:var(–blue);background:rgba(0,200,255,.06);}
 
-/* LOADING */
-.loading{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:60px 20px;color:#4a7a9b;}
-.loading-logo{font-family:‘Bebas Neue’,sans-serif;font-size:28px;letter-spacing:4px;color:#e8f4ff;}
-.loading-logo span{color:#00c8ff;}
-.spinner{width:32px;height:32px;border:2px solid #1a3a55;border-top-color:#00c8ff;border-radius:50%;animation:spin 0.8s linear infinite;}
+/* ── STATUS ── */
+.status{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:var(–muted);padding:10px 24px;border-bottom:1px solid var(–border);min-height:36px;}
+
+/* ── MAIN ── */
+.main{max-width:800px;margin:0 auto;padding:24px 20px 80px;position:relative;z-index:1;}
+
+/* ── DAY CARD ── */
+.day-card{margin-bottom:16px;border:1px solid var(–border);background:var(–bg2);overflow:hidden;position:relative;}
+.day-card::before{content:’’;position:absolute;top:0;left:0;right:0;height:2px;}
+.day-card.good::before{background:var(–green);}
+.day-card.marginal::before{background:var(–amber);}
+.day-card.warn-high::before{background:var(–red);}
+
+/* Card header */
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;flex-wrap:wrap;gap:8px;}
+.card-day{display:flex;flex-direction:column;}
+.card-day-name{font-family:‘Bebas Neue’,sans-serif;font-size:28px;letter-spacing:2px;line-height:1;}
+.card-day-date{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:2px;color:var(–muted);margin-top:2px;}
+.rating-pill{font-family:‘DM Mono’,monospace;font-size:11px;font-weight:700;letter-spacing:1px;padding:7px 14px;border-radius:0;}
+.rating-pill.good{background:rgba(0,255,163,.1);color:var(–green);border:1px solid rgba(0,255,163,.3);}
+.rating-pill.marginal{background:rgba(255,179,0,.1);color:var(–amber);border:1px solid rgba(255,179,0,.3);}
+.rating-pill.warn-high{background:rgba(248,113,113,.1);color:var(–red);border:1px solid rgba(248,113,113,.3);}
+
+/* Metrics grid */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(–border);}
+@media(max-width:480px){.metrics{grid-template-columns:repeat(3,1fr);}}
+.metric{background:var(–bg);padding:12px 10px;text-align:center;}
+.metric-val{font-family:‘Bebas Neue’,sans-serif;font-size:28px;line-height:1;letter-spacing:1px;}
+.metric-lbl{font-family:‘DM Mono’,monospace;font-size:7px;letter-spacing:2px;color:var(–muted);margin-top:3px;}
+.metric-sub{font-family:‘DM Mono’,monospace;font-size:8px;color:#2a4a6a;margin-top:1px;}
+
+/* Hourly strip */
+.hourly{padding:14px 18px;border-top:1px solid var(–border);}
+.hourly-label{font-family:‘DM Mono’,monospace;font-size:8px;letter-spacing:2px;color:var(–muted);margin-bottom:10px;}
+.hour-row{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;}
+.hour-row::-webkit-scrollbar{display:none;}
+.hour-cell{flex:1;min-width:60px;padding:8px 6px;text-align:center;border-right:1px solid var(–border);position:relative;}
+.hour-cell:last-child{border-right:none;}
+.hour-time{font-family:‘DM Mono’,monospace;font-size:8px;color:var(–muted);letter-spacing:1px;margin-bottom:6px;}
+.hour-wind{font-family:‘Bebas Neue’,sans-serif;font-size:22px;line-height:1;}
+.hour-bar{height:2px;margin:4px auto 3px;border-radius:1px;transition:width .3s;}
+.hour-dir{font-family:‘DM Mono’,monospace;font-size:8px;color:var(–muted);}
+.hour-gust{font-family:‘DM Mono’,monospace;font-size:8px;color:var(–amber);}
+
+/* Inversion banner */
+.inv-banner{margin:0 18px 12px;padding:10px 12px;border-left:3px solid;font-size:11px;line-height:1.6;}
+.inv-banner.high{background:rgba(248,113,113,.06);border-color:var(–red);}
+.inv-banner.moderate{background:rgba(255,179,0,.06);border-color:var(–amber);}
+.inv-title{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:2px;font-weight:700;margin-bottom:4px;}
+.inv-banner.high .inv-title{color:var(–red);}
+.inv-banner.moderate .inv-title{color:var(–amber);}
+.inv-text{color:var(–muted);font-size:11px;}
+
+/* Reasons */
+.reasons{padding:8px 18px 14px;display:flex;flex-wrap:wrap;gap:6px;}
+.reason-chip{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:1px;padding:4px 10px;border:1px solid var(–border);color:var(–muted);}
+.no-restrict{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–green);letter-spacing:1px;padding:8px 18px 14px;}
+
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:80px 20px;color:var(–muted);}
+.loading-title{font-family:‘Bebas Neue’,sans-serif;font-size:32px;letter-spacing:4px;}
+.loading-title span{color:var(–blue);}
+.spinner{width:36px;height:36px;border:2px solid var(–border);border-top-color:var(–blue);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+.loading-msg{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:3px;}
+
+/* Legend */
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;}
+.legend-item{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:1px;display:flex;align-items:center;gap:7px;color:var(–muted);}
+.legend-line{width:20px;height:2px;border-radius:1px;}
+
+/* Footer note */
+.footnote{font-family:‘DM Mono’,monospace;font-size:8px;letter-spacing:1px;color:#1e3a55;line-height:2;margin-top:24px;text-align:center;}
+
+/* Fade in animation for cards */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.day-card{animation:fadeUp .3s ease both;}
+.day-card:nth-child(1){animation-delay:.05s;}
+.day-card:nth-child(2){animation-delay:.1s;}
+.day-card:nth-child(3){animation-delay:.15s;}
+.day-card:nth-child(4){animation-delay:.2s;}
+.day-card:nth-child(5){animation-delay:.25s;}
 </style>
 
 </head>
@@ -71,41 +149,48 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:12px 2
 
 <nav>
   <a href="https://agricast.farm/app.html" class="nav-logo">AGRI<span>CAST</span></a>
-  <div style="display:flex;align-items:center;gap:14px;">
+  <div class="nav-links">
+    <a href="https://agricast.farm/app.html" class="nav-link">← APP</a>
     <a href="https://agricast.farm/radar.html" class="nav-link">RADAR</a>
     <a href="https://agricast.farm/app.html" class="nav-cta">LAUNCH APP</a>
   </div>
 </nav>
 
-<!-- LOCATION BAR -->
-
-<div class="loc-bar">
-  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;flex-shrink:0;">&#128167; SPRAY FORECAST</div>
-  <input id="locInput" class="loc-input" type="text" placeholder="Enter city, ZIP, or coordinates...">
-  <button class="loc-btn" onclick="locateGPS()">&#128205; GPS</button>
-  <button class="loc-btn primary" onclick="fetchFromInput()">FETCH</button>
+<div class="hero">
+  <div class="hero-label">PRECISION AG · SPRAY WEATHER</div>
+  <div class="hero-title">SPRAY<br><span>FORECAST</span></div>
+  <div class="hero-sub">5-DAY · SURFACE WIND AT 3FT · INVERSION DETECTION · HRRR + GFS BLEND</div>
+  <div class="search-wrap">
+    <input id="locInput" class="search-input" type="text" placeholder="City, ZIP, or coordinates...">
+    <button class="btn btn-gps" onclick="locateGPS()">📍 GPS</button>
+    <button class="btn btn-fetch" onclick="fetchFromInput()">FETCH</button>
+  </div>
 </div>
 
-<!-- FIELD PICKER (populated from localStorage) -->
+<div class="field-row" id="fieldPicker" style="display:none;"></div>
+<div class="status" id="statusBar">ENTER A LOCATION OR USE GPS TO GET YOUR SPRAY FORECAST</div>
 
-<div class="field-picker" id="fieldPicker" style="display:none;"></div>
-
-<!-- STATUS -->
-
-<div class="status-bar" id="statusBar">ENTER A LOCATION OR USE GPS TO SEE SPRAY CONDITIONS</div>
-
-<!-- CONTENT -->
-
-<div class="spray-container" id="sprayContainer">
-  <div class="loading" id="loadingEl" style="display:none;">
-    <div class="loading-logo">AGRI<span>CAST</span></div>
-    <div class="spinner"></div>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;">LOADING SPRAY DATA</div>
+<div class="main">
+  <div class="legend">
+    <div class="legend-item"><div class="legend-line" style="background:#00ffa3;"></div>GOOD CONDITIONS</div>
+    <div class="legend-item"><div class="legend-line" style="background:#ffb300;"></div>USE CAUTION</div>
+    <div class="legend-item"><div class="legend-line" style="background:#f87171;"></div>HIGH RISK — DO NOT SPRAY</div>
   </div>
-  <div id="sprayCards"></div>
+  <div id="sprayCards">
+    <div class="loading" id="loadingEl" style="display:none;">
+      <div class="loading-title">AGRI<span>CAST</span></div>
+      <div class="spinner"></div>
+      <div class="loading-msg">LOADING SPRAY DATA</div>
+    </div>
+  </div>
+  <div class="footnote">
+    WIND ADJUSTED TO SURFACE (10M × 0.62) · INVERSION RISK: CALM + CLEAR + NIGHT CONDITIONS<br>
+    SOURCE: HRRR DAYS 1-2 · GFS DAYS 3-5 · OPEN-METEO · UPDATED HOURLY
+  </div>
 </div>
 
 <script>
+
 var currentLat = null, currentLon = null;
 var unit = 'in';
 
@@ -116,10 +201,10 @@ function loadSavedFields() {
     if (!fields.length) return;
     var picker = document.getElementById('fieldPicker');
     picker.style.display = 'flex';
-    var html = '<div style="font-family:monospace;font-size:9px;letter-spacing:2px;color:#2a5278;flex-shrink:0;align-self:center;">SAVED FIELDS:</div>';
+    var html = '<span class="field-row-label">SAVED FIELDS</span>';
     fields.forEach(function(f, i) {
       if (!f.lat || !f.lon) return;
-      html += '<button class="field-chip" onclick="loadField('+i+')" id="chip'+i+'">'+f.name+'</button>';
+      html += '<button class="chip" onclick="loadField('+i+')" id="chip'+i+'">'+f.name+'</button>';
     });
     picker.innerHTML = html;
     window._fields = fields;
@@ -129,7 +214,7 @@ function loadSavedFields() {
 function loadField(i) {
   var f = window._fields[i];
   if (!f) return;
-  document.querySelectorAll('.field-chip').forEach(function(c){ c.classList.remove('active'); });
+  document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
   document.getElementById('chip'+i).classList.add('active');
   document.getElementById('locInput').value = f.name;
   fetchSpray(f.lat, f.lon, f.name);
@@ -173,7 +258,7 @@ function setStatus(msg) {
 async function fetchSpray(lat, lon, name) {
   currentLat = lat; currentLon = lon;
   setStatus('FETCHING SPRAY FORECAST FOR ' + (name || lat.toFixed(2)+', '+lon.toFixed(2)) + '...');
-  document.getElementById('loadingEl').style.display = 'flex';
+  document.getElementById('loadingEl').style.display = 'flex'; document.getElementById('sprayCards').innerHTML = '<div class="loading" id="loadingEl" style="display:flex;"><div class="loading-title">AGRI<span>CAST</span></div><div class="spinner"></div><div class="loading-msg">LOADING SPRAY DATA</div></div>';
   document.getElementById('sprayCards').innerHTML = '';
   try {
     var url = 'https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon
@@ -183,12 +268,12 @@ async function fetchSpray(lat, lon, name) {
     var r = await fetch(url);
     var d = await r.json();
     if (!d.daily) { setStatus('ERROR LOADING DATA'); document.getElementById('loadingEl').style.display='none'; return; }
-    document.getElementById('loadingEl').style.display = 'none';
+    
     renderSpray(d, name);
     setStatus('SPRAY FORECAST · ' + (name||'') + ' · 5-DAY HRRR/GFS BLEND · SURFACE WINDS AT 3FT BOOM HEIGHT');
   } catch(e) {
     setStatus('ERROR: ' + e.message);
-    document.getElementById('loadingEl').style.display = 'none';
+    
   }
 }
 
@@ -252,7 +337,7 @@ function renderSpray(d, name) {
       rating.reasons.push('Inversion risk: '+inversion.hours.slice(0,3).join(', '));
       if(rating.score<2){rating.label='⚠ USE CAUTION';rating.cls='marginal';}
     }
-    var windCol=windMax>25?'#e8a020':windMax>15?'#ffb300':'#00ffa3';
+    var windCol=windMax>25?'#f87171':windMax>15?'#ffb300':'#00ffa3';
     var gustCol=windGust>20?'#f87171':'#ffb300';
     var tempHiCol=tmax>90?'#f87171':tmax>85?'#ffb300':'#e8f4ff';
     var humCol=avgHum<40?'#ffb300':avgHum>90?'#ffb300':'#7ab8d4';
@@ -260,7 +345,7 @@ function renderSpray(d, name) {
     var precipStr=(rainMm/25.4).toFixed(2)+'"';
 
     // Hourly strip
-    var hourHtml="<div class='spray-hourly'><div style='font-size:8px;color:#3a6a94;letter-spacing:1px;margin-bottom:6px;'>SURFACE WIND (MPH @ 3FT BOOM) &amp; DIRECTION</div><div class='spray-hour-row'>";
+    var hourHtml="<div class='hourly'><div class='hourly-label'>SURFACE WIND (MPH @ 3FT) &amp; DIRECTION BY HOUR</div><div class='hour-row'>";
     [6,9,12,15,18].forEach(function(hr){
       var idx=hourBase+hr;
       var ws10=d.hourly.wind_speed_10m[idx], ws=ws10!==null?Math.round(ws10*0.62):null;
@@ -269,12 +354,12 @@ function renderSpray(d, name) {
       var wCol=ws>15?'#f87171':ws>10?'#ffb300':'#00ffa3';
       var barW=ws?Math.min(100,Math.round(ws/20*100)):0;
       var hrLabel=hr>=12?(hr===12?'12PM':(hr-12)+'PM'):hr+'AM';
-      hourHtml+="<div class='spray-hour'>"
+      hourHtml+="<div class='hour-cell'>"
         +"<div class='spray-hour-time'>"+hrLabel+"</div>"
-        +"<div class='spray-hour-wind' style='color:"+wCol+"'>"+(ws!==null?ws:'–')+"</div>"
+        +"<div class='hour-wind' style='color:"+wCol+"'>"+(ws!==null?ws:'–')+"</div>"
         +"<div class='spray-hour-bar' style='width:"+barW+"%;background:"+wCol+";'></div>"
         +"<div style='font-size:7px;color:#3a6a94;'>"+wd+"</div>"
-        +(wg?"<div style='font-size:7px;color:#ffb300;'>G"+wg+"</div>":"")
+        +(wg?"<div class='hour-gust'>G"+wg+"</div>":"")
         +"</div>";
     });
     hourHtml+="</div></div>";
@@ -291,20 +376,20 @@ function renderSpray(d, name) {
     }
 
     var reasonsHtml=rating.reasons.length
-      ?"<div style='font-size:9px;color:#7ab8d4;padding:6px 14px 10px;'>"+rating.reasons.map(function(r){return'&#9679; '+r;}).join(' &nbsp; ')+"</div>"
-      :"<div style='font-size:9px;color:#00ffa3;padding:6px 14px 10px;'>&#10003; No spray restrictions</div>";
+      ?"<div class='reasons'>"+rating.reasons.map(function(r){return"<span class='reason-chip'>"+r+"</span>";}).join('')+"</div>"
+      :"<div class='no-restrict'>✓ No spray restrictions</div>";
 
-    html+="<div class='spray-day'>"
-      +"<div class='spray-day-header'>"
-      +"<div><div class='spray-day-name'>"+dayName+"</div><div class='spray-day-date'>"+dateStr+"</div></div>"
-      +"<span class='spray-rating "+rating.cls+"'>"+rating.label+"</span>"
+    html+="<div class='day-card "+rating.cls+"'>"
+      +"<div class='card-head'>"
+      +"<div class='card-day'><div class='card-day-name'>"+dayName+"</div><div class='card-day-date'>"+dateStr+"</div></div>"
+      +"<span class='rating-pill "+rating.cls+"'>"+rating.label+"</span>"
       +"</div>"
-      +"<div class='spray-metrics'>"
-      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+windCol+"'>"+windMax+"</div><div class='spray-metric-lbl'>WIND MPH</div></div>"
-      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+gustCol+"'>"+windGust+"</div><div class='spray-metric-lbl'>GUST MPH</div></div>"
-      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+tempHiCol+"'>"+Math.round(tmax)+"°</div><div class='spray-metric-lbl'>HIGH °F</div></div>"
-      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+humCol+"'>"+avgHum+"%</div><div class='spray-metric-lbl'>HUMIDITY</div></div>"
-      +"<div class='spray-metric'><div class='spray-metric-val' style='color:"+rainCol+"'>"+precipStr+"</div><div class='spray-metric-lbl'>PRECIP</div></div>"
+      +"<div class='metrics'>"
+      +"<div class='metric'><div class='metric-val' style='color:"+windCol+"'>"+windMax+"</div><div class='metric-lbl'>WIND</div><div class='metric-sub'>MPH @ 3FT</div></div>"
+      +"<div class='metric'><div class='metric-val' style='color:"+gustCol+"'>"+windGust+"</div><div class='metric-lbl'>GUST</div><div class='metric-sub'>MPH @ 3FT</div></div>"
+      +"<div class='metric'><div class='metric-val' style='color:"+tempHiCol+"'>"+Math.round(tmax)+"°</div><div class='metric-lbl'>HIGH</div><div class='metric-sub'>°F</div></div>"
+      +"<div class='metric'><div class='metric-val' style='color:"+humCol+"'>"+avgHum+"%</div><div class='metric-lbl'>HUMIDITY</div><div class='metric-sub'>AVG</div></div>"
+      +"<div class='metric'><div class='metric-val' style='color:"+rainCol+"'>"+precipStr+"</div><div class='metric-lbl'>PRECIP</div><div class='metric-sub'>"+maxRainProb+"% CHANCE</div></div>"
       +"</div>"
       +hourHtml+invHtml+reasonsHtml
       +"</div>";
@@ -322,6 +407,7 @@ locateGPS();
 document.getElementById('locInput').addEventListener('keydown', function(e){
   if(e.key==='Enter') fetchFromInput();
 });
+
 </script>
 
 </body>
