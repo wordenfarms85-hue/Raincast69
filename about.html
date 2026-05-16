@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — Agricast</title>
+<meta name="description" content="Agricast was built by a third-generation farmer and agronomist in eastern Colorado who was tired of generic weather apps that didn't understand agriculture.">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#050c14;color:#e8f4ff;font-family:'DM Sans',sans-serif;line-height:1.7;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(5,12,20,0.97);border-bottom:1px solid #1a3a55;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:#e8f4ff;text-decoration:none;}
+.nav-logo span{color:#00c8ff;}
+.nav-links{display:flex;gap:14px;align-items:center;}
+.nav-link{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:#4a7a9b;text-decoration:none;}
+.nav-link:hover{color:#e8f4ff;}
+.nav-cta{background:#90ee90;color:#000;font-family:'DM Mono',monospace;font-weight:500;font-size:11px;letter-spacing:1.5px;padding:8px 16px;text-decoration:none;}
+
+.container{max-width:720px;margin:0 auto;padding:60px 24px 80px;}
+.page-label{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:4px;color:#00c8ff;margin-bottom:12px;}
+h1{font-family:‘Bebas Neue’,sans-serif;font-size:56px;line-height:1;margin-bottom:32px;color:#e8f4ff;}
+h1 span{color:#00c8ff;}
+
+.card{background:#091525;border:1px solid #1a3a55;padding:28px;margin-bottom:16px;}
+.card-label{font-family:‘DM Mono’,monospace;font-size:9px;letter-spacing:4px;color:#00c8ff;margin-bottom:14px;}
+.card-text{font-size:15px;color:#8ab8d4;line-height:1.9;}
+.card-text strong{color:#e8f4ff;}
+
+.hero-quote{font-family:‘Bebas Neue’,sans-serif;font-size:32px;line-height:1.2;color:#e8f4ff;letter-spacing:1px;margin-bottom:8px;}
+.hero-quote span{color:#00ffa3;}
+
+.founder{display:flex;align-items:center;gap:20px;border-top:1px solid #1a3a55;padding-top:20px;margin-top:20px;}
+.founder-avatar{width:56px;height:56px;background:linear-gradient(135deg,#0d2a40,#1a5278);border:2px solid #2a5278;display:flex;align-items:center;justify-content:center;font-family:‘Bebas Neue’,sans-serif;font-size:24px;color:#00c8ff;flex-shrink:0;}
+.founder-name{font-size:16px;font-weight:bold;color:#e8f4ff;letter-spacing:1px;margin-bottom:2px;}
+.founder-title{font-family:‘DM Mono’,monospace;font-size:9px;color:#4a7a9b;letter-spacing:2px;}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#1a3a55;border:1px solid #1a3a55;margin-bottom:16px;}
+.stat{background:#091525;padding:20px;text-align:center;}
+.stat-val{font-family:‘Bebas Neue’,sans-serif;font-size:36px;color:#00c8ff;line-height:1;}
+.stat-lbl{font-family:‘DM Mono’,monospace;font-size:8px;letter-spacing:2px;color:#4a7a9b;margin-top:4px;}
+
+.contact-link{display:block;color:#00c8ff;font-size:16px;font-weight:bold;letter-spacing:1px;text-decoration:none;margin-bottom:6px;}
+.contact-link:hover{text-decoration:underline;}
+
+footer{border-top:1px solid #1a3a55;padding:40px 24px;text-align:center;}
+.footer-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;}
+.footer-link{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:2px;color:#4a7a9b;text-decoration:none;}
+.footer-link:hover{color:#e8f4ff;}
+.footer-copy{font-family:‘DM Mono’,monospace;font-size:9px;color:#2a4a6a;letter-spacing:1px;}
+</style>
+
+</head>
+<body>
+
+<nav>
+  <a href="https://agricast.farm" class="nav-logo">AGRI<span>CAST</span></a>
+  <div class="nav-links">
+    <a href="https://agricast.farm/radar.html" class="nav-link">RADAR</a>
+    <a href="https://agricast.farm/spray.html" class="nav-link">SPRAY</a>
+    <a href="https://agricast.farm/app.html" class="nav-link">SIGN IN</a>
+    <a href="https://agricast.farm/app.html" class="nav-cta">LAUNCH APP</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-label">OUR STORY</div>
+  <h1>BUILT FOR THE <span>FIELD.</span></h1>
+
+  <!-- Stats -->
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-val">75+</div><div class="stat-lbl">ANALOG YEARS</div></div>
+    <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">FORECAST MODELS</div></div>
+    <div class="stat"><div class="stat-val">14</div><div class="stat-lbl">DAY WINDOW</div></div>
+  </div>
+
+  <!-- Story -->
+
+  <div class="card">
+    <div class="card-label">THE STORY</div>
+    <div class="hero-quote">Tired of weather apps that<br>didn't know what a <span>planting window</span> was.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">THE PROBLEM</div>
+    <p class="card-text">
+      As a third-generation farmer and agronomist in <strong>eastern Colorado</strong>, I spent years relying on generic weather apps that had no idea what a planting window was, couldn't tell me if it was safe to spray, and treated a dryland wheat field the same as a golf course in Florida.
+    </p>
+    <p class="card-text" style="margin-top:14px;">
+      They gave me a seven-day forecast. What I needed was GDU accumulation, spray inversion risk, 14-day blended precip, and how this year compares to 1988. No app did that. So I built one.
+    </p>
+  </div>
+
+  <!-- Mission -->
+
+  <div class="card">
+    <div class="card-label">THE MISSION</div>
+    <p class="card-text">
+      Agricast gives professional farmers and agronomists the weather intelligence they actually need — <strong>multi-model precipitation blends, real GDU tracking, soil moisture at four depths, spray windows with inversion detection, and 75 years of analog history</strong> — all in one platform built specifically for the field.
+    </p>
+    <p class="card-text" style="margin-top:14px;">
+      No generic forecasts. No consumer fluff. Just the data that drives better decisions on real ground.
+    </p>
+  </div>
+
+  <!-- Team -->
+
+  <div class="card">
+    <div class="card-label">THE TEAM</div>
+    <p class="card-text">
+      Agricast is built and maintained by one person — but shaped by generations of experience. My family has farmed eastern Colorado for three generations. Their knowledge, their questions, and their hard-won instincts about the land are baked into every feature this platform has.
+    </p>
+    <div class="founder">
+      <div class="founder-avatar">AJ</div>
+      <div>
+        <div class="founder-name">AJ WORDEN</div>
+        <div class="founder-title">FOUNDER · FARMER · AGRONOMIST · DEVELOPER</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3a6a94;letter-spacing:1px;margin-top:4px;">Burlington, Colorado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+
+  <div class="card">
+    <div class="card-label">GET IN TOUCH</div>
+    <a href="mailto:Agricastwx@gmail.com" class="contact-link">Agricastwx@gmail.com</a>
+    <p class="card-text" style="font-size:12px;color:#4a7a9b;">Questions · Feedback · Partnership Inquiries</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="https://agricast.farm" class="footer-link">HOME</a>
+    <a href="https://agricast.farm/app.html" class="footer-link">LAUNCH APP</a>
+    <a href="https://agricast.farm/radar.html" class="footer-link">RADAR</a>
+    <a href="https://agricast.farm/spray.html" class="footer-link">SPRAY</a>
+    <a href="https://agricast.farm/terms.html" class="footer-link">TERMS</a>
+    <a href="https://agricast.farm/privacy.html" class="footer-link">PRIVACY</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 AGRICAST · BURLINGTON, COLORADO · ALL RIGHTS RESERVED</div>
+</footer>
+
+</body>
+</html>
