@@ -3195,12 +3195,13 @@ function ensureMap() {
 
   function buildQPELayer(hours) {
     hours = hours || 24;
-    var layerName = 'mrms_qpe:QPE_' + hours + 'H_co';
+    // Layer is always 'mrms_qpe'; time period controlled by renderingRule
+    var renderRule = '{"rasterFunction":"QPE_' + hours + 'H"}';
     return L.tileLayer.wms(QPE_WMS, {
-      layers: layerName,
+      layers: 'mrms_qpe',
       format: 'image/png',
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.75,
       attribution: 'NOAA MRMS QPE',
       version: '1.3.0'
     });
@@ -3248,8 +3249,8 @@ function ensureMap() {
       var bbox = bounds.getWest()+','+bounds.getSouth()+','+bounds.getEast()+','+bounds.getNorth();
       var url = QPE_WMS
         +'?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo'
-        +'&LAYERS=mrms_qpe:QPE_'+hours+'H_co'
-        +'&QUERY_LAYERS=mrms_qpe:QPE_'+hours+'H_co'
+        +'&LAYERS=mrms_qpe'
+        +'&QUERY_LAYERS=mrms_qpe'
         +'&CRS=CRS:84'
         +'&BBOX='+bbox
         +'&WIDTH='+size.x+'&HEIGHT='+size.y
