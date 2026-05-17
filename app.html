@@ -386,7 +386,16 @@ td:first-child { text-align: left; color: #7ab8d4; }
 <div id="mapSection" style="margin-bottom:20px;">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>FIELD MAP — TAP TO ADD FIELD PIN</span>
-    <span id="mapModeLabel" style="color:#00c8ff;font-size:9px;">CLICK MAP TO DROP PIN</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="qpeToggleBtn" onclick="toggleQPE()" style="background:#0d1520;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">&#127783; QPE OFF</button>
+      <select id="qpeWindow" onchange="updateQPELayer()" style="background:#0d1520;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-size:10px;padding:4px 6px;cursor:pointer;display:none;">
+        <option value="1">1-HR</option>
+        <option value="24" selected>24-HR</option>
+        <option value="48">48-HR</option>
+        <option value="72">72-HR</option>
+      </select>
+      <span id="mapModeLabel" style="color:#00c8ff;font-size:9px;">CLICK MAP TO DROP PIN</span>
+    </div>
   </div>
   <div id="map"></div>
   <div class="map-hint">&#x1F4CD; Tap anywhere on map to place a field pin &bull; Tap existing pin to load that field</div>
@@ -3089,7 +3098,19 @@ function renderSeasonalRain() {
   }
 
   var html = "";
-  html += row("LAST 24 HOURS", sr.last24, "Yesterday + today (daily totals)", "#00ffa3");
+  // Use station rain today if connected, otherwise use model
+  var last24val = sr.last24;
+  var last24note = "Yesterday + today (model · best_match/HRRR)";
+  if (stationData && stationData.rainToday !== null && stationData.rainToday !== undefined) {
+    var stationRainIn = stationData.rainToday / 25.4; // mm to inches
+    last24val = stationRainIn;
+    last24note = "Station observed (" + (stationData.stationName || 'WeatherLink') + ")";
+  }
+  html += row("LAST 24 HOURS", last24val, last24note, "#00ffa3");
+  // Show MRMS QPE value if available
+  if (window.mrmsQPE24h !== undefined && window.mrmsQPE24h !== null) {
+    html += row("MRMS QPE 24-HR", window.mrmsQPE24h, "Radar-only · 1km · NOAA MRMS (toggle QPE on map)", "#00c8ff");
+  }
   html += row("YEAR TO DATE", sr.ytd, "Jan 1 – Today (" + dayOfYear + " days)", "#00c8ff");
   html += row("LAST 30 DAYS", sr.last30, "Rolling 30-day total", "#38bdf8");
   html += row("LAST 14 DAYS", sr.last14, "Rolling 14-day total", "#00c8ff");
@@ -3166,6 +3187,91 @@ function ensureMap() {
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19, opacity: 0.8
   }).addTo(leafletMap);
+  // MRMS QPE WMS Layer
+  window.qpeLayer = null;
+  window.qpeOn = false;
+
+  var QPE_WMS = 'https://mapservices.weather.noaa.gov/raster/services/obs/mrms_qpe/ImageServer/WMSServer';
+
+  function buildQPELayer(hours) {
+    hours = hours || 24;
+    var layerName = 'mrms_qpe:QPE_' + hours + 'H_co';
+    return L.tileLayer.wms(QPE_WMS, {
+      layers: layerName,
+      format: 'image/png',
+      transparent: true,
+      opacity: 0.7,
+      attribution: 'NOAA MRMS QPE',
+      version: '1.3.0'
+    });
+  }
+
+  window.toggleQPE = function() {
+    var btn = document.getElementById('qpeToggleBtn');
+    var sel = document.getElementById('qpeWindow');
+    if (!leafletMap) return;
+    if (!window.qpeOn) {
+      var hours = sel ? parseInt(sel.value) : 24;
+      window.qpeLayer = buildQPELayer(hours);
+      window.qpeLayer.addTo(leafletMap);
+      window.qpeOn = true;
+      btn.style.color = '#00ffa3'; btn.style.borderColor = '#00ffa3';
+      btn.textContent = '\u26c5 QPE ON';
+      if (sel) sel.style.display = 'inline-block';
+      // Fetch QPE value at current field location
+      if (currentLat && currentLon) fetchQPEValue(currentLat, currentLon, hours);
+    } else {
+      if (window.qpeLayer) leafletMap.removeLayer(window.qpeLayer);
+      window.qpeOn = false;
+      btn.style.color = '#7ab8d4'; btn.style.borderColor = '#2a5278';
+      btn.textContent = '\u26c5 QPE OFF';
+      if (sel) sel.style.display = 'none';
+    }
+  };
+
+  window.updateQPELayer = function() {
+    if (!window.qpeOn || !leafletMap) return;
+    var sel = document.getElementById('qpeWindow');
+    var hours = sel ? parseInt(sel.value) : 24;
+    if (window.qpeLayer) leafletMap.removeLayer(window.qpeLayer);
+    window.qpeLayer = buildQPELayer(hours);
+    window.qpeLayer.addTo(leafletMap);
+    if (currentLat && currentLon) fetchQPEValue(currentLat, currentLon, hours);
+  };
+
+  async function fetchQPEValue(lat, lon, hours) {
+    // Use WMS GetFeatureInfo to get QPE value at point
+    try {
+      var bounds = leafletMap.getBounds();
+      var size = leafletMap.getSize();
+      var point = leafletMap.latLngToContainerPoint([lat, lon]);
+      var bbox = bounds.getWest()+','+bounds.getSouth()+','+bounds.getEast()+','+bounds.getNorth();
+      var url = QPE_WMS
+        +'?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo'
+        +'&LAYERS=mrms_qpe:QPE_'+hours+'H_co'
+        +'&QUERY_LAYERS=mrms_qpe:QPE_'+hours+'H_co'
+        +'&CRS=CRS:84'
+        +'&BBOX='+bbox
+        +'&WIDTH='+size.x+'&HEIGHT='+size.y
+        +'&I='+Math.round(point.x)+'&J='+Math.round(point.y)
+        +'&INFO_FORMAT=application/json';
+      var r = await fetch(url);
+      var d = await r.json();
+      var val = null;
+      if (d.features && d.features.length && d.features[0].properties) {
+        var props = d.features[0].properties;
+        val = props.GRAY_INDEX || props.value || props['Pixel Value'] || null;
+      }
+      if (val !== null && val > 0) {
+        var valIn = (val / 25.4).toFixed(2);
+        // Update the seasonal rain display with QPE value
+        window.mrmsQPE24h = parseFloat(valIn);
+        renderSeasonalRain(); // re-render to show QPE value
+        setStatus('MRMS QPE '+hours+'-HR AT FIELD: '+valIn+' in (radar-only · 1km resolution)', 'ok');
+      }
+    } catch(e) { console.log('QPE fetch error:', e); }
+  }
+
   // Click to drop pin
   leafletMap.on("click", function(e) {
     openPinModal(e.latlng.lat, e.latlng.lng);
