@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -12,7 +11,6 @@
 <link rel="canonical" href="https://agricast.farm">
 
 <!-- Open Graph (Facebook, LinkedIn sharing) -->
-
 <meta property="og:title" content="Agricast — Precision Ag Weather Platform">
 <meta property="og:description" content="Multi-model precipitation forecasts, GDU tracking, soil moisture, spray weather, and analog year analysis built for professional farmers.">
 <meta property="og:url" content="https://agricast.farm">
@@ -20,14 +18,12 @@
 <meta property="og:site_name" content="Agricast">
 
 <!-- Twitter Card -->
-
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Agricast — Precision Ag Weather">
 <meta name="twitter:description" content="Multi-model forecasts, GDU tracking, spray windows, and analog year analysis for professional farmers.">
 <meta name="twitter:site" content="@agricastwx">
 
 <!-- Structured Data for Google -->
-
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -62,489 +58,487 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-–bg: #050c14;
-–bg2: #091525;
-–bg3: #0d1e30;
-–green: #00ffa3;
-–blue: #00c8ff;
-–amber: #ffb300;
-–text: #e8f4ff;
-–muted: #4a7a9b;
-–border: #1a3a55;
+  --bg: #050c14;
+  --bg2: #091525;
+  --bg3: #0d1e30;
+  --green: #00ffa3;
+  --blue: #00c8ff;
+  --amber: #ffb300;
+  --text: #e8f4ff;
+  --muted: #4a7a9b;
+  --border: #1a3a55;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-background: var(–bg);
-color: #e8f4ff;
-font-family: ‘DM Sans’, sans-serif;
-overflow-x: hidden;
-line-height: 1.6;
+  background: var(--bg);
+  color: #e8f4ff;
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
 }
 
 /* ── NOISE OVERLAY ── */
 body::before {
-content: ‘’;
-position: fixed;
-inset: 0;
-background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 256 256’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘noise’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23noise)’ opacity=‘0.03’/%3E%3C/svg%3E”);
-pointer-events: none;
-z-index: 0;
-opacity: 0.4;
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
 }
 
 /* ── NAV ── */
 nav {
-position: fixed;
-top: 0; left: 0; right: 0;
-z-index: 100;
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 12px 20px;
-background: rgba(5,12,20,0.95);
-backdrop-filter: blur(16px);
--webkit-backdrop-filter: blur(16px);
-border-bottom: 1px solid #1a3a55;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(5,12,20,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid #1a3a55;
 }
 .nav-logo {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 26px;
-letter-spacing: 3px;
-color: #e8f4ff;
-text-decoration: none;
-flex-shrink: 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: #e8f4ff;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 .nav-logo span { color: #00c8ff; }
 .nav-links-group {
-display: flex;
-align-items: center;
-gap: 10px;
-flex-wrap: nowrap;
-overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 .nav-text-link {
-font-family: ‘DM Mono’, monospace;
-font-size: 10px;
-letter-spacing: 1.5px;
-color: #8ab8d4;
-text-decoration: none;
-white-space: nowrap;
-flex-shrink: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #8ab8d4;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .nav-text-link:hover { color: #e8f4ff; }
 .nav-cta {
-background: #90ee90;
-color: #000;
-font-family: ‘DM Mono’, monospace;
-font-weight: 500;
-font-size: 11px;
-letter-spacing: 1.5px;
-padding: 8px 16px;
-text-decoration: none;
-transition: opacity 0.2s;
-white-space: nowrap;
-flex-shrink: 0;
+  background: #90ee90;
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 8px 16px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .nav-cta:hover { opacity: 0.85; }
 @media (max-width: 480px) {
-.nav-text-link { display: none; }
-.nav-hide-mobile { display: none; }
+  .nav-text-link { display: none; }
+  .nav-hide-mobile { display: none; }
 }
 
 /* ── HERO ── */
 .hero {
-min-height: 100vh;
-display: flex;
-align-items: center;
-position: relative;
-padding: 120px 40px 80px;
-overflow: hidden;
-background: #050c14;
-color: #e8f4ff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 120px 40px 80px;
+  overflow: hidden;
+  background: #050c14;
+  color: #e8f4ff;
 }
 
 .hero-grid {
-position: absolute;
-inset: 0;
-background-image:
-linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
-linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
-background-size: 60px 60px;
-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
 }
 
 .hero-glow {
-position: absolute;
-width: 600px;
-height: 600px;
-border-radius: 50%;
-background: radial-gradient(circle, rgba(0,200,255,0.08) 0%, transparent 70%);
-top: 50%;
-right: -100px;
-transform: translateY(-50%);
-pointer-events: none;
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,200,255,0.08) 0%, transparent 70%);
+  top: 50%;
+  right: -100px;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .hero-content {
-position: relative;
-z-index: 1;
-max-width: 680px;
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
 }
 
 .hero-eyebrow {
-font-family: ‘DM Mono’, monospace;
-font-size: 11px;
-letter-spacing: 4px;
-color: #00ffa3;
-margin-bottom: 20px;
-display: flex;
-align-items: center;
-gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: #00ffa3;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .hero-eyebrow::before {
-content: ‘’;
-width: 32px;
-height: 1px;
-background: var(–green);
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--green);
 }
 
 .hero h1 {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: clamp(64px, 10vw, 110px);
-line-height: 0.9;
-letter-spacing: 2px;
-margin-bottom: 28px;
-color: #e8f4ff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 10vw, 110px);
+  line-height: 0.9;
+  letter-spacing: 2px;
+  margin-bottom: 28px;
+  color: #e8f4ff;
 }
 .hero h1 span { color: #00c8ff; }
 
 .hero-sub {
-font-size: 18px;
-color: #8ab8d4;
-max-width: 480px;
-margin-bottom: 40px;
-line-height: 1.7;
-font-weight: 300;
+  font-size: 18px;
+  color: #8ab8d4;
+  max-width: 480px;
+  margin-bottom: 40px;
+  line-height: 1.7;
+  font-weight: 300;
 }
 .hero-sub strong { color: #e8f4ff; font-weight: 500; }
 
 .hero-actions {
-display: flex;
-gap: 16px;
-flex-wrap: wrap;
-align-items: center;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .btn-primary {
-background: var(–green);
-color: #000;
-font-family: ‘DM Mono’, monospace;
-font-size: 13px;
-font-weight: 500;
-letter-spacing: 2px;
-padding: 16px 36px;
-text-decoration: none;
-display: inline-block;
-transition: transform 0.2s, opacity 0.2s;
+  background: var(--green);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  padding: 16px 36px;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.2s, opacity 0.2s;
 }
 .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
 
 .btn-secondary {
-color: #00c8ff;
-font-family: ‘DM Mono’, monospace;
-font-size: 12px;
-letter-spacing: 2px;
-text-decoration: none;
-border-bottom: 1px solid var(–blue);
-padding-bottom: 2px;
-transition: opacity 0.2s;
+  color: #00c8ff;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--blue);
+  padding-bottom: 2px;
+  transition: opacity 0.2s;
 }
 .btn-secondary:hover { opacity: 0.7; }
 
 .hero-stats {
-display: flex;
-gap: 40px;
-margin-top: 60px;
-padding-top: 40px;
-border-top: 1px solid #1a3a55;
-flex-wrap: wrap;
+  display: flex;
+  gap: 40px;
+  margin-top: 60px;
+  padding-top: 40px;
+  border-top: 1px solid #1a3a55;
+  flex-wrap: wrap;
 }
 .stat-val {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 42px;
-color: #00c8ff;
-line-height: 1;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  color: #00c8ff;
+  line-height: 1;
 }
 .stat-label {
-font-family: ‘DM Mono’, monospace;
-font-size: 9px;
-letter-spacing: 2px;
-color: #8ab8d4;
-margin-top: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #8ab8d4;
+  margin-top: 4px;
 }
 
 /* ── TICKER ── */
 .ticker {
-background: var(–bg2);
-border-top: 1px solid #1a3a55;
-border-bottom: 1px solid #1a3a55;
-padding: 14px 0;
-overflow: hidden;
-white-space: nowrap;
+  background: var(--bg2);
+  border-top: 1px solid #1a3a55;
+  border-bottom: 1px solid #1a3a55;
+  padding: 14px 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .ticker-track {
-display: inline-flex;
-gap: 0;
-animation: ticker 30s linear infinite;
+  display: inline-flex;
+  gap: 0;
+  animation: ticker 30s linear infinite;
 }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .ticker-item {
-font-family: ‘DM Mono’, monospace;
-font-size: 11px;
-letter-spacing: 2px;
-color: #8ab8d4;
-padding: 0 40px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #8ab8d4;
+  padding: 0 40px;
 }
 .ticker-item span { color: #00ffa3; margin-right: 8px; }
 
 /* ── FEATURES ── */
 .features {
-background: #050c14;
-padding: 100px 40px;
-max-width: 1200px;
-margin: 0 auto;
+  background: #050c14;
+  padding: 100px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .section-label {
-font-family: ‘DM Mono’, monospace;
-font-size: 10px;
-letter-spacing: 4px;
-color: #00ffa3;
-margin-bottom: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: #00ffa3;
+  margin-bottom: 16px;
 }
 .section-title {
-color: #e8f4ff;
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: clamp(40px, 6vw, 72px);
-line-height: 1;
-margin-bottom: 60px;
+  color: #e8f4ff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1;
+  margin-bottom: 60px;
 }
 .section-title span { color: #00c8ff; }
 
 .feature-grid {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-gap: 1px;
-background: #1a3a55;
-border: 1px solid #1a3a55;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1px;
+  background: #1a3a55;
+  border: 1px solid #1a3a55;
 }
 .feature-card {
-background: #050c14;
-padding: 36px 32px;
-transition: background 0.2s;
+  background: #050c14;
+  padding: 36px 32px;
+  transition: background 0.2s;
 }
 .feature-card:hover { background: #091525; }
 .feature-icon {
-font-size: 28px;
-margin-bottom: 16px;
-display: block;
+  font-size: 28px;
+  margin-bottom: 16px;
+  display: block;
 }
 .feature-name {
-font-family: ‘DM Mono’, monospace;
-font-size: 12px;
-letter-spacing: 2px;
-color: #00c8ff;
-margin-bottom: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #00c8ff;
+  margin-bottom: 10px;
 }
 .feature-desc {
-font-size: 14px;
-color: #8ab8d4;
-line-height: 1.7;
+  font-size: 14px;
+  color: #8ab8d4;
+  line-height: 1.7;
 }
 
 /* ── DATA STRIP ── */
 .data-strip {
-background: #091525;
-border-top: 1px solid #1a3a55;
-border-bottom: 1px solid #1a3a55;
-padding: 60px 40px;
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-gap: 40px;
-max-width: 1200px;
-margin: 0 auto;
+  background: #091525;
+  border-top: 1px solid #1a3a55;
+  border-bottom: 1px solid #1a3a55;
+  padding: 60px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 .data-item-label {
-font-family: ‘DM Mono’, monospace;
-font-size: 9px;
-letter-spacing: 3px;
-color: #8ab8d4;
-margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #8ab8d4;
+  margin-bottom: 8px;
 }
 .data-item-val {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 36px;
-color: #ffb300;
-line-height: 1;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: #ffb300;
+  line-height: 1;
 }
 .data-item-sub {
-font-size: 12px;
-color: #8ab8d4;
-margin-top: 4px;
+  font-size: 12px;
+  color: #8ab8d4;
+  margin-top: 4px;
 }
 
 /* ── PRICING ── */
 .pricing {
-background: #050c14;
-padding: 100px 40px;
-max-width: 900px;
-margin: 0 auto;
-text-align: center;
+  background: #050c14;
+  padding: 100px 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
 }
 .pricing-cards {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 1px;
-background: #1a3a55;
-border: 1px solid #1a3a55;
-margin-top: 60px;
-text-align: left;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #1a3a55;
+  border: 1px solid #1a3a55;
+  margin-top: 60px;
+  text-align: left;
 }
 @media(max-width:600px){ .pricing-cards { grid-template-columns: 1fr; } }
 .pricing-card {
-background: #050c14;
-padding: 40px 36px;
+  background: #050c14;
+  padding: 40px 36px;
 }
-.pricing-card.featured { background: #091525; border: 1px solid var(–blue); margin: -1px; }
+.pricing-card.featured { background: #091525; border: 1px solid var(--blue); margin: -1px; }
 .pricing-tier {
-font-family: ‘DM Mono’, monospace;
-font-size: 10px;
-letter-spacing: 3px;
-color: #8ab8d4;
-margin-bottom: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #8ab8d4;
+  margin-bottom: 16px;
 }
 .pricing-price {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 64px;
-line-height: 1;
-color: #e8f4ff;
-margin-bottom: 4px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  line-height: 1;
+  color: #e8f4ff;
+  margin-bottom: 4px;
 }
 .pricing-price sup { font-size: 24px; vertical-align: super; }
 .pricing-period {
-font-family: ‘DM Mono’, monospace;
-font-size: 11px;
-color: #8ab8d4;
-letter-spacing: 2px;
-margin-bottom: 32px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #8ab8d4;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
 }
 .pricing-features {
-list-style: none;
-margin-bottom: 32px;
+  list-style: none;
+  margin-bottom: 32px;
 }
 .pricing-features li {
-font-size: 13px;
-color: #8ab8d4;
-padding: 8px 0;
-border-bottom: 1px solid #1a3a55;
-display: flex;
-align-items: center;
-gap: 10px;
+  font-size: 13px;
+  color: #8ab8d4;
+  padding: 8px 0;
+  border-bottom: 1px solid #1a3a55;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .pricing-features li.included { color: #e8f4ff; }
-.pricing-features li::before { content: ‘—’; color: var(–border); font-size: 10px; flex-shrink: 0; }
-.pricing-features li.included::before { content: ‘✓’; color: #00ffa3; }
+.pricing-features li::before { content: '—'; color: var(--border); font-size: 10px; flex-shrink: 0; }
+.pricing-features li.included::before { content: '✓'; color: #00ffa3; }
 .pricing-badge {
-display: inline-block;
-background: var(–blue);
-color: #000;
-font-family: ‘DM Mono’, monospace;
-font-size: 9px;
-letter-spacing: 2px;
-padding: 3px 10px;
-margin-bottom: 20px;
+  display: inline-block;
+  background: var(--blue);
+  color: #000;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  margin-bottom: 20px;
 }
 
 /* ── CROPS STRIP ── */
 .crops-strip {
-padding: 80px 40px;
-background: #091525;
-border-top: 1px solid #1a3a55;
+  padding: 80px 40px;
+  background: #091525;
+  border-top: 1px solid #1a3a55;
 }
 .crops-strip h2 {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 48px;
-text-align: center;
-margin-bottom: 40px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 40px;
 }
 .crops-grid {
-display: flex;
-flex-wrap: wrap;
-justify-content: center;
-gap: 12px;
-max-width: 900px;
-margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 .crop-tag {
-font-family: ‘DM Mono’, monospace;
-font-size: 11px;
-letter-spacing: 2px;
-color: #4a7a9b;
-border: 1px solid #1a3a55;
-padding: 8px 16px;
-background: #050c14;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #4a7a9b;
+  border: 1px solid #1a3a55;
+  padding: 8px 16px;
+  background: #050c14;
 }
 
 /* ── FOOTER ── */
 footer {
-background: #050c14;
-border-top: 1px solid #1a3a55;
-padding: 40px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-flex-wrap: wrap;
-gap: 20px;
+  background: #050c14;
+  border-top: 1px solid #1a3a55;
+  padding: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
 }
 .footer-logo {
-font-family: ‘Bebas Neue’, sans-serif;
-font-size: 24px;
-letter-spacing: 3px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px;
+  letter-spacing: 3px;
 }
 .footer-logo span { color: #00c8ff; }
 .footer-copy {
-font-family: ‘DM Mono’, monospace;
-font-size: 10px;
-color: #8ab8d4;
-letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #8ab8d4;
+  letter-spacing: 1px;
 }
 .footer-link {
-font-family: ‘DM Mono’, monospace;
-font-size: 11px;
-color: #8ab8d4;
-text-decoration: none;
-letter-spacing: 1px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #8ab8d4;
+  text-decoration: none;
+  letter-spacing: 1px;
 }
 .footer-link:hover { color: #00c8ff; }
 
 /* ── ANIMATIONS ── */
 .fade-up {
-opacity: 0;
-transform: translateY(30px);
-transition: opacity 0.7s ease, transform 0.7s ease;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
 }
 .fade-up.visible {
-opacity: 1;
-transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
-
 </head>
 <body>
 
 <!-- NAV -->
-
 <nav>
   <a href="https://agricast.farm" class="nav-logo">AGRI<span>CAST</span></a>
   <div class="nav-links-group">
@@ -556,7 +550,6 @@ transform: translateY(0);
 </nav>
 
 <!-- HERO -->
-
 <section class="hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
@@ -592,7 +585,6 @@ transform: translateY(0);
 </section>
 
 <!-- TICKER -->
-
 <div class="ticker">
   <div class="ticker-track">
     <span class="ticker-item"><span>●</span> GFS MODEL</span>
@@ -619,7 +611,6 @@ transform: translateY(0);
 </div>
 
 <!-- FEATURES -->
-
 <section class="features" id="features">
   <div class="section-label fade-up">WHAT'S INSIDE</div>
   <div class="section-title fade-up">EVERY TOOL A<br><span>FARMER NEEDS.</span></div>
@@ -673,7 +664,6 @@ transform: translateY(0);
 </section>
 
 <!-- DATA SOURCES -->
-
 <div style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:60px 40px;">
   <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:40px;">
     <div>
@@ -705,7 +695,6 @@ transform: translateY(0);
 </div>
 
 <!-- CROPS -->
-
 <section class="crops-strip">
   <h2 class="fade-up">EVERY CROP. <span style="color:var(--blue);">EVERY FIELD.</span></h2>
   <div class="crops-grid fade-up">
@@ -726,7 +715,6 @@ transform: translateY(0);
 </section>
 
 <!-- PRICING -->
-
 <section class="pricing" id="pricing">
   <div class="section-label fade-up">SIMPLE PRICING</div>
   <div class="section-title fade-up">START FREE.<br><span>GO PRO.</span></div>
@@ -752,7 +740,7 @@ transform: translateY(0);
       <div class="pricing-badge">MOST POPULAR</div>
       <div class="pricing-tier">AGRICAST PRO</div>
       <div class="pricing-price"><sup>$</sup>9.99</div>
-      <div class="pricing-period">PER MONTH &nbsp;·&nbsp; $80/YEAR</div>
+      <div class="pricing-period">PER MONTH &nbsp;·&nbsp; $100/YEAR</div>
       <ul class="pricing-features">
         <li class="included">Everything in Free</li>
         <li class="included">Soil moisture & temp</li>
@@ -770,7 +758,6 @@ transform: translateY(0);
 </section>
 
 <!-- FOOTER -->
-
 <footer>
   <div class="footer-logo">AGRI<span>CAST</span></div>
   <div class="footer-copy">© 2026 AGRICAST · PRECISION AG WEATHER</div>
@@ -791,6 +778,5 @@ var observer = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1 });
 document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el); });
 </script>
-
 </body>
 </html>
