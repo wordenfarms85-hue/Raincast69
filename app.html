@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -103,6 +102,7 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
 .soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
 
+
 /* Spray weather */
 .spray-day { background:#0d1520; border:1px solid #2a5278; margin-bottom:10px; overflow:hidden; }
 .spray-day-header { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid #1e3a5f; flex-wrap:wrap; }
@@ -125,6 +125,7 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .spray-hour-wind { font-size:10px; font-weight:bold; }
 .spray-hour-bar { height:4px; margin:2px auto; border-radius:2px; }
 
+
 /* Paywall */
 .pro-badge { background:rgba(255,179,0,0.15); color:#ffb300; border:1px solid #ffb300; font-size:8px; padding:2px 6px; letter-spacing:2px; font-weight:bold; vertical-align:middle; margin-left:6px; }
 .paywall-overlay { display:none; position:absolute; inset:0; background:rgba(10,15,26,0.92); z-index:10; align-items:center; justify-content:center; flex-direction:column; padding:20px; }
@@ -133,12 +134,13 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .paywall-box h3 { font-size:18px; font-weight:900; color:#ffb300; margin-bottom:6px; }
 .paywall-box p { font-size:11px; color:#7ab8d4; margin-bottom:16px; line-height:1.7; }
 .paywall-box ul { text-align:left; font-size:10px; color:#7ab8d4; margin-bottom:16px; list-style:none; padding:0; }
-.paywall-box ul li::before { content:“✓ “; color:#00ffa3; }
+.paywall-box ul li::before { content:"✓ "; color:#00ffa3; }
 .paywall-box ul li { margin-bottom:5px; }
 #upgradeBar { background:linear-gradient(90deg,#0d1520,#1a2a0a); border:1px solid #ffb300; padding:10px 14px; margin-bottom:16px; display:none; align-items:center; justify-content:space-between; gap:10px; }
 #upgradeBar .ub-text { font-size:10px; color:#ffb300; letter-spacing:1px; }
 #upgradeBar .ub-sub { font-size:9px; color:#7ab8d4; }
 .free-limit-msg { font-size:9px; color:#ffb300; letter-spacing:1px; margin-top:4px; }
+
 
 /* Personal Weather Station */
 #stationPanel { background:#0d1520; border:1px solid #2a5278; padding:14px 16px; margin-bottom:20px; }
@@ -183,6 +185,8 @@ button.danger { background: #111827; border: 1px solid #f87171; color: #f87171; 
 .sel-hybrid-stat-label { font-size:8px; color:#7ab8d4; letter-spacing:1px; margin-bottom:2px; }
 .sel-hybrid-stat-val { font-size:15px; font-weight:900; color:#e8f4ff; }
 /* Map */
+
+
 
 /* Map */
 #mapSection { margin-bottom: 20px; }
@@ -229,6 +233,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 .crop-btn:hover { border-color: #00c8ff; color: #e8f4ff; }
 .crop-btn.selected { background: rgba(0,200,255,0.15); border-color: #00c8ff; color: #00c8ff; }
 
+
 /* Tabs */
 .tab-bar { display:flex; gap:0; margin-bottom:0; overflow-x:auto; border-bottom:2px solid #2a5278; }
 .tab-btn { background:#0d1520; border:none; border-bottom:2px solid transparent; color:#7ab8d4; font-family:monospace; font-weight:bold; font-size:11px; padding:10px 16px; cursor:pointer; letter-spacing:1px; white-space:nowrap; margin-bottom:-2px; transition:all 0.15s; }
@@ -253,7 +258,11 @@ td:first-child { text-align: left; color: #7ab8d4; }
 .soil-trend { display:flex; align-items:flex-end; gap:2px; height:50px; margin-top:12px; overflow-x:auto; }
 .soil-trend-bar { width:8px; border-radius:1px 1px 0 0; flex-shrink:0; }
 
+
+
 /* Map */
+
+
 
 /* Map */
 #mapSection { margin-bottom: 20px; }
@@ -296,8 +305,8 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </head>
 <body>
 
-<!-- Auth Modal -->
 
+<!-- Auth Modal -->
 <div id="authOverlay">
   <div id="authBox">
     <h2>AGRI<span style="color:#00c8ff">CAST</span></h2>
@@ -307,6 +316,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <input id="authPassword" type="password" placeholder="Password" />
     <div class="auth-err" id="authErr"></div>
     <button class="primary" style="width:100%;padding:12px;" onclick="doAuth()">CONTINUE</button>
+    <div id="forgotLink" style="text-align:right;margin-top:8px;"><span onclick="showForgotPassword()" style="font-size:13px;color:#00c8ff;cursor:pointer;text-decoration:underline;">Forgot password?</span></div>
     <div class="auth-switch" id="authSwitch" onclick="toggleAuthMode()">
       No account? <span>Create one free</span>
     </div>
@@ -325,9 +335,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Auth bar -->
-
 <!-- Upgrade bar -->
-
 <div id="upgradeBar">
   <div>
     <div class="ub-text">⚡ AGRICAST FREE</div>
@@ -371,7 +379,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Field Tags -->
-
 <div id="fieldTagsPanel">
   <div class="section-title">MY FIELDS</div>
   <div class="tag-list" id="tagList"></div>
@@ -382,7 +389,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Interactive Map - always visible -->
-
 <div id="mapSection" style="margin-bottom:20px;">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>FIELD MAP — TAP TO ADD FIELD PIN</span>
@@ -402,7 +408,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Personal Weather Station Panel -->
-
 <div id="stationPanel" style="display:none;">
   <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
     <span>📡 PERSONAL WEATHER STATION</span>
@@ -410,7 +415,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- Station type selector -->
-
   <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:10px;">
     <button class="station-type-btn active" onclick="setStationType('tempest')" id="btnTempest">TEMPEST</button>
     <button class="station-type-btn" onclick="setStationType('weatherlink')" id="btnWeatherlink">WEATHERLINK</button>
@@ -427,7 +431,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- Tempest fields -->
-
   <div id="tempestFields">
     <div style="font-size:9px;color:#7ab8d4;letter-spacing:1px;margin-bottom:6px;">
       Get your token at <span style="color:#00c8ff;">tempestwx.com → Settings → Data Authorizations</span>
@@ -446,7 +449,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- WeatherLink fields -->
-
   <div id="weatherlinkFields" style="display:none;">
     <div style="font-size:9px;color:#7ab8d4;letter-spacing:1px;margin-bottom:6px;">
       Get keys at <span style="color:#00c8ff;">weatherlink.com → Account → Generate v2 Key</span>
@@ -469,7 +471,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- Live station data card -->
-
   <div id="stationDataCard" style="display:none;" class="station-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div>
@@ -485,14 +486,12 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Crop selector -->
-
 <div id="cropPanel">
   <div class="section-title">CROP</div>
   <div class="crop-grid" id="cropGrid"></div>
 </div>
 
 <!-- Planting date + maturity -->
-
 <div id="plantingPanel">
   <div class="section-title">PLANTING &amp; MATURITY</div>
   <div class="planting-row">
@@ -514,7 +513,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Hybrid selector -->
-
 <div id="hybridPanel">
   <div class="section-title">SEED HYBRID</div>
   <div class="hybrid-search-row">
@@ -539,7 +537,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Growth stage timeline -->
-
 <div id="stagePanel">
   <div class="section-title">GROWTH STAGE TIMELINE</div>
   <div class="stage-timeline">
@@ -549,22 +546,20 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Model total cards -->
-
 <div class="cards" id="cards" style="display:none"></div>
 
-<!-- Field pins list -->
 
+
+<!-- Field pins list -->
 <div id="fieldPinsSection" style="background:#0d1520;border:1px solid #2a5278;padding:14px 16px;margin-bottom:20px;display:none;">
   <div class="section-title">SAVED FIELDS</div>
   <div id="pinList"></div>
 </div>
 
 <!-- Main data tabs -->
-
 <div id="mainTabs" style="display:none; background:#0d1520; border:1px solid #2a5278; margin-bottom:20px;">
 
   <!-- Tab bar -->
-
   <div class="tab-bar">
     <button class="tab-btn tab-active" onclick="switchTab('overview')">&#127807; OVERVIEW</button>
     <button class="tab-btn" onclick="switchTab('soil')">&#127758; SOIL <span class="pro-badge">PRO</span></button>
@@ -576,56 +571,47 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- OVERVIEW TAB -->
-
   <div id="tab-overview" class="tab-pane tab-visible" style="padding:16px;">
     <div id="agCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:16px;"></div>
 
-```
-<!-- Seasonal rain panel -->
-<div id="seasonalRainPanel" style="display:none;">
-  <div class="section-title" style="margin-bottom:10px;">SEASONAL PRECIPITATION — HISTORICAL</div>
-  <div id="seasonalRainContent"></div>
-</div>
-```
-
+    <!-- Seasonal rain panel -->
+    <div id="seasonalRainPanel" style="display:none;">
+      <div class="section-title" style="margin-bottom:10px;">SEASONAL PRECIPITATION — HISTORICAL</div>
+      <div id="seasonalRainContent"></div>
+    </div>
   </div>
 
   <!-- SOIL TAB -->
-
   <div id="tab-soil" class="tab-pane" style="padding:16px;">
     <div class="soil-section-title">SOIL MOISTURE BY DEPTH &mdash; ERA5-LAND SATELLITE MODEL</div>
 
-```
-<!-- Summary zones -->
-<div class="soil-zones" id="soilZones"></div>
+    <!-- Summary zones -->
+    <div class="soil-zones" id="soilZones"></div>
 
-<!-- Depth bars -->
-<div id="soilDepthBars"></div>
+    <!-- Depth bars -->
+    <div id="soilDepthBars"></div>
 
-<!-- 14-day trend -->
-<div class="soil-section-title" style="margin-top:16px;">14-DAY SURFACE MOISTURE TREND</div>
-<div class="soil-trend" id="soilTrend"></div>
-<div style="display:flex;justify-content:space-between;font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:4px;">
-  <span>TODAY</span><span>DAY 7</span><span>DAY 14</span>
-</div>
+    <!-- 14-day trend -->
+    <div class="soil-section-title" style="margin-top:16px;">14-DAY SURFACE MOISTURE TREND</div>
+    <div class="soil-trend" id="soilTrend"></div>
+    <div style="display:flex;justify-content:space-between;font-size:8px;color:#3a6a94;letter-spacing:1px;margin-top:4px;">
+      <span>TODAY</span><span>DAY 7</span><span>DAY 14</span>
+    </div>
 
-<!-- Soil temp section -->
-<div class="soil-section-title" style="margin-top:20px;">SOIL TEMPERATURE BY DEPTH</div>
-<div id="soilTempCards" style="display:none;margin-bottom:12px;"></div>
-<div id="soilTempBars" style="display:none;margin-bottom:8px;"></div>
-<div id="soilTempCropNote" style="display:none;"></div>
+    <!-- Soil temp section -->
+    <div class="soil-section-title" style="margin-top:20px;">SOIL TEMPERATURE BY DEPTH</div>
+    <div id="soilTempCards" style="display:none;margin-bottom:12px;"></div>
+    <div id="soilTempBars" style="display:none;margin-bottom:8px;"></div>
+    <div id="soilTempCropNote" style="display:none;"></div>
 
-<div style="font-size:9px;color:#3a6a94;letter-spacing:1px;margin-top:12px;line-height:1.8;">
-  VWC = VOLUMETRIC WATER CONTENT (m&#179;/m&#179;) &middot; FIELD CAPACITY ~0.33 &middot; WILTING POINT ~0.10<br>
-  SOIL TEMP SOURCE: GFS MODEL VIA OPEN-METEO &middot; DEPTHS: 0, 6, 18, 54 cm (0, 2.4, 7, 21 in)<br>
-  SOURCE: ERA5-LAND (ECMWF) VIA OPEN-METEO &middot; ~9KM RESOLUTION &middot; UPDATED DAILY
-</div>
-```
-
+    <div style="font-size:9px;color:#3a6a94;letter-spacing:1px;margin-top:12px;line-height:1.8;">
+      VWC = VOLUMETRIC WATER CONTENT (m&#179;/m&#179;) &middot; FIELD CAPACITY ~0.33 &middot; WILTING POINT ~0.10<br>
+      SOIL TEMP SOURCE: GFS MODEL VIA OPEN-METEO &middot; DEPTHS: 0, 6, 18, 54 cm (0, 2.4, 7, 21 in)<br>
+      SOURCE: ERA5-LAND (ECMWF) VIA OPEN-METEO &middot; ~9KM RESOLUTION &middot; UPDATED DAILY
+    </div>
   </div>
 
   <!-- CHART TAB -->
-
   <div id="tab-chart" class="tab-pane" style="padding:16px;">
     <div class="chart-title" id="chartTitle">HOURLY BLEND AVERAGE</div>
     <!-- Chart container with Y-axis -->
@@ -648,20 +634,17 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- TABLE TAB -->
-
   <div id="tab-table" class="tab-pane" style="overflow-x:auto;">
     <table id="tbl" style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px;"></table>
   </div>
 
   <!-- FIELD OPS TAB -->
-
   <div id="tab-windows" class="tab-pane" style="padding:16px;">
     <div class="section-title">FIELD WORK WINDOWS</div>
     <div id="windowsList"></div>
   </div>
 
   <!-- ANALOG YEARS TAB -->
-
   <div id="tab-analog" class="tab-pane" style="padding:16px;">
     <div class="section-title" style="margin-bottom:6px;">ANALOG YEAR ANALYSIS</div>
     <div style="font-size:10px;color:#7ab8d4;margin-bottom:14px;line-height:1.6;">
@@ -705,7 +688,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- CONTACT TAB -->
-
   <div id="tab-contact" class="tab-pane" style="padding:24px 16px;">
     <div class="section-title" style="margin-bottom:16px;">CONTACT &amp; SUPPORT</div>
     <div style="background:#060f1a;border:1px solid #2a5278;padding:20px;max-width:400px;">
@@ -729,59 +711,54 @@ td:first-child { text-align: left; color: #7ab8d4; }
   </div>
 
   <!-- ABOUT TAB -->
-
   <div id="tab-about" class="tab-pane" style="padding:24px 16px;">
     <div class="section-title" style="margin-bottom:20px;">ABOUT AGRICAST</div>
 
-```
-<!-- Story card -->
-<div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
-  <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE STORY</div>
-  <div style="font-size:15px;color:#e8f4ff;line-height:1.9;margin-bottom:12px;">
-    Agricast was built out of frustration.
-  </div>
-  <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
-    As a third-generation farmer and agronomist in eastern Colorado, I spent years relying on generic weather apps that had no idea what a planting window was, couldn't tell me if it was safe to spray, and treated a dryland wheat field the same as a golf course in Florida.
-  </div>
-</div>
-
-<!-- Mission card -->
-<div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
-  <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE MISSION</div>
-  <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
-    I built Agricast to give professional farmers and agronomists the weather tools they actually need — multi-model precipitation blends, real GDU tracking, soil moisture, spray windows with inversion detection, and 75 years of analog history — all in one place, built specifically for the field.
-  </div>
-</div>
-
-<!-- Family card -->
-<div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
-  <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE TEAM</div>
-  <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
-    Agricast is built and maintained by AJ Worden — farmer, agronomist, and software developer based in Burlington, Colorado. My family has farmed eastern Colorado for generations, and their experience, knowledge, and feedback shapes every feature in this platform.
-  </div>
-  <div style="margin-top:14px;display:flex;align-items:center;gap:12px;border-top:1px solid #1a3a55;padding-top:14px;">
-    <div>
-      <div style="font-size:14px;font-weight:bold;color:#e8f4ff;letter-spacing:1px;">AJ WORDEN</div>
-      <div style="font-size:10px;color:#4a7a9b;letter-spacing:2px;">FOUNDER &middot; FARMER &middot; AGRONOMIST</div>
-      <div style="font-size:10px;color:#4a7a9b;letter-spacing:1px;">Burlington, Colorado</div>
+    <!-- Story card -->
+    <div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
+      <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE STORY</div>
+      <div style="font-size:15px;color:#e8f4ff;line-height:1.9;margin-bottom:12px;">
+        Agricast was built out of frustration.
+      </div>
+      <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
+        As a third-generation farmer and agronomist in eastern Colorado, I spent years relying on generic weather apps that had no idea what a planting window was, couldn't tell me if it was safe to spray, and treated a dryland wheat field the same as a golf course in Florida.
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- Contact -->
-<div style="background:#060f1a;border:1px solid #2a5278;padding:16px;">
-  <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">GET IN TOUCH</div>
-  <a href="mailto:Agricastwx@gmail.com" style="font-size:14px;font-weight:bold;color:#00c8ff;text-decoration:none;letter-spacing:1px;">Agricastwx@gmail.com</a>
-  <div style="font-size:10px;color:#3a6a94;letter-spacing:1px;margin-top:8px;line-height:1.8;">
-    QUESTIONS &middot; FEEDBACK &middot; PARTNERSHIP INQUIRIES
-  </div>
-</div>
-```
+    <!-- Mission card -->
+    <div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
+      <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE MISSION</div>
+      <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
+        I built Agricast to give professional farmers and agronomists the weather tools they actually need — multi-model precipitation blends, real GDU tracking, soil moisture, spray windows with inversion detection, and 75 years of analog history — all in one place, built specifically for the field.
+      </div>
+    </div>
 
+    <!-- Family card -->
+    <div style="background:#060f1a;border:1px solid #2a5278;padding:20px;margin-bottom:14px;">
+      <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">THE TEAM</div>
+      <div style="font-size:13px;color:#7ab8d4;line-height:1.9;">
+        Agricast is built and maintained by AJ Worden — farmer, agronomist, and software developer based in Burlington, Colorado. My family has farmed eastern Colorado for generations, and their experience, knowledge, and feedback shapes every feature in this platform.
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:12px;border-top:1px solid #1a3a55;padding-top:14px;">
+        <div>
+          <div style="font-size:14px;font-weight:bold;color:#e8f4ff;letter-spacing:1px;">AJ WORDEN</div>
+          <div style="font-size:10px;color:#4a7a9b;letter-spacing:2px;">FOUNDER &middot; FARMER &middot; AGRONOMIST</div>
+          <div style="font-size:10px;color:#4a7a9b;letter-spacing:1px;">Burlington, Colorado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div style="background:#060f1a;border:1px solid #2a5278;padding:16px;">
+      <div style="font-size:9px;color:#00c8ff;letter-spacing:3px;margin-bottom:10px;">GET IN TOUCH</div>
+      <a href="mailto:Agricastwx@gmail.com" style="font-size:14px;font-weight:bold;color:#00c8ff;text-decoration:none;letter-spacing:1px;">Agricastwx@gmail.com</a>
+      <div style="font-size:10px;color:#3a6a94;letter-spacing:1px;margin-top:8px;line-height:1.8;">
+        QUESTIONS &middot; FEEDBACK &middot; PARTNERSHIP INQUIRIES
+      </div>
+    </div>
   </div>
 
   <!-- SPRAY WEATHER TAB -->
-
   <div id="tab-spray" class="tab-pane" style="padding:16px;">
     <div class="section-title" style="margin-bottom:6px;">&#128167; SPRAY WEATHER FORECAST</div>
     <div style="font-size:10px;color:#7ab8d4;margin-bottom:14px;line-height:1.6;">
@@ -808,7 +785,6 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <!-- Pin name modal -->
-
 <div id="pinModal">
   <div id="pinModalBox">
     <h3>&#x1F4CD; NEW FIELD PIN</h3>
@@ -822,11 +798,8 @@ td:first-child { text-align: left; color: #7ab8d4; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 <script src="https://js.stripe.com/v3/"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
 <script>
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 // ─── STRIPE ──────────────────────────────────────────────────────────────────
@@ -842,7 +815,18 @@ var SUPA_URL = "https://ziuvfdtemgghmwnkoxxi.supabase.co";
 var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppdXZmZHRlbWdnaG13bmtveHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNzI3NDUsImV4cCI6MjA5MzY0ODc0NX0.pt6X_0NS4akeotE7sDJAChPrXDqlj-rb-dD_XJfvqv8";
 var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 var currentUser = null;
-var authMode = 'signin'; // or 'signup'
+var authMode = 'signin'; // signin, signup, or forgot
+
+async function showForgotPassword() {
+  authMode = 'forgot';
+  document.getElementById('authTitle').textContent = 'RESET PASSWORD';
+  document.getElementById('authPassword').style.display = 'none';
+  document.getElementById('forgotLink').style.display = 'none';
+  document.getElementById('authSwitch').innerHTML = 'Remember it? <span>Back to sign in</span>';
+  document.getElementById('authSwitch').onclick = function(){ showLogin(); };
+  document.querySelector('#authBox .primary').textContent = 'SEND RESET EMAIL';
+  document.getElementById('authErr').textContent = '';
+}
 var guestMode = false;
 
 async function initAuth() {
@@ -1068,6 +1052,10 @@ function tryItOut_cancel() {
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   document.getElementById('authTitle').textContent = authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT';
+  document.getElementById('forgotLink').style.display = authMode === 'signin' ? 'block' : 'none';
+  document.getElementById('authPassword').style.display = 'block';
+  document.querySelector('#authBox .primary').textContent = 'CONTINUE';
+  document.querySelector('#authBox .primary').disabled = false;
   document.getElementById('authSwitch').innerHTML = authMode === 'signin'
     ? 'No account? <span>Create one free</span>'
     : 'Have an account? <span>Sign in</span>';
@@ -1081,6 +1069,20 @@ async function doAuth() {
   err.textContent = '';
   if (!email || !pass) { err.textContent = 'ENTER EMAIL AND PASSWORD'; return; }
   var result;
+  if (authMode === 'forgot') {
+    if (!email) { document.getElementById('authErr').textContent = 'Enter your email address'; return; }
+    var res = await supa.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://agricast.farm/app.html'
+    });
+    if (res.error) {
+      document.getElementById('authErr').textContent = res.error.message;
+    } else {
+      document.getElementById('authErr').style.color = '#00ffa3';
+      document.getElementById('authErr').textContent = 'Reset email sent — check your inbox';
+      document.querySelector('#authBox .primary').disabled = true;
+    }
+    return;
+  }
   if (authMode === 'signup') {
     result = await supa.auth.signUp({ email:email, password:pass });
     if (!result.error && result.data.user && !result.data.session) {
@@ -4251,6 +4253,5 @@ document.getElementById("plantingDate").value = new Date().toISOString().split("
 ensureMap();
 initAuth();
 </script>
-
 </body>
 </html>
