@@ -804,7 +804,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
 <script>
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 // ─── STRIPE ──────────────────────────────────────────────────────────────────
-var STRIPE_PK   = "pk_test_51TWGugEgnpshCU4Zk5DtRGajcgd1wqZOzto9pkOqKhYn31oT3nKCZCOFcH1n3VREWs7SDhjtGwt6qHw9D7bHELcT00XMuPnsgr";
+var STRIPE_PK   = "pk_live_51TWGuLIoS32RqsccldhKTDaD6UHawDQOW1bbILzSWD6KTX4bLsRZhXHfE9BrB4ww4wNOuYzJzxNXs377Dmfbv3x4002sPZvTd2";
 var STRIPE_PRICE = "price_1TWGyoEgnpshCU4ZmJRBStny";
 var APP_URL      = "https://agricast.farm";
 var stripe       = null;
@@ -984,8 +984,8 @@ async function createOrUpdateSubscription(status) {
   }
 }
 
-var STRIPE_PAYMENT_LINK         = "https://buy.stripe.com/test_bJe14n2m70J4dVua6z3wQ01"; // monthly
-var STRIPE_PAYMENT_LINK_YEARLY  = "https://buy.stripe.com/test_6oU4gz0dZ63o18IdiL3wQ02"; // yearly // Set this once you create a Payment Link in Stripe
+var STRIPE_PAYMENT_LINK         = "https://buy.stripe.com/3cIdR98vN3hC1lO9IB6EU01"; // monthly
+var STRIPE_PAYMENT_LINK_YEARLY  = "https://buy.stripe.com/6oU5kD13l5pK0hK8Ex6EU00"; // yearly // Set this once you create a Payment Link in Stripe
 
 async function startUpgrade(plan) {
   if (!currentUser) { showLogin(); return; }
