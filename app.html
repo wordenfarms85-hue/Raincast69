@@ -3302,21 +3302,21 @@ function ensureMap() {
     if (!leafletMap) return;
     if (!window.ndviOn) {
       // Use NASA GIBS MODIS NDVI 16-day composite
-      window.ndviLayer = L.tileLayer(
-        (function(){
-        // Round to nearest 8-day MODIS composite period
-        var d = new Date();
-        d.setDate(d.getDate() - 8); // go back 8 days to ensure available
-        var ds = d.toISOString().split('T')[0];
-        return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/'+ds+'/GoogleMapsCompatible/{z}/{y}/{x}.png';
-      })(),
-        {
-          opacity: 0.75,
-          attribution: 'NASA GIBS MODIS NDVI',
-          tileSize: 256,
-          maxZoom: 12
-        }
-      );
+      // Build GIBS NDVI URL with correct format
+      var d = new Date();
+      d.setDate(d.getDate() - 16); // go back 16 days to ensure composite available
+      var ds = d.toISOString().split('T')[0];
+      var ndviUrl = 'https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/'
+        + 'MODIS_Terra_NDVI_16Day/default/' + ds
+        + '/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png';
+      window.ndviLayer = L.tileLayer(ndviUrl, {
+        subdomains: 'abc',
+        opacity: 0.8,
+        attribution: 'NASA GIBS / MODIS NDVI',
+        tileSize: 256,
+        maxZoom: 9,
+        bounds: [[-85, -180], [85, 180]]
+      });
       window.ndviLayer.addTo(leafletMap);
       window.ndviOn = true;
       btn.style.color = '#00ffa3'; btn.style.borderColor = '#00ffa3';
