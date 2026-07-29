@@ -3302,20 +3302,19 @@ function ensureMap() {
     if (!leafletMap) return;
     if (!window.ndviOn) {
       // Use NASA GIBS MODIS NDVI 16-day composite
-      // Build GIBS NDVI URL with correct format
+      // NASA GIBS NDVI via WMS — more reliable than WMTS for this layer
       var d = new Date();
-      d.setDate(d.getDate() - 16); // go back 16 days to ensure composite available
+      d.setDate(d.getDate() - 16);
       var ds = d.toISOString().split('T')[0];
-      var ndviUrl = 'https://gibs-{s}.earthdata.nasa.gov/wmts/epsg3857/best/'
-        + 'MODIS_Terra_NDVI_16Day/default/' + ds
-        + '/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png';
-      window.ndviLayer = L.tileLayer(ndviUrl, {
-        subdomains: 'abc',
+      window.ndviLayer = L.tileLayer.wms('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', {
+        layers: 'MODIS_Terra_NDVI_8Day',
+        format: 'image/png',
+        transparent: true,
         opacity: 0.8,
-        attribution: 'NASA GIBS / MODIS NDVI',
-        tileSize: 256,
-        maxZoom: 9,
-        bounds: [[-85, -180], [85, 180]]
+        attribution: 'NASA EOSDIS GIBS / MODIS NDVI',
+        version: '1.3.0',
+        time: ds,
+        maxZoom: 9
       });
       window.ndviLayer.addTo(leafletMap);
       window.ndviOn = true;
