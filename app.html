@@ -394,6 +394,7 @@ td:first-child { text-align: left; color: #7ab8d4; }
     <span>FIELD MAP — TAP TO ADD FIELD PIN</span>
     <div style="display:flex;align-items:center;gap:8px;">
       <button id="qpeToggleBtn" onclick="toggleQPE()" style="background:#0d1520;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">&#127783; QPE OFF</button>
+      <button id="ndviToggleBtn" onclick="toggleNDVI()" style="background:#0d1520;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:1px;">&#127807; NDVI OFF</button>
       <select id="qpeWindow" onchange="updateQPELayer()" style="background:#0d1520;border:1px solid #2a5278;color:#7ab8d4;font-family:monospace;font-size:10px;padding:4px 6px;cursor:pointer;display:none;">
         <option value="1">1-HR</option>
         <option value="24" selected>24-HR</option>
@@ -3276,6 +3277,58 @@ function ensureMap() {
       }
     } catch(e) { console.log('QPE fetch error:', e); }
   }
+
+  // NASA GIBS NDVI WMS Layer (MODIS, 250m, weekly)
+  window.ndviLayer = null;
+  window.ndviOn = false;
+
+  var GIBS_WMS = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+
+  function buildNDVILayer() {
+    return L.tileLayer.wms(GIBS_WMS, {
+      layers: 'MODIS_Terra_Land_Surface_Temp_Day',
+      format: 'image/png',
+      transparent: true,
+      opacity: 0.8,
+      attribution: 'NASA GIBS / MODIS',
+      version: '1.3.0',
+      crs: L.CRS.EPSG4326
+    });
+  }
+
+  window.toggleNDVI = function() {
+    if (!isPro && !guestMode) { requirePro('NDVI Imagery'); return; }
+    var btn = document.getElementById('ndviToggleBtn');
+    if (!leafletMap) return;
+    if (!window.ndviOn) {
+      // Use NASA GIBS MODIS NDVI 16-day composite
+      window.ndviLayer = L.tileLayer(
+        (function(){
+        // Round to nearest 8-day MODIS composite period
+        var d = new Date();
+        d.setDate(d.getDate() - 8); // go back 8 days to ensure available
+        var ds = d.toISOString().split('T')[0];
+        return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/'+ds+'/GoogleMapsCompatible/{z}/{y}/{x}.png';
+      })(),
+        {
+          opacity: 0.75,
+          attribution: 'NASA GIBS MODIS NDVI',
+          tileSize: 256,
+          maxZoom: 12
+        }
+      );
+      window.ndviLayer.addTo(leafletMap);
+      window.ndviOn = true;
+      btn.style.color = '#00ffa3'; btn.style.borderColor = '#00ffa3';
+      
+      btn.textContent = '🌿 NDVI ON';
+    } else {
+      if (window.ndviLayer) leafletMap.removeLayer(window.ndviLayer);
+      window.ndviOn = false;
+      btn.style.color = '#7ab8d4'; btn.style.borderColor = '#2a5278';
+      btn.textContent = '🌿 NDVI OFF';
+    }
+  };
 
   // Click to drop pin
   leafletMap.on("click", function(e) {
